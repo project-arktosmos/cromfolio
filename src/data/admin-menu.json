@@ -1,0 +1,31 @@
+{
+	"items": [
+		{
+			"id": "audio",
+			"label": "Audio",
+			"path": "/admin/audio"
+		},
+		{
+			"id": "tapper",
+			"label": "Rhythm Tapper",
+			"path": "/admin/tapper"
+		},
+		{
+			"id": "settings",
+			"label": "Settings",
+			"path": "/admin/settings"
+		},
+		{
+			"id": "wikia",
+			"label": "Wikia",
+			"path": "/admin/wikia"
+		},
+		{
+			"id": "items",
+			"label": "Items",
+			"path": "/admin/items",
+			"group": "Data"
+		}
+	],
+	"generatedAt": "2026-01-21T23:12:31.315Z"
+}
