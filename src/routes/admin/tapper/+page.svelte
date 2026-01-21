@@ -2,6 +2,7 @@
 	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import { guess } from 'web-audio-beat-detector';
 
 	// Game configuration
 	const LANES = 4;
@@ -9,26 +10,23 @@
 	const LANE_COLORS = ['bg-error', 'bg-warning', 'bg-success', 'bg-info'];
 	const LANE_GLOW = ['shadow-error', 'shadow-warning', 'shadow-success', 'shadow-info'];
 	const NOTE_FALL_TIME = 2000; // ms for note to fall from top to hit zone
-	const HIT_ZONE_TOLERANCE = 100; // ms tolerance for hit detection
-	const ANALYSIS_INTERVAL = 50; // ms between audio analysis checks
-
-	// Audio analysis thresholds for beat detection
-	const BASS_THRESHOLD = 0.6; // Low frequency threshold (bass/kick)
-	const MID_THRESHOLD = 0.5; // Mid frequency threshold (snare/vocals)
-	const HIGH_THRESHOLD = 0.4; // High frequency threshold (hi-hats/cymbals)
+	const HIT_ZONE_TOLERANCE = 150; // ms tolerance for hit detection
 
 	// Game state
 	let audioElement: HTMLAudioElement;
 	let audioContext: AudioContext | null = null;
-	let analyser: AnalyserNode | null = null;
-	let dataArray: Uint8Array | null = null;
 
 	let isPlaying = $state(false);
 	let currentTime = $state(0);
 	let duration = $state(0);
-	let volume = $state(0.8);
 	let isLoading = $state(true);
+	let isAnalyzing = $state(false);
 	let gameStarted = $state(false);
+
+	// BPM detection results
+	let detectedBpm = $state(0);
+	let beatOffset = $state(0);
+	let beatInterval = $state(0); // ms between beats
 
 	// Scoring
 	let score = $state(0);
@@ -49,67 +47,147 @@
 
 	let notes = $state<Note[]>([]);
 	let noteIdCounter = 0;
+	let scheduledBeats = $state(0);
 
 	// Key press visual feedback
 	let lanePressed = $state<boolean[]>([false, false, false, false]);
 	let laneFlash = $state<boolean[]>([false, false, false, false]);
 
-	// Beat detection state
-	let lastBeatTime: number[] = [0, 0, 0, 0];
-	let beatCooldown = 150; // ms between beats per lane
-
 	// Animation frame
 	let animationFrameId: number;
-	let analysisIntervalId: NodeJS.Timeout;
+
+	// Reactive timestamp for note positions
+	let gameTime = $state(0);
+
+	// Pattern generation - seeded random for consistent patterns
+	let patternSeed = 0;
 
 	onMount(async () => {
 		if (!browser) return;
-
-		// Set up audio context and analyser
-		audioContext = new AudioContext();
-		analyser = audioContext.createAnalyser();
-		analyser.fftSize = 256;
-		analyser.smoothingTimeConstant = 0.3;
-
-		const bufferLength = analyser.frequencyBinCount;
-		dataArray = new Uint8Array(bufferLength);
-
 		isLoading = false;
 	});
 
 	onDestroy(() => {
-		if (animationFrameId) {
-			cancelAnimationFrame(animationFrameId);
-		}
-		if (analysisIntervalId) {
-			clearInterval(analysisIntervalId);
-		}
+		stopGame();
 		if (audioContext) {
 			audioContext.close();
 		}
-		window.removeEventListener('keydown', handleKeyDown);
-		window.removeEventListener('keyup', handleKeyUp);
 	});
 
-	function connectAudio() {
-		if (!audioContext || !analyser || !audioElement) return;
-
-		const source = audioContext.createMediaElementSource(audioElement);
-		source.connect(analyser);
-		analyser.connect(audioContext.destination);
+	// Simple seeded random number generator
+	function seededRandom() {
+		patternSeed = (patternSeed * 1103515245 + 12345) & 0x7fffffff;
+		return patternSeed / 0x7fffffff;
 	}
 
-	function startGame() {
-		if (!audioElement || !audioContext) return;
+	async function analyzeAudio() {
+		if (!audioElement) return;
+
+		isAnalyzing = true;
+
+		try {
+			// Create audio context for analysis
+			const tempContext = new AudioContext();
+
+			// Fetch and decode the audio file
+			const response = await fetch(audioElement.src);
+			const arrayBuffer = await response.arrayBuffer();
+			const audioBuffer = await tempContext.decodeAudioData(arrayBuffer);
+
+			// Detect BPM using web-audio-beat-detector
+			const result = await guess(audioBuffer);
+
+			detectedBpm = result.bpm;
+			beatOffset = result.offset * 1000; // Convert to ms
+			beatInterval = (60 / detectedBpm) * 1000; // ms per beat
+
+			tempContext.close();
+		} catch (error) {
+			console.error('BPM detection failed:', error);
+			// Fallback to default BPM
+			detectedBpm = 120;
+			beatOffset = 0;
+			beatInterval = 500;
+		}
+
+		isAnalyzing = false;
+	}
+
+	function generateNotePattern(beatNumber: number): number[] {
+		// Generate a pattern of lanes to hit for this beat
+		// Use beat number as seed for consistent patterns
+		patternSeed = beatNumber * 12345;
+
+		const lanes: number[] = [];
+
+		// Vary pattern complexity based on beat position
+		const isDownbeat = beatNumber % 4 === 0;
+		const isHalfBeat = beatNumber % 2 === 0;
+
+		if (isDownbeat) {
+			// Downbeats: 1-2 notes, favor bass lanes (0, 1)
+			const noteCount = seededRandom() > 0.6 ? 2 : 1;
+			for (let i = 0; i < noteCount; i++) {
+				const lane = seededRandom() > 0.5 ? 0 : Math.floor(seededRandom() * 2);
+				if (!lanes.includes(lane)) lanes.push(lane);
+			}
+		} else if (isHalfBeat) {
+			// Half beats: 1 note, any lane
+			lanes.push(Math.floor(seededRandom() * LANES));
+		} else {
+			// Off beats: 0-1 note, favor higher lanes (2, 3) for hi-hats
+			if (seededRandom() > 0.4) {
+				lanes.push(Math.floor(seededRandom() * 2) + 2);
+			}
+		}
+
+		return lanes;
+	}
+
+	function scheduleNotesAhead() {
+		if (!gameStarted) return;
+
+		const now = audioElement.currentTime * 1000;
+		const lookAheadTime = NOTE_FALL_TIME + 500; // Schedule notes this far ahead
+
+		// Calculate which beats we need to schedule
+		const currentBeat = Math.floor((now - beatOffset) / beatInterval);
+		const futureBeat = Math.floor((now + lookAheadTime - beatOffset) / beatInterval);
+
+		for (let beat = Math.max(0, scheduledBeats); beat <= futureBeat; beat++) {
+			if (beat <= scheduledBeats - 1) continue; // Already scheduled
+
+			const beatTime = beatOffset + beat * beatInterval;
+			if (beatTime < now) continue; // Beat already passed
+
+			// Generate pattern for this beat
+			const lanes = generateNotePattern(beat);
+
+			// Spawn notes for each lane in the pattern
+			for (const lane of lanes) {
+				spawnNote(lane, beatTime - NOTE_FALL_TIME, beatTime);
+			}
+
+			scheduledBeats = beat + 1;
+		}
+	}
+
+	async function startGame() {
+		if (!audioElement) return;
+
+		// Analyze audio if not already done
+		if (detectedBpm === 0) {
+			await analyzeAudio();
+		}
+
+		// Create audio context if needed
+		if (!audioContext) {
+			audioContext = new AudioContext();
+		}
 
 		// Resume audio context if suspended
 		if (audioContext.state === 'suspended') {
-			audioContext.resume();
-		}
-
-		// Connect audio only once
-		if (!analyser?.numberOfInputs) {
-			connectAudio();
+			await audioContext.resume();
 		}
 
 		// Reset game state
@@ -120,7 +198,8 @@
 		missCount = 0;
 		notes = [];
 		noteIdCounter = 0;
-		lastBeatTime = [0, 0, 0, 0];
+		scheduledBeats = 0;
+		patternSeed = Date.now();
 
 		gameStarted = true;
 		audioElement.currentTime = 0;
@@ -128,9 +207,6 @@
 
 		// Start game loop
 		startGameLoop();
-
-		// Start beat detection
-		startBeatDetection();
 
 		// Add keyboard listeners
 		window.addEventListener('keydown', handleKeyDown);
@@ -144,9 +220,6 @@
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
 		}
-		if (analysisIntervalId) {
-			clearInterval(analysisIntervalId);
-		}
 
 		window.removeEventListener('keydown', handleKeyDown);
 		window.removeEventListener('keyup', handleKeyUp);
@@ -157,22 +230,32 @@
 			if (!gameStarted) return;
 
 			const now = audioElement.currentTime * 1000;
+			gameTime = now;
 
-			// Update notes - mark missed notes
-			notes = notes.map((note) => {
+			// Schedule notes ahead of time
+			scheduleNotesAhead();
+
+			// Mark missed notes
+			let hasChanges = false;
+			const updatedNotes = notes.map((note) => {
 				if (!note.hit && !note.missed && now > note.hitTime + HIT_ZONE_TOLERANCE) {
 					combo = 0;
 					missCount++;
+					hasChanges = true;
 					return { ...note, missed: true };
 				}
 				return note;
 			});
 
-			// Remove old notes (fallen past the screen)
-			notes = notes.filter((note) => {
+			// Remove old notes
+			const filteredNotes = updatedNotes.filter((note) => {
 				const timeSinceHit = now - note.hitTime;
-				return timeSinceHit < 500; // Keep for 500ms after hit time for animation
+				return timeSinceHit < 500;
 			});
+
+			if (hasChanges || filteredNotes.length !== notes.length) {
+				notes = filteredNotes;
+			}
 
 			animationFrameId = requestAnimationFrame(gameLoop);
 		}
@@ -180,54 +263,12 @@
 		animationFrameId = requestAnimationFrame(gameLoop);
 	}
 
-	function startBeatDetection() {
-		analysisIntervalId = setInterval(() => {
-			if (!analyser || !dataArray || !gameStarted || audioElement.paused) return;
-
-			analyser.getByteFrequencyData(dataArray);
-
-			const now = audioElement.currentTime * 1000;
-			const bufferLength = dataArray.length;
-
-			// Divide frequency bins into ranges for different lanes
-			// Lane 0: Bass (20-150 Hz) - bins 0-5
-			// Lane 1: Low-mid (150-500 Hz) - bins 6-20
-			// Lane 2: Mid (500-2000 Hz) - bins 21-50
-			// Lane 3: High (2000-8000 Hz) - bins 51-100
-
-			const bassAvg = getAverageVolume(dataArray, 0, 5);
-			const lowMidAvg = getAverageVolume(dataArray, 6, 20);
-			const midAvg = getAverageVolume(dataArray, 21, 50);
-			const highAvg = getAverageVolume(dataArray, 51, Math.min(100, bufferLength - 1));
-
-			const levels = [bassAvg, lowMidAvg, midAvg, highAvg];
-			const thresholds = [BASS_THRESHOLD, MID_THRESHOLD, MID_THRESHOLD, HIGH_THRESHOLD];
-
-			// Check each lane for beat detection
-			levels.forEach((level, lane) => {
-				if (level > thresholds[lane] && now - lastBeatTime[lane] > beatCooldown) {
-					// Spawn a note
-					spawnNote(lane, now);
-					lastBeatTime[lane] = now;
-				}
-			});
-		}, ANALYSIS_INTERVAL);
-	}
-
-	function getAverageVolume(dataArray: Uint8Array, startBin: number, endBin: number): number {
-		let sum = 0;
-		for (let i = startBin; i <= endBin; i++) {
-			sum += dataArray[i];
-		}
-		return sum / (endBin - startBin + 1) / 255;
-	}
-
-	function spawnNote(lane: number, currentTimeMs: number) {
+	function spawnNote(lane: number, spawnTime: number, hitTime: number) {
 		const note: Note = {
 			id: noteIdCounter++,
 			lane,
-			spawnTime: currentTimeMs,
-			hitTime: currentTimeMs + NOTE_FALL_TIME,
+			spawnTime,
+			hitTime,
 			hit: false,
 			missed: false
 		};
@@ -240,10 +281,9 @@
 
 		lanePressed[laneIndex] = true;
 
-		// Check for note hit
 		const now = audioElement.currentTime * 1000;
 
-		// Find the closest unhit note in this lane within tolerance
+		// Find closest unhit note in this lane
 		let closestNote: Note | null = null;
 		let closestDistance = Infinity;
 
@@ -258,15 +298,13 @@
 		}
 
 		if (closestNote) {
-			// Hit!
 			notes = notes.map((n) => (n.id === closestNote!.id ? { ...n, hit: true } : n));
 
-			// Calculate score based on timing
 			let points = 100;
 			if (closestDistance < 30) {
-				points = 300; // Perfect
+				points = 300;
 			} else if (closestDistance < 60) {
-				points = 200; // Great
+				points = 200;
 			}
 
 			score += points * (1 + Math.floor(combo / 10) * 0.1);
@@ -274,7 +312,6 @@
 			hitCount++;
 			if (combo > maxCombo) maxCombo = combo;
 
-			// Visual feedback
 			triggerLaneFlash(laneIndex);
 		}
 	}
@@ -319,14 +356,13 @@
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
 	}
 
-	// Calculate note position based on current time
-	function getNotePosition(note: Note): number {
-		const now = audioElement?.currentTime * 1000 || 0;
-		const progress = (now - note.spawnTime) / NOTE_FALL_TIME;
-		return Math.min(progress * 100, 100);
+	function getNotePosition(note: Note, currentGameTime: number): number {
+		const totalFallTime = note.hitTime - note.spawnTime;
+		const elapsed = currentGameTime - note.spawnTime;
+		const progress = elapsed / totalFallTime;
+		return Math.min(Math.max(progress * 85, 0), 100);
 	}
 
-	// Get accuracy percentage
 	function getAccuracy(): string {
 		const total = hitCount + missCount;
 		if (total === 0) return '100.0';
@@ -337,7 +373,6 @@
 <div class="flex min-h-screen flex-col bg-base-300 p-6">
 	<h1 class="mb-4 text-center text-3xl font-bold text-base-content">Rhythm Tapper</h1>
 
-	<!-- Audio Element -->
 	<audio
 		bind:this={audioElement}
 		src="/music/dbgt.mp3"
@@ -346,12 +381,11 @@
 		onplay={handlePlay}
 		onpause={handlePause}
 		onended={handleEnded}
-		preload="metadata"
+		preload="auto"
 		crossorigin="anonymous"
 	></audio>
 
 	{#if !gameStarted}
-		<!-- Start Screen -->
 		<div class="mx-auto flex max-w-2xl flex-col items-center justify-center gap-6">
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body items-center text-center">
@@ -373,15 +407,26 @@
 						{/each}
 					</div>
 
+					{#if detectedBpm > 0}
+						<div class="badge badge-primary badge-lg">Detected: {detectedBpm} BPM</div>
+					{/if}
+
 					<p class="text-sm text-base-content/50">
-						Notes are auto-generated based on the music's rhythm and frequencies.
+						Notes are generated based on detected BPM and beat patterns.
 					</p>
 
 					<div class="card-actions mt-4">
-						<button onclick={startGame} class="btn btn-primary btn-lg" disabled={isLoading}>
+						<button
+							onclick={startGame}
+							class="btn btn-primary btn-lg"
+							disabled={isLoading || isAnalyzing}
+						>
 							{#if isLoading}
 								<span class="loading loading-spinner"></span>
 								Loading...
+							{:else if isAnalyzing}
+								<span class="loading loading-spinner"></span>
+								Analyzing BPM...
 							{:else}
 								Start Game
 							{/if}
@@ -391,7 +436,6 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Game Screen -->
 		<div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
 			<!-- Stats Bar -->
 			<div class="flex items-center justify-between rounded-lg bg-base-100 p-4 shadow-lg">
@@ -407,6 +451,10 @@
 					<div class="text-center">
 						<div class="text-2xl font-bold text-accent">{getAccuracy()}%</div>
 						<div class="text-xs text-base-content/50">Accuracy</div>
+					</div>
+					<div class="text-center">
+						<div class="text-lg font-mono text-base-content/70">{detectedBpm}</div>
+						<div class="text-xs text-base-content/50">BPM</div>
 					</div>
 				</div>
 				<div class="flex items-center gap-4">
@@ -432,11 +480,11 @@
 							{#each notes.filter((n) => n.lane === i) as note (note.id)}
 								<div
 									class={classNames(
-										'absolute left-1/2 h-8 w-16 -translate-x-1/2 rounded-lg transition-opacity',
+										'absolute left-1/2 h-12 w-12 -translate-x-1/2 rounded-full transition-opacity',
 										LANE_COLORS[i],
 										note.hit ? 'scale-150 opacity-0' : note.missed ? 'opacity-30' : 'opacity-100'
 									)}
-									style="top: {getNotePosition(note)}%;"
+									style="top: {getNotePosition(note, gameTime)}%;"
 								></div>
 							{/each}
 						</div>
@@ -478,7 +526,7 @@
 		</div>
 	{/if}
 
-	<!-- Results Modal (shown when game ends) -->
+	<!-- Results -->
 	{#if !gameStarted && maxCombo > 0}
 		<div class="mx-auto mt-6 max-w-md">
 			<div class="card bg-base-100 shadow-xl">

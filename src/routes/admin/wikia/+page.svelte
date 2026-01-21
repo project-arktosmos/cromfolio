@@ -1,23 +1,21 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount } from 'svelte';
-	import { tvShowsService } from '$services/tvshows.service';
+	import { albumsService } from '$services/albums.service';
 	import { isTriviaSection } from '$services/fandom.service';
-	import type { TVShow } from '$types/tvshow.type';
+	import type { Album } from '$types/album.type';
 	import type {
 		FandomWiki,
 		FandomArticle,
 		FandomArticleSection,
-		FandomCategory
+		FandomCategory,
+		FandomImage
 	} from '$types/fandom.type';
 
 	// Collection state
-	let shows: TVShow[] = $state([]);
+	let albums: Album[] = $state([]);
 	let isLoading = $state(true);
-	let selectedShow = $state<TVShow | null>(null);
-
-	// Manual show input
-	let newShowTitle = $state('');
+	let selectedAlbum = $state<Album | null>(null);
 
 	// Wiki discovery state
 	let wikiResults = $state<FandomWiki[]>([]);
@@ -27,7 +25,7 @@
 	let manualWikiInput = $state('');
 
 	// Article/Content exploration state
-	let activeTab = $state<'search' | 'sections' | 'categories'>('search');
+	let activeTab = $state<'search' | 'sections' | 'categories' | 'images'>('search');
 	let articleSearchQuery = $state('');
 	let articleResults = $state<FandomArticle[]>([]);
 	let isSearchingArticles = $state(false);
@@ -43,52 +41,51 @@
 	let isLoadingSections = $state(false);
 	let isLoadingContent = $state(false);
 
+	// Image search state
+	let imageSearchQuery = $state('');
+	let imageResults = $state<FandomImage[]>([]);
+	let isSearchingImages = $state(false);
+	let selectedImage = $state<FandomImage | null>(null);
+
 	onMount(() => {
-		// Load shows from localStorage service
-		shows = tvShowsService.all();
+		// Load albums from localStorage service
+		albums = albumsService.all();
 		isLoading = false;
 	});
 
-	// Add a new show manually
-	function addShow() {
-		if (!newShowTitle.trim()) return;
-
-		const show: TVShow = {
-			id: crypto.randomUUID(),
-			title: newShowTitle.trim(),
-			addedAt: new Date().toISOString()
-		};
-
-		tvShowsService.add(show);
-		shows = tvShowsService.all();
-		newShowTitle = '';
-
-		// Auto-select and search
-		selectShow(show);
-	}
-
-	// Remove a show
-	function removeShow(show: TVShow, event: MouseEvent) {
-		event.stopPropagation();
-		tvShowsService.remove(show);
-		shows = tvShowsService.all();
-
-		if (selectedShow?.id === show.id) {
-			selectedShow = null;
-			resetWikiExplorer();
-		}
-	}
-
-	// Select/deselect a show
-	function selectShow(show: TVShow) {
-		if (selectedShow?.id === show.id) {
-			selectedShow = null;
+	// Select/deselect an album
+	function selectAlbum(album: Album) {
+		if (selectedAlbum?.id === album.id) {
+			selectedAlbum = null;
 			resetWikiExplorer();
 		} else {
-			selectedShow = show;
+			selectedAlbum = album;
 			resetWikiExplorer();
-			searchWikis(show.title);
+			// If album has a wikia URL, try to extract wiki name and select it
+			if (album.wikiaUrl) {
+				const match = album.wikiaUrl.match(/https?:\/\/([^.]+)\.fandom\.com/);
+				if (match) {
+					manualWikiInput = match[1];
+					tryManualWiki();
+				}
+			} else {
+				searchWikis(album.title);
+			}
 		}
+	}
+
+	// Link the selected wiki to the current album
+	function linkWikiToAlbum(wiki: FandomWiki) {
+		if (!selectedAlbum) return;
+
+		const updatedAlbum: Album = {
+			...selectedAlbum,
+			wikiaUrl: wiki.url
+		};
+
+		albumsService.update(updatedAlbum);
+		albums = albumsService.all();
+		selectedAlbum = updatedAlbum;
 	}
 
 	// Reset wiki explorer state
@@ -111,6 +108,9 @@
 		categories = [];
 		selectedCategory = null;
 		categoryMembers = [];
+		imageSearchQuery = '';
+		imageResults = [];
+		selectedImage = null;
 	}
 
 	// Search for wikis
@@ -171,9 +171,9 @@
 	function selectWiki(wiki: FandomWiki) {
 		selectedWiki = wiki;
 		resetArticleExplorer();
-		// Pre-fill search with show title
-		if (selectedShow) {
-			articleSearchQuery = selectedShow.title;
+		// Pre-fill search with album title
+		if (selectedAlbum) {
+			articleSearchQuery = selectedAlbum.title;
 		}
 	}
 
@@ -277,6 +277,63 @@
 		}
 	}
 
+	// Search images in the selected wiki
+	async function searchImages() {
+		if (!selectedWiki) return;
+
+		isSearchingImages = true;
+		selectedImage = null;
+
+		try {
+			const params = new URLSearchParams({
+				wiki: selectedWiki.name,
+				limit: '24',
+				thumbWidth: '200'
+			});
+
+			if (imageSearchQuery.trim()) {
+				params.set('query', imageSearchQuery.trim());
+			}
+
+			const response = await fetch(`/api/fandom/wiki/images?${params}`);
+			const data = await response.json();
+			imageResults = data.images || [];
+
+			// Debug: log full image URLs (not truncated)
+			console.log('[wikia] searchImages results:');
+			imageResults.forEach((img, i) => {
+				console.log(`[${i}] ${img.name}`);
+				console.log(`    url: ${img.url}`);
+				console.log(`    thumbUrl: ${img.thumbUrl}`);
+			});
+		} catch (error) {
+			console.error('[wikia] searchImages error:', error);
+		} finally {
+			isSearchingImages = false;
+		}
+	}
+
+	// Handle image load error
+	function handleImageError(event: Event, image: FandomImage) {
+		const img = event.target as HTMLImageElement;
+		console.error('[wikia] Image failed to load:', {
+			name: image.name,
+			attemptedUrl: img.src,
+			originalUrl: image.url,
+			thumbUrl: image.thumbUrl
+		});
+		// Hide the broken image
+		img.style.display = 'none';
+	}
+
+	// Format file size
+	function formatFileSize(bytes: number | undefined): string {
+		if (bytes === undefined) return '';
+		if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+		if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+		return `${bytes} B`;
+	}
+
 	// Format article count
 	function formatCount(count: number | undefined): string {
 		if (count === undefined) return '';
@@ -287,64 +344,60 @@
 </script>
 
 <div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">TV Show Wikia Finder</h1>
+	<h1 class="text-2xl font-bold mb-4">Album Wikia Finder</h1>
 
 	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
-		<!-- Column 1: Shows List -->
+		<!-- Column 1: Albums List -->
 		<div class="card bg-base-200 overflow-hidden flex flex-col">
 			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">TV Shows</h2>
+				<h2 class="card-title text-lg mb-2">Albums</h2>
 
-				<!-- Add show input -->
-				<div class="flex gap-2 mb-3">
-					<input
-						type="text"
-						placeholder="Enter TV show title..."
-						class="input input-bordered input-sm flex-1"
-						bind:value={newShowTitle}
-						onkeydown={(e) => e.key === 'Enter' && addShow()}
-					/>
-					<button class="btn btn-primary btn-sm" onclick={addShow} disabled={!newShowTitle.trim()}>
-						Add
-					</button>
-				</div>
-
-				<!-- Shows list -->
+				<!-- Albums list -->
 				<div class="flex-1 overflow-y-auto">
 					{#if isLoading}
 						<div class="flex justify-center p-4">
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
-					{:else if shows.length === 0}
+					{:else if albums.length === 0}
 						<div class="text-center text-base-content/60 p-4">
-							<p>No TV shows added yet.</p>
-							<p class="text-sm mt-1">Add a show to start finding wikis.</p>
+							<p>No albums created yet.</p>
+							<p class="text-sm mt-1">
+								Create albums in the <a href="/admin/album" class="link link-primary">Album Manager</a> first.
+							</p>
 						</div>
 					{:else}
 						<div class="space-y-2">
-							{#each shows as show (show.id)}
-								<button
+							{#each albums as album (album.id)}
+								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors',
+										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedShow?.id === show.id,
-											'bg-base-100': selectedShow?.id !== show.id
+											'bg-primary/20 ring-2 ring-primary': selectedAlbum?.id === album.id,
+											'bg-base-100': selectedAlbum?.id !== album.id
 										}
 									)}
-									onclick={() => selectShow(show)}
+									onclick={() => selectAlbum(album)}
+									onkeydown={(e) => e.key === 'Enter' && selectAlbum(album)}
+									role="button"
+									tabindex="0"
 								>
-									<div class="flex items-center justify-between">
-										<span class="font-medium truncate">{show.title}</span>
-										<button
-											class="btn btn-ghost btn-xs text-error"
-											onclick={(e) => removeShow(show, e)}
-											title="Remove show"
-										>
-											✕
-										</button>
+									<div class="flex items-start gap-3">
+										{#if album.coverImage}
+											<img
+												src={album.coverImage}
+												alt={album.title}
+												class="w-10 h-14 object-cover rounded"
+											/>
+										{/if}
+										<div class="flex-1 min-w-0">
+											<span class="font-medium truncate block">{album.title}</span>
+											{#if album.wikiaUrl}
+												<span class="badge badge-info badge-xs mt-1">Wikia linked</span>
+											{/if}
+										</div>
 									</div>
-								</button>
+								</div>
 							{/each}
 						</div>
 					{/if}
@@ -365,12 +418,12 @@
 						class="input input-bordered input-sm flex-1"
 						bind:value={manualWikiInput}
 						onkeydown={(e) => e.key === 'Enter' && tryManualWiki()}
-						disabled={!selectedShow}
+						disabled={!selectedAlbum}
 					/>
 					<button
 						class="btn btn-secondary btn-sm"
 						onclick={tryManualWiki}
-						disabled={!manualWikiInput.trim() || !selectedShow}
+						disabled={!manualWikiInput.trim() || !selectedAlbum}
 					>
 						+
 					</button>
@@ -384,9 +437,9 @@
 
 				<!-- Wiki results -->
 				<div class="flex-1 overflow-y-auto">
-					{#if !selectedShow}
+					{#if !selectedAlbum}
 						<div class="text-center text-base-content/60 p-4">
-							<p>Select a TV show to discover wikis.</p>
+							<p>Select an album to discover wikis.</p>
 						</div>
 					{:else if isSearchingWikis}
 						<div class="flex justify-center p-4">
@@ -400,7 +453,7 @@
 					{:else}
 						<div class="space-y-2">
 							{#each wikiResults as wiki (wiki.name)}
-								<button
+								<div
 									class={classNames(
 										'w-full text-left p-3 rounded-lg transition-colors',
 										'hover:bg-base-300',
@@ -409,16 +462,30 @@
 											'bg-base-100': selectedWiki?.name !== wiki.name
 										}
 									)}
-									onclick={() => selectWiki(wiki)}
 								>
-									<div class="font-medium truncate">{wiki.title}</div>
-									<div class="text-sm text-base-content/60 truncate">{wiki.url}</div>
-									{#if wiki.stats?.articles}
-										<div class="text-xs text-base-content/50 mt-1">
-											{formatCount(wiki.stats.articles)} articles
-										</div>
+									<button
+										class="w-full text-left"
+										onclick={() => selectWiki(wiki)}
+									>
+										<div class="font-medium truncate">{wiki.title}</div>
+										<div class="text-sm text-base-content/60 truncate">{wiki.url}</div>
+										{#if wiki.stats?.articles}
+											<div class="text-xs text-base-content/50 mt-1">
+												{formatCount(wiki.stats.articles)} articles
+											</div>
+										{/if}
+									</button>
+									{#if selectedAlbum && selectedAlbum.wikiaUrl !== wiki.url}
+										<button
+											class="btn btn-info btn-xs mt-2"
+											onclick={() => linkWikiToAlbum(wiki)}
+										>
+											Link to Album
+										</button>
+									{:else if selectedAlbum?.wikiaUrl === wiki.url}
+										<span class="badge badge-success badge-sm mt-2">Linked</span>
 									{/if}
-								</button>
+								</div>
 							{/each}
 						</div>
 					{/if}
@@ -464,6 +531,15 @@
 							}}
 						>
 							Categories
+						</button>
+						<button
+							class={classNames('tab', { 'tab-active': activeTab === 'images' })}
+							onclick={() => {
+								activeTab = 'images';
+								if (imageResults.length === 0) searchImages();
+							}}
+						>
+							Images
 						</button>
 					</div>
 
@@ -665,6 +741,117 @@
 											{/each}
 										</div>
 									{/if}
+								{/if}
+							{/if}
+						{:else if activeTab === 'images'}
+							<!-- Images tab -->
+							<div class="flex gap-2 mb-3">
+								<input
+									type="text"
+									placeholder="Search images..."
+									class="input input-bordered input-sm flex-1"
+									bind:value={imageSearchQuery}
+									onkeydown={(e) => e.key === 'Enter' && searchImages()}
+								/>
+								<button
+									class="btn btn-primary btn-sm"
+									onclick={searchImages}
+									disabled={isSearchingImages}
+								>
+									{#if isSearchingImages}
+										<span class="loading loading-spinner loading-xs"></span>
+									{:else}
+										Search
+									{/if}
+								</button>
+							</div>
+
+							{#if isSearchingImages}
+								<div class="flex justify-center p-4">
+									<span class="loading loading-spinner loading-md"></span>
+								</div>
+							{:else if imageResults.length === 0}
+								<div class="text-center text-base-content/60 p-4">
+									<p>No images found.</p>
+									<p class="text-sm mt-1">Try searching for a character or episode name.</p>
+								</div>
+							{:else}
+								<div class="grid grid-cols-3 gap-2 mb-3">
+									{#each imageResults as image (image.name)}
+										<button
+											class={classNames(
+												'relative aspect-square rounded overflow-hidden transition-all bg-base-300',
+												'hover:ring-2 hover:ring-primary',
+												{
+													'ring-2 ring-primary': selectedImage?.name === image.name
+												}
+											)}
+											onclick={() => (selectedImage = selectedImage?.name === image.name ? null : image)}
+											title={image.title}
+										>
+											<img
+												src={image.thumbUrl || image.url}
+												alt={image.title}
+												class="w-full h-full object-cover"
+												loading="lazy"
+												referrerpolicy="no-referrer"
+												onerror={(e) => handleImageError(e, image)}
+											/>
+										</button>
+									{/each}
+								</div>
+
+								{#if selectedImage}
+									<div class="divider my-2"></div>
+									<div class="bg-base-100 rounded p-3">
+										<div class="font-medium truncate mb-2" title={selectedImage.title}>
+											{selectedImage.title}
+										</div>
+										<div class="flex gap-3">
+											<img
+												src={selectedImage.thumbUrl || selectedImage.url}
+												alt={selectedImage.title}
+												class="w-24 h-24 object-cover rounded bg-base-300"
+												referrerpolicy="no-referrer"
+												onerror={(e) => handleImageError(e, selectedImage)}
+											/>
+											<div class="flex-1 text-sm space-y-1">
+												{#if selectedImage.width && selectedImage.height}
+													<div class="text-base-content/60">
+														{selectedImage.width} x {selectedImage.height}
+													</div>
+												{/if}
+												{#if selectedImage.size}
+													<div class="text-base-content/60">
+														{formatFileSize(selectedImage.size)}
+													</div>
+												{/if}
+												{#if selectedImage.mime}
+													<div class="text-base-content/60">
+														{selectedImage.mime}
+													</div>
+												{/if}
+												<div class="flex flex-wrap gap-1 mt-2">
+													<a
+														href={selectedImage.url}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="btn btn-xs btn-primary"
+													>
+														Full Image
+													</a>
+													<a
+														href={selectedImage.descriptionUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="btn btn-xs btn-ghost"
+													>
+														Wiki Page
+													</a>
+												</div>
+											</div>
+										</div>
+									</div>
 								{/if}
 							{/if}
 						{/if}

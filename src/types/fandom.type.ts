@@ -64,6 +64,18 @@ export interface FandomCategory {
 	subcats?: number;
 }
 
+export interface FandomImage {
+	name: string; // e.g., "File:Walter_White.png"
+	title: string; // Display title without "File:" prefix
+	url: string; // Direct image URL
+	descriptionUrl: string; // Wiki page URL for the image
+	width?: number;
+	height?: number;
+	size?: number; // File size in bytes
+	mime?: string; // e.g., "image/png"
+	thumbUrl?: string; // Thumbnail URL (if requested)
+}
+
 export interface FandomSearchResponse<T> {
 	data: T;
 	fromCache: boolean;

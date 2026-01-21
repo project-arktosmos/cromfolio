@@ -7,7 +7,8 @@ import type {
 	FandomWiki,
 	FandomArticle,
 	FandomArticleSection,
-	FandomCategory
+	FandomCategory,
+	FandomImage
 } from '$types/fandom.type';
 
 /**
@@ -398,6 +399,144 @@ export async function getCategoryMembers(
 	} catch (error) {
 		console.error('[fandom.service] getCategoryMembers error:', error);
 		return [];
+	}
+}
+
+/**
+ * Search for images in a wiki
+ * Uses the MediaWiki API to search in the File namespace (ns=6)
+ */
+export async function searchImages(
+	wikiName: string,
+	query: string,
+	limit: number = 20,
+	thumbWidth: number = 200
+): Promise<FandomImage[]> {
+	try {
+		// Search in the File namespace (ns=6)
+		const searchUrl = `https://${wikiName}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=${limit}&format=json&origin=*`;
+		const searchResponse = await fetch(searchUrl);
+
+		if (!searchResponse.ok) {
+			throw new Error(`Failed to search images: ${searchResponse.status}`);
+		}
+
+		const searchData = await searchResponse.json();
+		const searchResults = searchData.query?.search || [];
+
+		if (searchResults.length === 0) {
+			return [];
+		}
+
+		// Get image info for the found files
+		const titles = searchResults
+			.map((result: { title: string }) => result.title)
+			.join('|');
+
+		const infoUrl = `https://${wikiName}.fandom.com/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url|size|mime&format=json&origin=*`;
+		const infoResponse = await fetch(infoUrl);
+
+		if (!infoResponse.ok) {
+			throw new Error(`Failed to get image info: ${infoResponse.status}`);
+		}
+
+		const infoData = await infoResponse.json();
+		const pages = infoData.query?.pages || {};
+
+		const images: FandomImage[] = [];
+
+		for (const pageId of Object.keys(pages)) {
+			const page = pages[pageId];
+			if (page.imageinfo && page.imageinfo.length > 0) {
+				const info = page.imageinfo[0];
+				images.push({
+					name: page.title,
+					title: page.title.replace(/^File:/, ''),
+					url: info.url,
+					descriptionUrl: `https://${wikiName}.fandom.com/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
+					width: info.width,
+					height: info.height,
+					size: info.size,
+					mime: info.mime,
+					thumbUrl: generateThumbUrl(info.url, thumbWidth)
+				});
+			}
+		}
+
+		return images;
+	} catch (error) {
+		console.error('[fandom.service] searchImages error:', error);
+		return [];
+	}
+}
+
+/**
+ * Generate a thumbnail URL from a Fandom image URL
+ * Fandom uses /revision/latest format, we can add /scale-to-width-down/X
+ */
+function generateThumbUrl(originalUrl: string, width: number): string {
+	// Fandom URLs format: .../revision/latest?cb=...
+	// To get thumbnail: .../revision/latest/scale-to-width-down/WIDTH?cb=...
+	if (originalUrl.includes('/revision/latest')) {
+		return originalUrl.replace('/revision/latest', `/revision/latest/scale-to-width-down/${width}`);
+	}
+	return originalUrl;
+}
+
+/**
+ * Get all images (browse without search query)
+ * Uses allimages API to list images alphabetically
+ */
+export async function getImages(
+	wikiName: string,
+	limit: number = 20,
+	thumbWidth: number = 200,
+	from?: string
+): Promise<{ images: FandomImage[]; continueFrom?: string }> {
+	try {
+		// allimages API - get basic image info
+		let url = `https://${wikiName}.fandom.com/api.php?action=query&list=allimages&ailimit=${limit}&aiprop=url|size|mime&format=json&origin=*`;
+
+		if (from) {
+			url += `&aifrom=${encodeURIComponent(from)}`;
+		}
+
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			throw new Error(`Failed to get images: ${response.status}`);
+		}
+
+		const data = await response.json();
+		const allImages = data.query?.allimages || [];
+		const continueFrom = data.continue?.aifrom;
+
+		const images: FandomImage[] = allImages.map(
+			(img: {
+				name: string;
+				url: string;
+				descriptionurl: string;
+				width?: number;
+				height?: number;
+				size?: number;
+				mime?: string;
+			}) => ({
+				name: `File:${img.name}`,
+				title: img.name,
+				url: img.url,
+				descriptionUrl: img.descriptionurl,
+				width: img.width,
+				height: img.height,
+				size: img.size,
+				mime: img.mime,
+				thumbUrl: generateThumbUrl(img.url, thumbWidth)
+			})
+		);
+
+		return { images, continueFrom };
+	} catch (error) {
+		console.error('[fandom.service] getImages error:', error);
+		return { images: [] };
 	}
 }
 
