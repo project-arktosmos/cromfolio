@@ -56,6 +56,20 @@
 	const BOOK_DEPTH = 0.06;
 	const COVER_THICKNESS = 0.008;
 
+	// Edit room mode
+	let isEditMode = $state(false);
+	let floorGrid: THREE.GridHelper | null = null;
+	let wallGrids: THREE.GridHelper[] = [];
+
+	// Edit mode object manipulation
+	let editableObjects: THREE.Object3D[] = []; // Objects that can be edited (furniture, models)
+	let selectedEditObject: THREE.Object3D | null = $state(null);
+	let originalMaterials: Map<THREE.Mesh, THREE.Material | THREE.Material[]> = new Map();
+	let boundingBoxHelper: THREE.Box3Helper | null = null;
+	let rotationAxisHelper: THREE.Line | null = null;
+	const EDIT_MOVE_SPEED = 0.1;
+	const EDIT_ROTATE_SPEED = Math.PI / 16; // 11.25 degrees per press
+
 	function getProxiedUrl(url: string): string {
 		if (url.startsWith('http://') || url.startsWith('https://')) {
 			return `/api/image-proxy?url=${encodeURIComponent(url)}`;
@@ -614,11 +628,34 @@
 				(gltf) => {
 					const model = gltf.scene;
 
-					// Scale and position the model next to the existing desk
-					// Existing desk: 2.5 wide, 0.75 tall, 1.2 deep
-					// GLTF models from Sketchfab are typically in cm, scale to match
-					model.scale.set(1.5, 1.5, 1.5);
-					model.position.set(2.8, 0, -4.4);
+					// Get the bounding box to understand the model's size
+					const box = new THREE.Box3().setFromObject(model);
+					const size = box.getSize(new THREE.Vector3());
+					const center = box.getCenter(new THREE.Vector3());
+
+					console.log('IKEA desk original size:', size);
+					console.log('IKEA desk original center:', center);
+
+					// Target height for the desk
+					const targetHeight = 1;
+					const scaleFactor = targetHeight / size.y;
+
+					model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+					// Recalculate after scaling
+					box.setFromObject(model);
+					const newSize = box.getSize(new THREE.Vector3());
+					const newCenter = box.getCenter(new THREE.Vector3());
+
+					console.log('IKEA desk scaled size:', newSize);
+
+					// Position: place it to the right of the existing desk
+					// Center it on Y so it sits on the floor, offset X to the right
+					model.position.set(
+						2.5 - newCenter.x, // To the right of existing desk
+						-box.min.y, // Sit on the floor (y=0)
+						-4.4 - newCenter.z // Same Z as existing desk
+					);
 
 					// Enable shadows on all meshes
 					model.traverse((child) => {
@@ -637,6 +674,233 @@
 				}
 			);
 		});
+	}
+
+	function toggleEditMode(): void {
+		isEditMode = !isEditMode;
+
+		if (isEditMode) {
+			// Create floor grid - 8x10 units (room size), 1 unit per square
+			const roomWidth = 8;
+			const roomDepth = 10;
+			const roomHeight = 4;
+
+			// Floor grid
+			floorGrid = new THREE.GridHelper(Math.max(roomWidth, roomDepth), Math.max(roomWidth, roomDepth), 0xff0000, 0xff0000);
+			floorGrid.position.y = 0.01; // Slightly above floor to avoid z-fighting
+			scene.add(floorGrid);
+
+			// Back wall grid
+			const backWallGrid = new THREE.GridHelper(roomWidth, roomWidth, 0xff0000, 0xff0000);
+			backWallGrid.rotation.x = Math.PI / 2;
+			backWallGrid.position.set(0, roomHeight / 2, -roomDepth / 2 + 0.01);
+			scene.add(backWallGrid);
+			wallGrids.push(backWallGrid);
+
+			// Front wall grid
+			const frontWallGrid = new THREE.GridHelper(roomWidth, roomWidth, 0xff0000, 0xff0000);
+			frontWallGrid.rotation.x = Math.PI / 2;
+			frontWallGrid.position.set(0, roomHeight / 2, roomDepth / 2 - 0.01);
+			scene.add(frontWallGrid);
+			wallGrids.push(frontWallGrid);
+
+			// Left wall grid
+			const leftWallGrid = new THREE.GridHelper(roomDepth, roomDepth, 0xff0000, 0xff0000);
+			leftWallGrid.rotation.z = Math.PI / 2;
+			leftWallGrid.position.set(-roomWidth / 2 + 0.01, roomHeight / 2, 0);
+			scene.add(leftWallGrid);
+			wallGrids.push(leftWallGrid);
+
+			// Right wall grid
+			const rightWallGrid = new THREE.GridHelper(roomDepth, roomDepth, 0xff0000, 0xff0000);
+			rightWallGrid.rotation.z = Math.PI / 2;
+			rightWallGrid.position.set(roomWidth / 2 - 0.01, roomHeight / 2, 0);
+			scene.add(rightWallGrid);
+			wallGrids.push(rightWallGrid);
+		} else {
+			// Remove grids
+			if (floorGrid) {
+				scene.remove(floorGrid);
+				floorGrid.dispose();
+				floorGrid = null;
+			}
+			wallGrids.forEach((grid) => {
+				scene.remove(grid);
+				grid.dispose();
+			});
+			wallGrids = [];
+
+			// Deselect any selected object when exiting edit mode
+			if (selectedEditObject) {
+				deselectEditObject();
+			}
+		}
+	}
+
+	function selectEditObject(obj: THREE.Object3D): void {
+		// Deselect previous object if any
+		if (selectedEditObject) {
+			deselectEditObject();
+		}
+
+		selectedEditObject = obj;
+
+		// Create bounding box helper
+		const box = new THREE.Box3().setFromObject(obj);
+		boundingBoxHelper = new THREE.Box3Helper(box, new THREE.Color(0x00ffff));
+		scene.add(boundingBoxHelper);
+
+		// Create rotation axis helper (yellow vertical line through center)
+		const center = box.getCenter(new THREE.Vector3());
+		const axisGeometry = new THREE.BufferGeometry().setFromPoints([
+			new THREE.Vector3(center.x, 0, center.z),
+			new THREE.Vector3(center.x, box.max.y + 0.5, center.z)
+		]);
+		const axisMaterial = new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 2 });
+		rotationAxisHelper = new THREE.Line(axisGeometry, axisMaterial);
+		scene.add(rotationAxisHelper);
+
+		// Highlight the object with a cyan tint
+		obj.traverse((child) => {
+			if (child instanceof THREE.Mesh && child.material) {
+				// Store original material
+				originalMaterials.set(child, child.material);
+
+				// Create highlighted material
+				if (Array.isArray(child.material)) {
+					child.material = child.material.map((mat) => {
+						const highlightMat = mat.clone();
+						if ('emissive' in highlightMat) {
+							(highlightMat as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x00ffff);
+							(highlightMat as THREE.MeshStandardMaterial).emissiveIntensity = 0.3;
+						}
+						return highlightMat;
+					});
+				} else {
+					const highlightMat = child.material.clone();
+					if ('emissive' in highlightMat) {
+						(highlightMat as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x00ffff);
+						(highlightMat as THREE.MeshStandardMaterial).emissiveIntensity = 0.3;
+					}
+					child.material = highlightMat;
+				}
+			}
+		});
+	}
+
+	function deselectEditObject(): void {
+		if (!selectedEditObject) return;
+
+		// Remove bounding box helper
+		if (boundingBoxHelper) {
+			scene.remove(boundingBoxHelper);
+			boundingBoxHelper.dispose();
+			boundingBoxHelper = null;
+		}
+
+		// Remove rotation axis helper
+		if (rotationAxisHelper) {
+			scene.remove(rotationAxisHelper);
+			rotationAxisHelper.geometry.dispose();
+			(rotationAxisHelper.material as THREE.Material).dispose();
+			rotationAxisHelper = null;
+		}
+
+		// Restore original materials
+		selectedEditObject.traverse((child) => {
+			if (child instanceof THREE.Mesh) {
+				const originalMat = originalMaterials.get(child);
+				if (originalMat) {
+					// Dispose highlighted materials
+					if (Array.isArray(child.material)) {
+						child.material.forEach((m) => m.dispose());
+					} else {
+						child.material.dispose();
+					}
+					child.material = originalMat;
+				}
+			}
+		});
+
+		originalMaterials.clear();
+		selectedEditObject = null;
+	}
+
+	function updateEditHelpers(): void {
+		if (!selectedEditObject) return;
+
+		const box = new THREE.Box3().setFromObject(selectedEditObject);
+
+		// Update bounding box
+		if (boundingBoxHelper) {
+			boundingBoxHelper.box.copy(box);
+		}
+
+		// Update rotation axis position
+		if (rotationAxisHelper) {
+			const center = box.getCenter(new THREE.Vector3());
+			const positions = rotationAxisHelper.geometry.attributes.position;
+			positions.setXYZ(0, center.x, 0, center.z);
+			positions.setXYZ(1, center.x, box.max.y + 0.5, center.z);
+			positions.needsUpdate = true;
+		}
+	}
+
+	function moveEditObject(dx: number, dz: number): void {
+		if (!selectedEditObject) return;
+
+		// Move in world space based on camera direction
+		const forward = new THREE.Vector3(0, 0, -1);
+		const right = new THREE.Vector3(1, 0, 0);
+
+		const yawQuat = new THREE.Quaternion();
+		yawQuat.setFromEuler(new THREE.Euler(0, yaw, 0));
+		forward.applyQuaternion(yawQuat);
+		right.applyQuaternion(yawQuat);
+
+		selectedEditObject.position.x += right.x * dx * EDIT_MOVE_SPEED + forward.x * dz * EDIT_MOVE_SPEED;
+		selectedEditObject.position.z += right.z * dx * EDIT_MOVE_SPEED + forward.z * dz * EDIT_MOVE_SPEED;
+
+		updateEditHelpers();
+	}
+
+	function rotateEditObject(direction: number): void {
+		if (!selectedEditObject) return;
+
+		const angle = direction * EDIT_ROTATE_SPEED;
+
+		// Get bounding box center before rotation
+		const boxBefore = new THREE.Box3().setFromObject(selectedEditObject);
+		const centerBefore = boxBefore.getCenter(new THREE.Vector3());
+
+		// Rotate the object
+		selectedEditObject.rotation.y += angle;
+
+		// Get bounding box center after rotation
+		const boxAfter = new THREE.Box3().setFromObject(selectedEditObject);
+		const centerAfter = boxAfter.getCenter(new THREE.Vector3());
+
+		// Compensate for any center drift caused by rotation
+		// This keeps the visual center in the same place
+		selectedEditObject.position.x += centerBefore.x - centerAfter.x;
+		selectedEditObject.position.z += centerBefore.z - centerAfter.z;
+
+		updateEditHelpers();
+	}
+
+	function getEditableObjectFromIntersection(intersects: THREE.Intersection[]): THREE.Object3D | null {
+		for (const intersect of intersects) {
+			let obj: THREE.Object3D | null = intersect.object;
+
+			// Walk up to find the root editable object
+			while (obj) {
+				if (editableObjects.includes(obj)) {
+					return obj;
+				}
+				obj = obj.parent;
+			}
+		}
+		return null;
 	}
 
 	function setupLighting(): void {
@@ -754,17 +1018,26 @@
 		const desk = createDesk();
 		// Position desk against the back wall (wall at Z=-5, desk depth 1.2, so center at -5 + 0.6 = -4.4)
 		desk.position.set(0, 0, -4.4);
+		desk.userData.isEditable = true;
+		desk.userData.name = 'Desk';
 		scene.add(desk);
+		editableObjects.push(desk);
 
 		// Add bookshelf on the wall above the desk
 		const bookshelf = createBookshelf();
 		bookshelf.position.set(0, SHELF_Y, -4.85); // Against the wall
+		bookshelf.userData.isEditable = true;
+		bookshelf.userData.name = 'Bookshelf';
 		scene.add(bookshelf);
+		editableObjects.push(bookshelf);
 
 		// Load IKEA desk model next to the existing desk
 		const ikeaDesk = await loadIkeaDesk();
 		if (ikeaDesk) {
+			ikeaDesk.userData.isEditable = true;
+			ikeaDesk.userData.name = 'IKEA Desk';
 			scene.add(ikeaDesk);
+			editableObjects.push(ikeaDesk);
 		}
 
 		// No chair - player is standing/sitting at desk
@@ -825,6 +1098,51 @@
 	function onKeyDown(event: KeyboardEvent): void {
 		const key = event.key.toLowerCase();
 
+		// Spacebar toggles edit mode
+		if (event.code === 'Space') {
+			event.preventDefault();
+			toggleEditMode();
+			return;
+		}
+
+		// Edit mode controls for selected object
+		if (isEditMode && selectedEditObject) {
+			// Arrow keys move the object
+			if (key === 'arrowup') {
+				event.preventDefault();
+				moveEditObject(0, 1); // Forward
+				return;
+			} else if (key === 'arrowdown') {
+				event.preventDefault();
+				moveEditObject(0, -1); // Backward
+				return;
+			} else if (key === 'arrowleft') {
+				event.preventDefault();
+				moveEditObject(-1, 0); // Left
+				return;
+			} else if (key === 'arrowright') {
+				event.preventDefault();
+				moveEditObject(1, 0); // Right
+				return;
+			}
+			// Q/E rotate the object
+			else if (key === 'q') {
+				event.preventDefault();
+				rotateEditObject(1); // Rotate left (counter-clockwise)
+				return;
+			} else if (key === 'e') {
+				event.preventDefault();
+				rotateEditObject(-1); // Rotate right (clockwise)
+				return;
+			}
+			// Escape deselects
+			else if (key === 'escape') {
+				event.preventDefault();
+				deselectEditObject();
+				return;
+			}
+		}
+
 		// When book is open, A/D and arrow keys control page flipping instead of movement
 		if (isBookOpen) {
 			if (key === 'a' || key === 'arrowleft') {
@@ -866,9 +1184,9 @@
 		// Save the page number that will be shown on the flipping page (the even number being flipped back)
 		const flippingPageNum = currentPage - 1;
 
-		// Update currentPage FIRST so startFlipAnimation can pre-render destination pages
-		const newPage = currentPage - 2;
-		currentPage = newPage < 1 ? 1 : newPage;
+		// Calculate target page but DON'T update currentPage yet - wait for animation to complete
+		const targetPage = currentPage - 2 < 1 ? 1 : currentPage - 2;
+		userData.targetPage = targetPage;
 
 		// Start flip animation: a page flips from left back to right
 		startFlipAnimation(selectedBook, 1, flippingPageNum);
@@ -884,9 +1202,9 @@
 		// Save the page number that will be shown on the flipping page (the odd number being flipped)
 		const flippingPageNum = currentPage;
 
-		// Update currentPage FIRST so startFlipAnimation can pre-render destination pages
-		const newPage = currentPage + 2;
-		currentPage = newPage > TOTAL_PAGES ? TOTAL_PAGES : newPage;
+		// Calculate target page but DON'T update currentPage yet - wait for animation to complete
+		const targetPage = currentPage + 2 > TOTAL_PAGES ? TOTAL_PAGES : currentPage + 2;
+		userData.targetPage = targetPage;
 
 		// Start flip animation: a page flips from right to left
 		startFlipAnimation(selectedBook, -1, flippingPageNum);
@@ -900,34 +1218,25 @@
 		const flippingPivot = userData.flippingPagePivot as THREE.Group;
 		const flippingFrontMaterial = userData.flippingPageFrontMaterial as THREE.MeshStandardMaterial;
 		const flippingBackMaterial = userData.flippingPageBackMaterial as THREE.MeshStandardMaterial;
-
-		// Pre-render the destination pages BEFORE starting the flip animation
-		// so they're visible underneath the flipping page
 		const rightPageMaterial = userData.rightPageMaterial as THREE.MeshStandardMaterial;
-		const leftPageMaterial = userData.leftPageMaterial as THREE.MeshStandardMaterial;
 
 		if (direction < 0) {
 			// Flipping right to left (going forward): page with odd number flips to reveal even+odd underneath
-			// currentPage has already been updated to the new value
-			// Show the destination pages (new left and right) underneath
-			const newRightPageNum = currentPage;
-			const newLeftPageNum = currentPage - 1;
+			// The left page stays as-is during the flip (shows current even page)
+			// The right page shows the DESTINATION right page underneath the flipping page
+			const targetPage = userData.targetPage;
+			const newRightPageNum = targetPage;
 
-			// Update and show the destination right page (will be revealed as flip completes)
+			// Pre-render the destination RIGHT page (will be revealed as flip completes)
 			if (newRightPageNum >= 1 && newRightPageNum <= TOTAL_PAGES) {
 				rightPageMaterial.map = createNumberedPageTexture(newRightPageNum, false);
 				rightPageMaterial.needsUpdate = true;
 				(userData.rightPage as THREE.Mesh).visible = true;
 			}
 
-			// Update and show the destination left page
-			if (newLeftPageNum >= 1 && newLeftPageNum <= TOTAL_PAGES) {
-				leftPageMaterial.map = createNumberedPageTexture(newLeftPageNum, true);
-				leftPageMaterial.needsUpdate = true;
-				(userData.leftPage as THREE.Mesh).visible = true;
-			}
+			// LEFT page keeps showing current content - don't change it during flip
 
-			// The flipping page: front shows OLD right page (odd), back shows next even page
+			// The flipping page: front shows current right page (odd), back shows next even page
 			// When flipping from page 1 to page 3: front=1, back=2
 			flippingFrontMaterial.map = createNumberedPageTexture(pageNum, false);
 			flippingFrontMaterial.needsUpdate = true;
@@ -939,36 +1248,38 @@
 			userData.targetFlipRotation = -Math.PI;
 
 		} else {
-			// Flipping left to right (going backward): page with even number flips back to reveal previous spread
-			// currentPage has already been updated to the new value
-			const newRightPageNum = currentPage;
-			const newLeftPageNum = currentPage - 1;
+			// Flipping left to right (going backward): page flips from left position to right position
+			// Example: from page 3 to page 1
+			// - Flipping page starts on LEFT showing current even (2) on its back
+			// - Flipping page ends on RIGHT showing destination odd (1) on its front
+			// - Static LEFT page underneath shows destination left (hidden for page 1)
+			// - Static RIGHT page is HIDDEN during flip (flipping page lands on it)
+			const targetPage = userData.targetPage;
+			const leftPageMaterial = userData.leftPageMaterial as THREE.MeshStandardMaterial;
 
-			// Update and show the destination right page
-			if (newRightPageNum >= 1 && newRightPageNum <= TOTAL_PAGES) {
-				rightPageMaterial.map = createNumberedPageTexture(newRightPageNum, false);
-				rightPageMaterial.needsUpdate = true;
-				(userData.rightPage as THREE.Mesh).visible = true;
-			}
+			// HIDE the static right page - the flipping page will land on this position
+			(userData.rightPage as THREE.Mesh).visible = false;
 
-			// Update and show the destination left page (or hide if going back to page 1)
+			// Pre-render the destination LEFT page UNDERNEATH the flipping page
+			const newLeftPageNum = targetPage - 1;
 			if (newLeftPageNum >= 1 && newLeftPageNum <= TOTAL_PAGES) {
 				leftPageMaterial.map = createNumberedPageTexture(newLeftPageNum, true);
 				leftPageMaterial.needsUpdate = true;
 				(userData.leftPage as THREE.Mesh).visible = true;
 			} else {
+				// Going back to page 1 means no left page
 				(userData.leftPage as THREE.Mesh).visible = false;
 			}
 
-			// The flipping page: when going backward from page 3 to page 1
-			// Back shows the even page (2), front shows the odd page before it (1)
-			// But we're starting from left side (-PI), so back is facing player initially
+			// The flipping page:
+			// Back shows the current even page (e.g., 2) - faces player at start
+			// Front shows the destination right page (e.g., 1) - faces player at end
 			flippingBackMaterial.map = createNumberedPageTexture(pageNum, true);
 			flippingBackMaterial.needsUpdate = true;
-			flippingFrontMaterial.map = createNumberedPageTexture(pageNum - 1, false);
+			flippingFrontMaterial.map = createNumberedPageTexture(targetPage, false);
 			flippingFrontMaterial.needsUpdate = true;
 
-			// Start at -PI, go to 0
+			// Start at -PI (left position), go to 0 (right position)
 			flippingPivot.rotation.y = -Math.PI;
 			userData.targetFlipRotation = 0;
 		}
@@ -1242,11 +1553,40 @@
 					flipPivot.rotation.y += flipDiff * ANIMATION_SPEED * 2;
 				} else {
 					flipPivot.rotation.y = targetRot;
-					// Animation complete - hide both sides of the flipping page
-					// The destination pages were already pre-rendered before animation started
+					// Animation complete
+					const wasFlippingBackward = userData.flipDirection > 0;
 					userData.isFlipping = false;
 					userData.flippingPageFront.visible = false;
 					userData.flippingPageBack.visible = false;
+
+					// Now update currentPage to the target
+					if (userData.targetPage !== undefined) {
+						currentPage = userData.targetPage;
+
+						// Update static pages to show final content
+						const leftPageMaterial = userData.leftPageMaterial as THREE.MeshStandardMaterial;
+						const rightPageMaterial = userData.rightPageMaterial as THREE.MeshStandardMaterial;
+						const newLeftPageNum = currentPage - 1;
+						const newRightPageNum = currentPage;
+
+						// Update left page
+						if (newLeftPageNum >= 1 && newLeftPageNum <= TOTAL_PAGES) {
+							leftPageMaterial.map = createNumberedPageTexture(newLeftPageNum, true);
+							leftPageMaterial.needsUpdate = true;
+							(userData.leftPage as THREE.Mesh).visible = true;
+						} else {
+							(userData.leftPage as THREE.Mesh).visible = false;
+						}
+
+						// Update right page (especially important after backward flip)
+						if (wasFlippingBackward) {
+							rightPageMaterial.map = createNumberedPageTexture(newRightPageNum, false);
+							rightPageMaterial.needsUpdate = true;
+							(userData.rightPage as THREE.Mesh).visible = true;
+						}
+
+						userData.targetPage = undefined;
+					}
 				}
 			}
 		}
@@ -1435,7 +1775,22 @@
 		// Raycast from the actual click position in NDC
 		raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
 
-		// Check for intersections with album books
+		// In edit mode, check for editable objects first
+		if (isEditMode) {
+			const allIntersects = raycaster.intersectObjects(scene.children, true);
+			const editableObj = getEditableObjectFromIntersection(allIntersects);
+
+			if (editableObj) {
+				selectEditObject(editableObj);
+				return;
+			} else if (selectedEditObject) {
+				// Clicked on empty space or non-editable, deselect
+				deselectEditObject();
+				return;
+			}
+		}
+
+		// Normal mode: check for album books
 		const intersects = raycaster.intersectObjects(albumBooks, true);
 		const bookGroup = getBookFromIntersection(intersects);
 
@@ -1543,7 +1898,8 @@
 		<div class="text-sm text-base-content/60">
 			<span class="badge badge-ghost">WASD</span> move ·
 			<span class="badge badge-ghost">Mouse</span> look ·
-			<span class="badge badge-ghost">Click</span> interact
+			<span class="badge badge-ghost">Click</span> interact ·
+			<span class="badge badge-ghost">Space</span> edit mode
 		</div>
 	</div>
 
@@ -1566,6 +1922,31 @@
 				<div class="absolute w-0.5 h-4 bg-white/70"></div>
 			</div>
 		</div>
+
+		{#if isEditMode}
+			<div class="absolute top-4 left-4 flex flex-col gap-2">
+				<div class="badge badge-error badge-lg gap-2">
+					<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+					Edit Mode
+				</div>
+				{#if selectedEditObject}
+					<div class="bg-base-300/90 backdrop-blur-sm rounded-lg p-3 text-sm">
+						<div class="font-bold text-cyan-400 mb-2">
+							{selectedEditObject.userData.name || 'Object'}
+						</div>
+						<div class="space-y-1 text-base-content/80">
+							<div><span class="badge badge-xs">Arrow Keys</span> Move</div>
+							<div><span class="badge badge-xs">Q / E</span> Rotate</div>
+							<div><span class="badge badge-xs">Esc</span> Deselect</div>
+						</div>
+					</div>
+				{:else}
+					<div class="text-xs text-base-content/60 bg-base-300/70 rounded px-2 py-1">
+						Click an object to select
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		{#if selectedAlbum}
 			{#if isBookOpen}
