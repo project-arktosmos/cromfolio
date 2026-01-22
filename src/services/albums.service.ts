@@ -1,46 +1,42 @@
 /**
  * Albums Service
- * Manages a collection of collectible card albums
+ * Manages a collection of collectible card albums via Tauri backend
  */
 
-import { ArrayServiceClass } from '$services/classes/array-service.class';
+import { tauriApiService } from '$services/tauri-api.service';
 import type { Album } from '$types/album.type';
 
-export const albumsService = new ArrayServiceClass<Album>('albums', []);
-
 /**
- * Get the album collection
+ * Get all albums from the database
  */
-export function getAlbumCollection() {
-	return {
-		albums: albumsService.all()
-	};
+export async function getAlbumCollection(): Promise<Album[]> {
+	return await tauriApiService.getAll<Album>('albums');
 }
 
 /**
  * Add an album to the collection
  */
-export function addAlbum(album: Album) {
-	return albumsService.add(album);
+export async function addAlbum(album: Album): Promise<Album | null> {
+	return await tauriApiService.create<Album>('albums', album);
 }
 
 /**
  * Remove an album from the collection
  */
-export function removeAlbum(album: Album) {
-	return albumsService.remove(album);
+export async function removeAlbum(album: Album): Promise<boolean> {
+	return await tauriApiService.delete('albums', String(album.id));
 }
 
 /**
  * Update an album in the collection
  */
-export function updateAlbum(album: Album) {
-	return albumsService.update(album);
+export async function updateAlbum(album: Album): Promise<Album | null> {
+	return await tauriApiService.update<Album>('albums', String(album.id), album);
 }
 
 /**
  * Check if an album exists in the collection
  */
-export function albumExists(id: string | number) {
-	return albumsService.exists(id);
+export async function albumExists(id: string | number): Promise<Album | null> {
+	return await tauriApiService.get<Album>('albums', String(id));
 }

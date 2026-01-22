@@ -1,12 +1,18 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount } from 'svelte';
-	import { albumsService } from '$services/albums.service';
+	import {
+		getAlbumCollection,
+		addAlbum as addAlbumService,
+		updateAlbum as updateAlbumService,
+		removeAlbum as removeAlbumService
+	} from '$services/albums.service';
 	import type { Album } from '$types/album.type';
 
 	// Collection state
 	let albums: Album[] = $state([]);
 	let isLoading = $state(true);
+	let isSaving = $state(false);
 	let selectedAlbum = $state<Album | null>(null);
 
 	// Form state
@@ -18,8 +24,8 @@
 	let formImdbId = $state('');
 	let formTmdbId = $state<number | null>(null);
 
-	onMount(() => {
-		albums = albumsService.all();
+	onMount(async () => {
+		albums = await getAlbumCollection();
 		isLoading = false;
 	});
 
@@ -36,9 +42,10 @@
 	}
 
 	// Add a new album
-	function addAlbum() {
-		if (!formTitle.trim()) return;
+	async function addAlbum() {
+		if (!formTitle.trim() || isSaving) return;
 
+		isSaving = true;
 		const album: Album = {
 			id: crypto.randomUUID(),
 			title: formTitle.trim(),
@@ -50,15 +57,19 @@
 			addedAt: new Date().toISOString()
 		};
 
-		albumsService.add(album);
-		albums = albumsService.all();
-		resetForm();
+		const result = await addAlbumService(album);
+		if (result) {
+			albums = await getAlbumCollection();
+			resetForm();
+		}
+		isSaving = false;
 	}
 
 	// Update an existing album
-	function updateAlbum() {
-		if (!selectedAlbum || !formTitle.trim()) return;
+	async function updateAlbum() {
+		if (!selectedAlbum || !formTitle.trim() || isSaving) return;
 
+		isSaving = true;
 		const updatedAlbum: Album = {
 			...selectedAlbum,
 			title: formTitle.trim(),
@@ -69,19 +80,23 @@
 			tmdbId: formTmdbId || undefined
 		};
 
-		albumsService.update(updatedAlbum);
-		albums = albumsService.all();
-		resetForm();
+		const result = await updateAlbumService(updatedAlbum);
+		if (result) {
+			albums = await getAlbumCollection();
+			resetForm();
+		}
+		isSaving = false;
 	}
 
 	// Remove an album
-	function removeAlbum(album: Album, event: MouseEvent) {
+	async function removeAlbum(album: Album, event: MouseEvent) {
 		event.stopPropagation();
-		albumsService.remove(album);
-		albums = albumsService.all();
-
-		if (selectedAlbum?.id === album.id) {
-			resetForm();
+		const success = await removeAlbumService(album);
+		if (success) {
+			albums = await getAlbumCollection();
+			if (selectedAlbum?.id === album.id) {
+				resetForm();
+			}
 		}
 	}
 
@@ -330,9 +345,14 @@
 						<button
 							class="btn btn-primary w-full"
 							onclick={handleSubmit}
-							disabled={!formTitle.trim()}
+							disabled={!formTitle.trim() || isSaving}
 						>
-							{isEditing ? 'Update Album' : 'Create Album'}
+							{#if isSaving}
+								<span class="loading loading-spinner loading-sm"></span>
+								Saving...
+							{:else}
+								{isEditing ? 'Update Album' : 'Create Album'}
+							{/if}
 						</button>
 					</div>
 				</div>

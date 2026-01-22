@@ -403,6 +403,27 @@ export async function getCategoryMembers(
 }
 
 /**
+ * Check if a mime type is a displayable image
+ */
+function isImageMime(mime: string | undefined): boolean {
+	if (!mime) return false;
+	return mime.startsWith('image/') && !mime.includes('svg'); // SVGs can have issues with thumbnails
+}
+
+/**
+ * Generate a thumbnail URL from a Fandom image URL
+ * Fandom uses /revision/latest format, we can add /scale-to-width-down/X
+ */
+function generateThumbUrl(originalUrl: string, width: number): string {
+	// Fandom URLs format: .../revision/latest?cb=...
+	// To get thumbnail: .../revision/latest/scale-to-width-down/WIDTH?cb=...
+	if (originalUrl.includes('/revision/latest')) {
+		return originalUrl.replace('/revision/latest', `/revision/latest/scale-to-width-down/${width}`);
+	}
+	return originalUrl;
+}
+
+/**
  * Search for images in a wiki
  * Uses the MediaWiki API to search in the File namespace (ns=6)
  */
@@ -449,6 +470,10 @@ export async function searchImages(
 			const page = pages[pageId];
 			if (page.imageinfo && page.imageinfo.length > 0) {
 				const info = page.imageinfo[0];
+				// Filter out non-image files (videos, etc.)
+				if (!isImageMime(info.mime)) {
+					continue;
+				}
 				images.push({
 					name: page.title,
 					title: page.title.replace(/^File:/, ''),
@@ -470,37 +495,73 @@ export async function searchImages(
 	}
 }
 
-/**
- * Generate a thumbnail URL from a Fandom image URL
- * Fandom uses /revision/latest format, we can add /scale-to-width-down/X
- */
-function generateThumbUrl(originalUrl: string, width: number): string {
-	// Fandom URLs format: .../revision/latest?cb=...
-	// To get thumbnail: .../revision/latest/scale-to-width-down/WIDTH?cb=...
-	if (originalUrl.includes('/revision/latest')) {
-		return originalUrl.replace('/revision/latest', `/revision/latest/scale-to-width-down/${width}`);
-	}
-	return originalUrl;
+export type ImageSortOption = 'name' | 'timestamp';
+export type SortDirection = 'ascending' | 'descending';
+
+export interface GetImagesOptions {
+	limit?: number;
+	thumbWidth?: number;
+	from?: string;
+	continueToken?: string;
+	sort?: ImageSortOption;
+	direction?: SortDirection;
+	prefix?: string;
+	minSize?: number;
+	maxSize?: number;
 }
 
 /**
  * Get all images (browse without search query)
- * Uses allimages API to list images alphabetically
+ * Uses allimages API to list images with sorting and filtering options
+ * Filters to only return actual image files (not videos, etc.)
  */
 export async function getImages(
 	wikiName: string,
-	limit: number = 20,
-	thumbWidth: number = 200,
-	from?: string
-): Promise<{ images: FandomImage[]; continueFrom?: string }> {
+	options: GetImagesOptions = {}
+): Promise<{ images: FandomImage[]; continueFrom?: string; continueToken?: string }> {
+	const {
+		limit = 20,
+		thumbWidth = 200,
+		from,
+		continueToken,
+		sort = 'name',
+		direction = 'ascending',
+		prefix,
+		minSize,
+		maxSize
+	} = options;
+
 	try {
-		// allimages API - get basic image info
-		let url = `https://${wikiName}.fandom.com/api.php?action=query&list=allimages&ailimit=${limit}&aiprop=url|size|mime&format=json&origin=*`;
+		// Request more than needed since we'll filter out non-images
+		const requestLimit = Math.min(limit * 3, 100);
+		const params = new URLSearchParams({
+			action: 'query',
+			list: 'allimages',
+			ailimit: requestLimit.toString(),
+			aiprop: 'url|size|mime|timestamp',
+			aisort: sort,
+			aidir: direction,
+			format: 'json',
+			origin: '*'
+		});
 
 		if (from) {
-			url += `&aifrom=${encodeURIComponent(from)}`;
+			params.set('aifrom', from);
+		}
+		if (continueToken) {
+			params.set('aicontinue', continueToken);
+		}
+		if (prefix) {
+			params.set('aiprefix', prefix);
+		}
+		if (minSize !== undefined) {
+			params.set('aiminsize', minSize.toString());
+		}
+		if (maxSize !== undefined) {
+			params.set('aimaxsize', maxSize.toString());
 		}
 
+		const url = `https://${wikiName}.fandom.com/api.php?${params}`;
 		const response = await fetch(url);
 
 		if (!response.ok) {
@@ -509,31 +570,39 @@ export async function getImages(
 
 		const data = await response.json();
 		const allImages = data.query?.allimages || [];
-		const continueFrom = data.continue?.aifrom;
+		const continueData = data.continue;
 
-		const images: FandomImage[] = allImages.map(
-			(img: {
-				name: string;
-				url: string;
-				descriptionurl: string;
-				width?: number;
-				height?: number;
-				size?: number;
-				mime?: string;
-			}) => ({
-				name: `File:${img.name}`,
-				title: img.name,
-				url: img.url,
-				descriptionUrl: img.descriptionurl,
-				width: img.width,
-				height: img.height,
-				size: img.size,
-				mime: img.mime,
-				thumbUrl: generateThumbUrl(img.url, thumbWidth)
-			})
-		);
+		const images: FandomImage[] = allImages
+			.filter((img: { mime?: string }) => isImageMime(img.mime))
+			.slice(0, limit)
+			.map(
+				(img: {
+					name: string;
+					url: string;
+					descriptionurl: string;
+					width?: number;
+					height?: number;
+					size?: number;
+					mime?: string;
+					timestamp?: string;
+				}) => ({
+					name: `File:${img.name}`,
+					title: img.name,
+					url: img.url,
+					descriptionUrl: img.descriptionurl,
+					width: img.width,
+					height: img.height,
+					size: img.size,
+					mime: img.mime,
+					thumbUrl: generateThumbUrl(img.url, thumbWidth)
+				})
+			);
 
-		return { images, continueFrom };
+		return {
+			images,
+			continueFrom: continueData?.aifrom,
+			continueToken: continueData?.aicontinue
+		};
 	} catch (error) {
 		console.error('[fandom.service] getImages error:', error);
 		return { images: [] };

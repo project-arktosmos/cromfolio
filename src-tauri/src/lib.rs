@@ -1,8 +1,14 @@
+mod apis;
 mod commands;
 mod db;
 mod image_cache;
 mod models;
 
+use apis::{
+    client::ApiClientState,
+    config::{ApiConfig, ApiConfigState},
+    igdb::IgdbApi,
+};
 use db::Database;
 use image_cache::{
     cache_image, cache_images_batch, clear_image_cache, get_cache_path, get_cache_stats,
@@ -38,6 +44,12 @@ pub fn run() {
     }
 
     builder = builder.setup(|app| {
+        // Load .env file from project root (for development)
+        // In production, environment variables should be set by the system
+        if let Err(e) = dotenvy::dotenv() {
+            log::warn!("Could not load .env file: {}", e);
+        }
+
         // Initialize database from app.db at project root
         let db = Database::init(app.handle())
             .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)) as Box<dyn std::error::Error>)?;
@@ -53,26 +65,37 @@ pub fn run() {
         log::info!("Image cache directory: {:?}", cache_dir);
         app.manage(ImageCacheState::new(cache_dir));
 
+        // Initialize API client and config
+        let api_client = ApiClientState::new()
+            .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())) as Box<dyn std::error::Error>)?;
+        app.manage(api_client);
+
+        let api_config = ApiConfigState::new(ApiConfig::from_env());
+        app.manage(api_config);
+
+        // Initialize IGDB API (needs to maintain OAuth token state)
+        app.manage(IgdbApi::new());
+
         // Build custom menu (desktop only)
         #[cfg(desktop)]
         {
-            let home_item = MenuItemBuilder::with_id("nav_home", "Home")
-                .accelerator("CmdOrCtrl+Shift+H")
+            let admin_item = MenuItemBuilder::with_id("nav_admin", "Admin")
+                .accelerator("CmdOrCtrl+Shift+A")
+                .build(app)?;
+            let game_item = MenuItemBuilder::with_id("nav_game", "Game")
+                .accelerator("CmdOrCtrl+Shift+G")
                 .build(app)?;
 
             let select_menu = if is_production() {
-                // Production: only Home menu item
+                // Production: only Game menu item
                 SubmenuBuilder::new(app, "Select")
-                    .item(&home_item)
+                    .item(&game_item)
                     .build()?
             } else {
-                // Development: Admin and Home menu items
-                let admin_item = MenuItemBuilder::with_id("nav_admin", "Admin")
-                    .accelerator("CmdOrCtrl+Shift+A")
-                    .build(app)?;
+                // Development: Admin and Game menu items
                 SubmenuBuilder::new(app, "Select")
                     .item(&admin_item)
-                    .item(&home_item)
+                    .item(&game_item)
                     .build()?
             };
 
@@ -133,8 +156,8 @@ pub fn run() {
                 "nav_admin" => {
                     let _ = window.eval("window.location.href = '/admin'");
                 }
-                "nav_home" => {
-                    let _ = window.eval("window.location.href = '/'");
+                "nav_game" => {
+                    let _ = window.eval("window.location.href = '/game'");
                 }
                 // Display sizes
                 "size_mobile" => {
@@ -179,6 +202,41 @@ pub fn run() {
             commands::create_item,
             commands::update_item,
             commands::delete_item,
+            // Albums
+            commands::get_all_albums,
+            commands::get_album,
+            commands::create_album,
+            commands::update_album,
+            commands::delete_album,
+            // Cards
+            commands::get_all_cards,
+            commands::get_cards_by_album,
+            commands::get_card,
+            commands::create_card,
+            commands::update_card,
+            commands::delete_card,
+            commands::delete_cards_by_album,
+            // Sources
+            commands::get_all_sources,
+            commands::get_sources_by_album,
+            commands::source_exists,
+            commands::get_source_by_external_id,
+            commands::create_source,
+            commands::delete_source,
+            // Rarities
+            commands::get_all_rarities,
+            commands::get_rarity,
+            commands::create_rarity,
+            commands::update_rarity,
+            commands::delete_rarity,
+            // Questions (trivia)
+            commands::get_all_questions,
+            commands::get_questions_by_album,
+            commands::get_question,
+            commands::create_question,
+            commands::update_question,
+            commands::delete_question,
+            commands::delete_questions_by_album,
             // Image cache
             get_cached_image,
             cache_image,
@@ -186,6 +244,27 @@ pub fn run() {
             get_cache_stats,
             clear_image_cache,
             get_cache_path,
+            // API Fetch commands - Search
+            commands::search_movies,
+            commands::search_tv,
+            commands::search_games,
+            commands::search_anime,
+            commands::search_sports_teams,
+            commands::search_sports_leagues,
+            commands::search_animals,
+            commands::search_music_artists,
+            commands::search_book_authors,
+            commands::search_book_works,
+            // API Fetch commands - Batch fetch
+            commands::fetch_source_images,
+            // API Fetch commands - Helpers
+            commands::get_species_in_genus,
+            commands::get_artist_releases,
+            commands::get_author_works,
+            commands::get_teams_in_league,
+            // API Config
+            commands::get_api_config,
+            commands::update_api_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

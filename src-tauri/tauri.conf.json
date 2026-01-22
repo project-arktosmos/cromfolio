@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Synaxis",
-        "width": 1280,
-        "height": 800,
+        "width": 1920,
+        "height": 1080,
         "minWidth": 800,
         "minHeight": 600,
         "resizable": true,

@@ -55,6 +55,22 @@ export interface FanartTVResponse {
 	characterart?: FanartImage[];
 }
 
+export interface FanartMusicResponse {
+	name: string;
+	mbid_id: string;
+	artistbackground?: FanartImage[];
+	artistthumb?: FanartImage[];
+	musiclogo?: FanartImage[];
+	hdmusiclogo?: FanartImage[];
+	musicbanner?: FanartImage[];
+	albums?: {
+		[albumId: string]: {
+			albumcover?: FanartImage[];
+			cdart?: FanartImage[];
+		};
+	};
+}
+
 export interface FanartImageWithType extends FanartImage {
 	type: string;
 	thumbUrl: string;
@@ -208,6 +224,92 @@ export async function getTVImagesFlat(tvdbId: number): Promise<FanartImageWithTy
 					type,
 					thumbUrl: getThumbUrl(img.url)
 				});
+			}
+		}
+	}
+
+	return images;
+}
+
+/**
+ * Get music artist images by MusicBrainz ID
+ */
+export async function getMusicArtistByMbid(mbid: string): Promise<FanartMusicResponse | null> {
+	const apiKey = getApiKey();
+	if (!apiKey) {
+		console.error('[fanart.service] Fanart.tv API key not configured');
+		return null;
+	}
+
+	try {
+		const response = await fetch(`${FANART_BASE_URL}/music/${mbid}?api_key=${apiKey}`);
+
+		if (response.status === 404) {
+			// No images found for this artist
+			return null;
+		}
+
+		if (!response.ok) {
+			throw new Error(`Fanart.tv API error: ${response.status}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error('[fanart.service] getMusicArtistByMbid error:', error);
+		return null;
+	}
+}
+
+/**
+ * Get all music artist images as a flat array with types
+ */
+export async function getMusicImagesFlat(mbid: string): Promise<FanartImageWithType[]> {
+	const data = await getMusicArtistByMbid(mbid);
+	if (!data) return [];
+
+	const images: FanartImageWithType[] = [];
+	const imageTypes: (keyof FanartMusicResponse)[] = [
+		'artistthumb',
+		'artistbackground',
+		'hdmusiclogo',
+		'musiclogo',
+		'musicbanner'
+	];
+
+	for (const type of imageTypes) {
+		const typeImages = data[type];
+		if (Array.isArray(typeImages)) {
+			for (const img of typeImages) {
+				images.push({
+					...img,
+					type,
+					thumbUrl: getThumbUrl(img.url)
+				});
+			}
+		}
+	}
+
+	// Also include album covers if available
+	if (data.albums) {
+		for (const albumId of Object.keys(data.albums)) {
+			const album = data.albums[albumId];
+			if (album.albumcover) {
+				for (const img of album.albumcover) {
+					images.push({
+						...img,
+						type: 'albumcover',
+						thumbUrl: getThumbUrl(img.url)
+					});
+				}
+			}
+			if (album.cdart) {
+				for (const img of album.cdart) {
+					images.push({
+						...img,
+						type: 'cdart',
+						thumbUrl: getThumbUrl(img.url)
+					});
+				}
 			}
 		}
 	}

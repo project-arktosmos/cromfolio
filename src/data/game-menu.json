@@ -1,0 +1,43 @@
+{
+	"items": [
+		{
+			"id": "album",
+			"label": "Album",
+			"path": "/game/album"
+		},
+		{
+			"id": "card",
+			"label": "Card",
+			"path": "/game/card"
+		},
+		{
+			"id": "player",
+			"label": "Player",
+			"path": "/game/player"
+		},
+		{
+			"id": "room",
+			"label": "Room",
+			"path": "/game/room"
+		},
+		{
+			"id": "guess-the-name",
+			"label": "Guess The Name",
+			"path": "/game/guess-the-name",
+			"group": "Minigames"
+		},
+		{
+			"id": "matching-pairs",
+			"label": "Matching Pairs",
+			"path": "/game/matching-pairs",
+			"group": "Minigames"
+		},
+		{
+			"id": "odd-one-out",
+			"label": "Odd One Out",
+			"path": "/game/odd-one-out",
+			"group": "Minigames"
+		}
+	],
+	"generatedAt": "2026-01-22T12:52:02.566Z"
+}

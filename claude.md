@@ -519,6 +519,71 @@ Translations are in `src/services/i18n/locales/`.
 
 ---
 
+## Route-Specific Data Storage
+
+This project uses **two distinct data storage strategies** depending on the route:
+
+### `/admin` Routes - SQLite Database
+
+All pages under `/admin` **MUST** interact with the SQLite database via Tauri commands:
+
+- Use Tauri `invoke()` to call Rust backend commands
+- Data is stored persistently in `app.db`
+- Suitable for: admin CRUD operations, data management, content that needs to persist across devices
+
+```typescript
+// Example: Admin service using Tauri/SQLite
+import { invoke } from '@tauri-apps/api/core';
+
+export async function getAlbums(): Promise<Album[]> {
+	return await invoke('get_albums');
+}
+
+export async function createAlbum(album: Album): Promise<void> {
+	await invoke('create_album', { album });
+}
+```
+
+### `/game` Routes - localStorage
+
+All pages under `/game` **MUST** use localStorage via service classes:
+
+- Use `ArrayServiceClass` or `ObjectServiceClass` from `$services/classes/`
+- Data persists in browser localStorage
+- Suitable for: game state, user preferences, scores, local-only data
+
+```typescript
+// Example: Game service using localStorage
+import { ArrayServiceClass } from '$services/classes/array-service.class';
+
+interface GameScore {
+	id: string;
+	game: string;
+	score: number;
+	timestamp: string;
+}
+
+export const gameScoresService = new ArrayServiceClass<GameScore>('game-scores', []);
+```
+
+### Why This Separation?
+
+| Aspect | `/admin` (SQLite) | `/game` (localStorage) |
+|--------|-------------------|------------------------|
+| **Persistence** | Server-side, survives app reinstall | Browser-only, cleared with browser data |
+| **Data sharing** | Can be synced/exported | Local to browser |
+| **Use case** | Content management | User game state |
+| **Performance** | Async queries | Synchronous access |
+
+### Adding New Routes
+
+When adding a new subpage:
+
+- **Under `/admin/`**: Create Tauri commands in `src-tauri/src/commands/` and call via `invoke()`
+- **Under `/game/`**: Create a service in `src/services/` using the service classes
+
+---
+
 ## Quick Reference Checklist
 
 When implementing a new feature:

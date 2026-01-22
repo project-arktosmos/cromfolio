@@ -206,3 +206,98 @@ export async function getImagesByImdbId(imdbId: string): Promise<{
 		logos: transformImages(imagesResponse.logos || [])
 	};
 }
+
+// Credits/Cast types
+export interface TMDBCastMember {
+	id: number;
+	name: string;
+	character: string;
+	profile_path: string | null;
+	order: number;
+	gender: number;
+	known_for_department: string;
+}
+
+export interface TMDBCreditsResponse {
+	id: number;
+	cast: TMDBCastMember[];
+}
+
+export interface TMDBCastWithImages extends TMDBCastMember {
+	profileUrl: string | null;
+	profileThumbUrl: string | null;
+}
+
+/**
+ * Get credits/cast for a movie
+ */
+export async function getMovieCredits(tmdbId: number): Promise<TMDBCreditsResponse | null> {
+	const apiKey = getApiKey();
+	if (!apiKey) {
+		console.error('[tmdb.service] TMDB API key not configured');
+		return null;
+	}
+
+	try {
+		const response = await fetch(
+			`${TMDB_BASE_URL}/movie/${tmdbId}/credits?api_key=${apiKey}`
+		);
+
+		if (!response.ok) {
+			throw new Error(`TMDB API error: ${response.status}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error('[tmdb.service] getMovieCredits error:', error);
+		return null;
+	}
+}
+
+/**
+ * Get credits/cast for a TV show
+ */
+export async function getTVCredits(tmdbId: number): Promise<TMDBCreditsResponse | null> {
+	const apiKey = getApiKey();
+	if (!apiKey) {
+		console.error('[tmdb.service] TMDB API key not configured');
+		return null;
+	}
+
+	try {
+		const response = await fetch(
+			`${TMDB_BASE_URL}/tv/${tmdbId}/credits?api_key=${apiKey}`
+		);
+
+		if (!response.ok) {
+			throw new Error(`TMDB API error: ${response.status}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error('[tmdb.service] getTVCredits error:', error);
+		return null;
+	}
+}
+
+/**
+ * Get credits/cast by TMDB ID with profile images
+ */
+export async function getCreditsByTmdbId(
+	tmdbId: number,
+	mediaType: 'movie' | 'tv'
+): Promise<TMDBCastWithImages[]> {
+	const creditsResponse =
+		mediaType === 'movie' ? await getMovieCredits(tmdbId) : await getTVCredits(tmdbId);
+
+	if (!creditsResponse) return [];
+
+	// Transform cast to include profile URLs, filter those with images
+	return creditsResponse.cast
+		.filter((member) => member.profile_path)
+		.map((member) => ({
+			...member,
+			profileUrl: member.profile_path ? getTmdbImageUrl(member.profile_path, 'original') : null,
+			profileThumbUrl: member.profile_path ? getTmdbImageUrl(member.profile_path, 'w185') : null
+		}));
+}

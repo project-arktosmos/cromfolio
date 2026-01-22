@@ -6,14 +6,24 @@
 			"path": "/admin/album"
 		},
 		{
-			"id": "audio",
-			"label": "Audio",
-			"path": "/admin/audio"
-		},
-		{
 			"id": "card",
 			"label": "Card",
 			"path": "/admin/card"
+		},
+		{
+			"id": "components",
+			"label": "Components",
+			"path": "/admin/components"
+		},
+		{
+			"id": "metadata",
+			"label": "Metadata",
+			"path": "/admin/metadata"
+		},
+		{
+			"id": "rarity",
+			"label": "Rarity",
+			"path": "/admin/rarity"
 		},
 		{
 			"id": "settings",
@@ -26,21 +36,20 @@
 			"path": "/admin/sources"
 		},
 		{
-			"id": "tapper",
-			"label": "Tapper",
-			"path": "/admin/tapper"
+			"id": "trivia",
+			"label": "Trivia",
+			"path": "/admin/trivia"
 		},
 		{
-			"id": "wikia",
-			"label": "Wikia",
-			"path": "/admin/wikia"
+			"id": "wikidata",
+			"label": "Wikidata",
+			"path": "/admin/wikidata"
 		},
 		{
-			"id": "items",
-			"label": "Items",
-			"path": "/admin/items",
-			"group": "Data"
+			"id": "wordle",
+			"label": "Wordle",
+			"path": "/admin/wordle"
 		}
 	],
-	"generatedAt": "2026-01-21T23:39:51.074Z"
+	"generatedAt": "2026-01-22T12:52:02.533Z"
 }
