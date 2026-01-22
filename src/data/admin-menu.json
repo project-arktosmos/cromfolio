@@ -16,19 +16,14 @@
 			"path": "/admin/components"
 		},
 		{
-			"id": "evm",
-			"label": "Evm",
-			"path": "/admin/evm"
+			"id": "furniture",
+			"label": "Furniture",
+			"path": "/admin/furniture"
 		},
 		{
 			"id": "internet-archive",
 			"label": "Internet Archive",
 			"path": "/admin/internet-archive"
-		},
-		{
-			"id": "metadata",
-			"label": "Metadata",
-			"path": "/admin/metadata"
 		},
 		{
 			"id": "models",
@@ -39,6 +34,11 @@
 			"id": "rarity",
 			"label": "Rarity",
 			"path": "/admin/rarity"
+		},
+		{
+			"id": "rooms",
+			"label": "Rooms",
+			"path": "/admin/rooms"
 		},
 		{
 			"id": "settings",
@@ -71,5 +71,5 @@
 			"path": "/admin/wordle"
 		}
 	],
-	"generatedAt": "2026-01-22T16:42:29.290Z"
+	"generatedAt": "2026-01-22T18:59:24.779Z"
 }

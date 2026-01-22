@@ -238,6 +238,12 @@ impl Database {
         // EVM tables
         Self::create_evm_tables(conn)?;
 
+        // Furniture table
+        Self::create_furniture_table(conn)?;
+
+        // Rooms table
+        Self::create_rooms_table(conn)?;
+
         Ok(())
     }
 
@@ -526,6 +532,199 @@ impl Database {
         .map_err(|e| format!("Failed to create evm_transactions from index: {}", e))?;
 
         log::info!("EVM tables created successfully");
+        Ok(())
+    }
+
+    /// Create furniture table for 3D models
+    fn create_furniture_table(conn: &Connection) -> Result<(), String> {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS furniture (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                furniture_type TEXT NOT NULL DEFAULT 'decoration',
+                model_path TEXT NOT NULL,
+                scale REAL NOT NULL DEFAULT 1.0,
+                thumbnail TEXT,
+                description TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create furniture table: {}", e))?;
+
+        // Index on furniture_type for filtering
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_furniture_type ON furniture(furniture_type)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create furniture type index: {}", e))?;
+
+        // Seed default furniture if table is empty
+        Self::seed_default_furniture(conn)?;
+
+        log::info!("Furniture table created successfully");
+        Ok(())
+    }
+
+    /// Seed default furniture items
+    fn seed_default_furniture(conn: &Connection) -> Result<(), String> {
+        // Check if furniture table is empty
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM furniture", [], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+
+        if count > 0 {
+            return Ok(()); // Already seeded
+        }
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // IKEA furniture items with appropriate scales
+        let furniture_items = [
+            (
+                "ikea-linnmon-alex-desk",
+                "IKEA Linnmon/Alex Desk",
+                "table",
+                "ikea_linnmonalex_desk/scene.gltf",
+                0.01,
+                "A classic IKEA desk combination with drawer unit",
+            ),
+            (
+                "ikea-billy-long",
+                "IKEA Billy Bookcase (Long)",
+                "shelf",
+                "ikea_billy_long/scene.gltf",
+                0.01,
+                "IKEA Billy bookcase - long configuration",
+            ),
+            (
+                "ikea-kallax-77x147",
+                "IKEA Kallax Shelf 77x147",
+                "shelf",
+                "ikea_kallax_77x147/scene.gltf",
+                0.01,
+                "IKEA Kallax shelf unit (77cm x 147cm)",
+            ),
+        ];
+
+        for (id, name, furniture_type, model_path, scale, description) in furniture_items {
+            conn.execute(
+                "INSERT INTO furniture (id, name, furniture_type, model_path, scale, description, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                rusqlite::params![id, name, furniture_type, model_path, scale, description, now.clone(), now.clone()],
+            )
+            .map_err(|e| format!("Failed to seed furniture '{}': {}", name, e))?;
+        }
+
+        log::info!("Seeded {} default furniture items", furniture_items.len());
+        Ok(())
+    }
+
+    /// Create rooms table for 3D room templates
+    fn create_rooms_table(conn: &Connection) -> Result<(), String> {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS rooms (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                -- Dimensions
+                dim_width REAL NOT NULL DEFAULT 8.0,
+                dim_height REAL NOT NULL DEFAULT 4.0,
+                dim_depth REAL NOT NULL DEFAULT 10.0,
+                -- Movement bounds
+                bounds_min_x REAL NOT NULL DEFAULT -3.5,
+                bounds_max_x REAL NOT NULL DEFAULT 3.5,
+                bounds_min_z REAL NOT NULL DEFAULT -4.0,
+                bounds_max_z REAL NOT NULL DEFAULT 4.5,
+                -- Colors (hex)
+                color_floor TEXT NOT NULL DEFAULT '#8b7355',
+                color_ceiling TEXT NOT NULL DEFAULT '#f5f5f5',
+                color_walls TEXT NOT NULL DEFAULT '#e8e4de',
+                -- Camera spawn
+                camera_x REAL NOT NULL DEFAULT 0.0,
+                camera_y REAL NOT NULL DEFAULT 1.4,
+                camera_z REAL NOT NULL DEFAULT -0.8,
+                camera_pitch REAL NOT NULL DEFAULT -0.35,
+                -- Furniture (JSON array of RoomFurniture)
+                furniture_json TEXT NOT NULL DEFAULT '[]',
+                -- Optional thumbnail
+                thumbnail TEXT,
+                -- Timestamps
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create rooms table: {}", e))?;
+
+        // Seed default room
+        Self::seed_default_rooms(conn)?;
+
+        log::info!("Rooms table created successfully");
+        Ok(())
+    }
+
+    /// Seed default room matching the /game/room implementation
+    fn seed_default_rooms(conn: &Connection) -> Result<(), String> {
+        // Check if rooms table is empty
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM rooms", [], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+
+        if count > 0 {
+            return Ok(()); // Already seeded
+        }
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // Furniture placements matching /game/room:
+        // - IKEA desk at position (2.5, 0, -4.4)
+        let furniture_json = r#"[
+            {
+                "furnitureId": "ikea-linnmon-alex-desk",
+                "position": { "x": 2.5, "y": 0, "z": -4.4 },
+                "rotation": { "x": 0, "y": 0, "z": 0 },
+                "scale": 1.0
+            }
+        ]"#;
+
+        conn.execute(
+            "INSERT INTO rooms (
+                id, name, description,
+                dim_width, dim_height, dim_depth,
+                bounds_min_x, bounds_max_x, bounds_min_z, bounds_max_z,
+                color_floor, color_ceiling, color_walls,
+                camera_x, camera_y, camera_z, camera_pitch,
+                furniture_json,
+                created_at, updated_at
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
+            rusqlite::params![
+                "default-study",
+                "Default Study",
+                "The default study room with desk, chair, and bookshelf matching the /game/room layout",
+                8.0,  // width
+                4.0,  // height
+                10.0, // depth
+                -3.5, // bounds minX
+                3.5,  // bounds maxX
+                -4.0, // bounds minZ
+                4.5,  // bounds maxZ
+                "#8b7355", // floor color (wooden brown)
+                "#f5f5f5", // ceiling color (light)
+                "#e8e4de", // walls color (light beige)
+                0.0,   // camera X
+                1.4,   // camera Y (eye height)
+                -0.8,  // camera Z (slightly forward from center)
+                -0.35, // camera pitch (looking slightly down at desk)
+                furniture_json,
+                now.clone(),
+                now
+            ],
+        )
+        .map_err(|e| format!("Failed to seed default room: {}", e))?;
+
+        log::info!("Seeded 1 default room");
         Ok(())
     }
 }

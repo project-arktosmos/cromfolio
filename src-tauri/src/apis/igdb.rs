@@ -174,6 +174,7 @@ impl IgdbApi {
                     .into_iter()
                     .map(|g| g.name)
                     .collect(),
+                source: "igdb".to_string(),
             }
         }).collect();
 

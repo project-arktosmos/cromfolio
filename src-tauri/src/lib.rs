@@ -251,6 +251,19 @@ pub fn run() {
             commands::update_question,
             commands::delete_question,
             commands::delete_questions_by_album,
+            // Furniture
+            commands::get_all_furniture,
+            commands::get_furniture,
+            commands::get_furniture_by_type,
+            commands::create_furniture,
+            commands::update_furniture,
+            commands::delete_furniture,
+            // Rooms
+            commands::get_all_rooms,
+            commands::get_room,
+            commands::create_room,
+            commands::update_room,
+            commands::delete_room,
             // Image cache
             get_cached_image,
             cache_image,

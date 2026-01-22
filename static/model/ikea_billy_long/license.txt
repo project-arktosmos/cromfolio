@@ -1,0 +1,11 @@
+Model Information:
+* title:	IKEA-BILLY long
+* source:	https://sketchfab.com/3d-models/ikea-billy-long-49b595e6b80c4d65aaebba54b2bb26d6
+* author:	fr023n1 (https://sketchfab.com/fr023n1)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "IKEA-BILLY long" (https://sketchfab.com/3d-models/ikea-billy-long-49b595e6b80c4d65aaebba54b2bb26d6) by fr023n1 (https://sketchfab.com/fr023n1) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use super::client::{ApiClient, ApiError};
-use super::types::ImageItem;
+use super::types::{ImageItem, GameSearchResult};
 
 const SGDB_BASE_URL: &str = "https://www.steamgriddb.com/api/v2";
 
@@ -14,6 +14,8 @@ struct SgdbSearchResponse {
 struct SgdbGame {
     id: i64,
     name: String,
+    #[serde(default)]
+    release_date: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,7 +36,7 @@ struct SgdbImage {
 pub struct SgdbApi;
 
 impl SgdbApi {
-    /// Search for a game by name
+    /// Search for a game by name (returns just the first match ID)
     pub async fn search_game(
         client: &ApiClient,
         api_key: &str,
@@ -60,6 +62,50 @@ impl SgdbApi {
         }
 
         Ok(Some(data.data[0].id))
+    }
+
+    /// Search for games by name (returns full search results)
+    pub async fn search_games(
+        client: &ApiClient,
+        api_key: &str,
+        query: &str,
+    ) -> Result<Vec<GameSearchResult>, ApiError> {
+        let url = format!(
+            "{}/search/autocomplete/{}",
+            SGDB_BASE_URL,
+            urlencoding::encode(query)
+        );
+
+        let response = client.get_with_headers(
+            "sgdb",
+            &url,
+            vec![("Authorization", &format!("Bearer {}", api_key))],
+        ).await?;
+
+        let data: SgdbSearchResponse = response.json().await
+            .map_err(|e| ApiError::InvalidResponse(e.to_string()))?;
+
+        if !data.success {
+            return Ok(vec![]);
+        }
+
+        let results = data.data.into_iter().map(|game| {
+            GameSearchResult {
+                id: game.id,
+                name: game.name.clone(),
+                slug: game.name.to_lowercase().replace(' ', "-"),
+                summary: None,
+                first_release_date: game.release_date,
+                cover_url: None,
+                cover_thumb_url: None,
+                rating: None,
+                platforms: vec![],
+                genres: vec![],
+                source: "sgdb".to_string(),
+            }
+        }).collect();
+
+        Ok(results)
     }
 
     /// Get all images for a game by SGDB game ID

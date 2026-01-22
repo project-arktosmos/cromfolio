@@ -4,6 +4,10 @@
 	import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 	import { getAlbumCollection } from '$services/albums.service';
 	import { playerAlbumsService } from '$services/player-albums.service';
+	import { getAllRooms } from '$services/room.service';
+	import { getAllFurniture } from '$services/furniture.service';
+	import { DEFAULT_ROOM, type Room } from '$types/room.type';
+	import type { Furniture } from '$types/furniture.type';
 	import type { Album } from '$types/album.type';
 
 	let container: HTMLDivElement;
@@ -13,10 +17,22 @@
 	let animationId: number;
 	let loadedTextures: THREE.Texture[] = [];
 
+	// Room configuration loaded from database
+	let currentRoom: Room | null = $state(null);
+	let furnitureDefinitions: Furniture[] = [];
+	let loadedFurnitureModels: Map<string, THREE.Group> = new Map();
+	let roomFurnitureGroup: THREE.Group | null = null;
+
 	// Player albums state
 	let ownedAlbums: Album[] = $state([]);
 	let isLoading = $state(true);
 	let albumBooks: THREE.Group[] = [];
+
+	// Booster packs state - 5 packs with randomly assigned albums
+	const BOOSTER_PACK_COUNT = 5;
+	let boosterPackAlbums: Album[] = $state([]);
+	let boosterPacks3D: THREE.Group[] = [];
+	let boosterPackBaseModel: THREE.Group | null = null;
 
 	// Shelf state - tracks which books are on the shelf
 	let shelfBooks: THREE.Group[] = [];
@@ -34,7 +50,8 @@
 	// Movement state - WASD controls
 	const keysPressed: Set<string> = new Set();
 	const MOVE_SPEED = 0.05;
-	const ROOM_BOUNDS = { minX: -3.5, maxX: 3.5, minZ: -4, maxZ: 4.5 };
+	// Room bounds will be set from loaded room config, with defaults
+	let ROOM_BOUNDS = { minX: -3.5, maxX: 3.5, minZ: -4, maxZ: 4.5 };
 
 	// Raycaster for book interaction
 	let raycaster: THREE.Raycaster;
@@ -42,6 +59,25 @@
 	let selectedAlbum: Album | null = $state(null);
 	let selectedBook: THREE.Group | null = null;
 	let isBookOpen = $state(false);
+
+	// Booster pack interaction state
+	let selectedBoosterPack: THREE.Group | null = $state(null);
+	const BOOSTER_PACK_CAMERA_OFFSET = new THREE.Vector3(0, -0.1, -0.6);
+
+	// Booster pack cutting state
+	let isCutting = $state(false);
+	let isPackOpened = $state(false);
+
+	// Drawing plane for cutting
+	let cutPlane: THREE.Mesh | null = null;
+	let cutCanvas: HTMLCanvasElement | null = null;
+	let cutCanvasCtx: CanvasRenderingContext2D | null = null;
+	let cutTexture: THREE.CanvasTexture | null = null;
+	let lastDrawPoint: { x: number; y: number } | null = null;
+
+	// Track where the red line crosses the blue guides
+	let leftCrossY: number | null = null;
+	let rightCrossY: number | null = null;
 
 	// Animation settings
 	const ANIMATION_SPEED = 0.08;
@@ -251,6 +287,479 @@
 		return texture;
 	}
 
+	// Booster pack texture creation functions
+	function createBoosterPackCoverTexture(image: HTMLImageElement): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 512;
+		canvas.height = 512;
+		const ctx = canvas.getContext('2d')!;
+
+		ctx.clearRect(0, 0, 512, 512);
+
+		const imgAspect = image.width / image.height;
+		let drawWidth: number;
+		let drawHeight: number;
+
+		if (imgAspect > 1) {
+			drawHeight = 512;
+			drawWidth = 512 * imgAspect;
+		} else {
+			drawWidth = 512;
+			drawHeight = 512 / imgAspect;
+		}
+
+		const drawX = (512 - drawWidth) / 2;
+		const drawY = (512 - drawHeight) / 2;
+
+		ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+		const texture = new THREE.CanvasTexture(canvas);
+		texture.colorSpace = THREE.SRGBColorSpace;
+		loadedTextures.push(texture);
+		return texture;
+	}
+
+	function createBoosterPackFallbackTexture(title: string): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 512;
+		canvas.height = 768;
+		const ctx = canvas.getContext('2d')!;
+
+		const gradient = ctx.createLinearGradient(0, 0, 0, 768);
+		gradient.addColorStop(0, '#1a1a2e');
+		gradient.addColorStop(0.5, '#16213e');
+		gradient.addColorStop(1, '#0f3460');
+		ctx.fillStyle = gradient;
+		ctx.fillRect(0, 0, 512, 768);
+
+		ctx.strokeStyle = '#e94560';
+		ctx.lineWidth = 8;
+		ctx.strokeRect(20, 20, 472, 728);
+
+		ctx.strokeStyle = '#ffd700';
+		ctx.lineWidth = 2;
+		ctx.strokeRect(35, 35, 442, 698);
+
+		ctx.fillStyle = '#ffffff';
+		ctx.font = 'bold 36px Arial';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+
+		const words = title.split(' ');
+		const lines: string[] = [];
+		let currentLine = '';
+		const maxWidth = 400;
+
+		for (const word of words) {
+			const testLine = currentLine ? `${currentLine} ${word}` : word;
+			const metrics = ctx.measureText(testLine);
+			if (metrics.width > maxWidth && currentLine) {
+				lines.push(currentLine);
+				currentLine = word;
+			} else {
+				currentLine = testLine;
+			}
+		}
+		if (currentLine) lines.push(currentLine);
+
+		const lineHeight = 44;
+		const startY = 384 - ((lines.length - 1) * lineHeight) / 2;
+		lines.forEach((line, i) => {
+			ctx.fillText(line, 256, startY + i * lineHeight);
+		});
+
+		ctx.fillStyle = '#ffd700';
+		ctx.font = 'bold 24px Arial';
+		ctx.fillText('BOOSTER PACK', 256, 680);
+
+		const texture = new THREE.CanvasTexture(canvas);
+		loadedTextures.push(texture);
+		return texture;
+	}
+
+	async function loadBoosterPackImage(url: string): Promise<HTMLImageElement> {
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.crossOrigin = 'anonymous';
+			img.onload = () => resolve(img);
+			img.onerror = (error) => reject(error);
+			img.src = getProxiedUrl(url);
+		});
+	}
+
+	function formatAlbumType(albumType: string): string {
+		const typeLabels: Record<string, string> = {
+			movie: 'MOVIE',
+			tv: 'TV SHOW',
+			videogame: 'VIDEO GAME',
+			anime: 'ANIME',
+			sports_league: 'SPORTS',
+			animal: 'ANIMAL',
+			musician: 'MUSIC',
+			author: 'BOOKS'
+		};
+		return typeLabels[albumType] || albumType.toUpperCase();
+	}
+
+	function createBoosterPackTypeTexture(albumType: string): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 512;
+		canvas.height = 96;
+		const ctx = canvas.getContext('2d')!;
+
+		ctx.clearRect(0, 0, 512, 96);
+
+		ctx.fillStyle = '#ffd700';
+		ctx.font = 'bold 32px Arial';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(formatAlbumType(albumType), 256, 48);
+
+		const texture = new THREE.CanvasTexture(canvas);
+		texture.colorSpace = THREE.SRGBColorSpace;
+		loadedTextures.push(texture);
+		return texture;
+	}
+
+	function createBoosterPackTitleTexture(title: string): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 512;
+		canvas.height = 128;
+		const ctx = canvas.getContext('2d')!;
+
+		ctx.clearRect(0, 0, 512, 128);
+
+		ctx.fillStyle = '#ffffff';
+		ctx.font = 'bold 36px Arial';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+
+		const words = title.split(' ');
+		const lines: string[] = [];
+		let currentLine = '';
+		const maxWidth = 480;
+
+		for (const word of words) {
+			const testLine = currentLine ? `${currentLine} ${word}` : word;
+			const metrics = ctx.measureText(testLine);
+			if (metrics.width > maxWidth && currentLine) {
+				lines.push(currentLine);
+				currentLine = word;
+			} else {
+				currentLine = testLine;
+			}
+		}
+		if (currentLine) lines.push(currentLine);
+
+		const displayLines = lines.slice(0, 2);
+		if (lines.length > 2) {
+			displayLines[1] = displayLines[1].slice(0, -3) + '...';
+		}
+
+		const lineHeight = 40;
+		const totalHeight = displayLines.length * lineHeight;
+		const startY = (128 - totalHeight) / 2 + lineHeight / 2;
+
+		displayLines.forEach((line, i) => {
+			ctx.fillText(line, 256, startY + i * lineHeight);
+		});
+
+		const texture = new THREE.CanvasTexture(canvas);
+		texture.colorSpace = THREE.SRGBColorSpace;
+		loadedTextures.push(texture);
+		return texture;
+	}
+
+	async function loadBoosterPackBaseModel(): Promise<THREE.Group | null> {
+		const loader = new GLTFLoader();
+
+		return new Promise((resolve) => {
+			loader.load(
+				'/model/booster_pack_tcg_pack/scene.gltf',
+				(gltf) => {
+					resolve(gltf.scene);
+				},
+				undefined,
+				(error) => {
+					console.error('Failed to load booster pack model:', error);
+					resolve(null);
+				}
+			);
+		});
+	}
+
+	async function createBoosterPack3D(album: Album, wrapperColor: string = '#c0c0c0'): Promise<THREE.Group> {
+		const packGroup = new THREE.Group();
+
+		// Load the base model if not already loaded
+		if (!boosterPackBaseModel) {
+			boosterPackBaseModel = await loadBoosterPackBaseModel();
+		}
+
+		if (!boosterPackBaseModel) {
+			// Fallback: create a simple box if model fails to load
+			const geometry = new THREE.BoxGeometry(0.15, 0.25, 0.02);
+			const material = new THREE.MeshStandardMaterial({ color: 0x888888 });
+			const mesh = new THREE.Mesh(geometry, material);
+			packGroup.add(mesh);
+			packGroup.userData = { album };
+			return packGroup;
+		}
+
+		// Clone the base model
+		const model = boosterPackBaseModel.clone();
+
+		// Load cover image texture
+		let imageTexture: THREE.Texture | null = null;
+		if (album.coverImage) {
+			try {
+				const image = await loadBoosterPackImage(album.coverImage);
+				imageTexture = createBoosterPackCoverTexture(image);
+			} catch {
+				// Will use fallback
+			}
+		}
+
+		// Apply textures to the model
+		model.traverse((child) => {
+			if (child instanceof THREE.Mesh) {
+				if (child.name === 'Object_6') {
+					// Card/artwork surface
+					if (imageTexture) {
+						child.material = new THREE.MeshStandardMaterial({
+							map: imageTexture,
+							metalness: 0.1,
+							roughness: 0.4,
+							side: THREE.DoubleSide
+						});
+					} else {
+						child.material = new THREE.MeshStandardMaterial({
+							map: createBoosterPackFallbackTexture(album.title),
+							metalness: 0.1,
+							roughness: 0.4,
+							side: THREE.DoubleSide
+						});
+					}
+				} else if (child.name === 'Object_4') {
+					// Metallic wrapper
+					child.material = new THREE.MeshStandardMaterial({
+						color: new THREE.Color(wrapperColor),
+						metalness: 0.85,
+						roughness: 0.2,
+						envMapIntensity: 1.0
+					});
+				}
+			}
+		});
+
+		// Scale down for room scene
+		model.scale.set(0.04, 0.04, 0.04);
+
+		packGroup.add(model);
+
+		// Add album type label above the image area
+		const typeTexture = createBoosterPackTypeTexture(album.albumType);
+		const typeGeometry = new THREE.PlaneGeometry(3.2 * 0.04, 0.6 * 0.04);
+		const typeMaterial = new THREE.MeshBasicMaterial({
+			map: typeTexture,
+			transparent: true,
+			side: THREE.DoubleSide,
+			depthWrite: false
+		});
+		const typeMesh = new THREE.Mesh(typeGeometry, typeMaterial);
+		typeMesh.position.set(0, 2.1 * 0.04, 0.08 * 0.04);
+		packGroup.add(typeMesh);
+
+		// Add title text below the image area
+		const titleTexture = createBoosterPackTitleTexture(album.title);
+		const titleGeometry = new THREE.PlaneGeometry(3.2 * 0.04, 0.8 * 0.04);
+		const titleMaterial = new THREE.MeshBasicMaterial({
+			map: titleTexture,
+			transparent: true,
+			side: THREE.DoubleSide,
+			depthWrite: false
+		});
+		const titleMesh = new THREE.Mesh(titleGeometry, titleMaterial);
+		titleMesh.position.set(0, -2.1 * 0.04, 0.08 * 0.04);
+		packGroup.add(titleMesh);
+
+		packGroup.userData = {
+			album,
+			isBoosterPack: true,
+			isSelected: false,
+			isAttachedToCamera: false,
+			originalPosition: new THREE.Vector3(),
+			originalRotation: new THREE.Euler(),
+			targetPosition: new THREE.Vector3(),
+			targetRotation: new THREE.Euler(),
+			currentCameraOffset: new THREE.Vector3()
+		};
+
+		return packGroup;
+	}
+
+	async function placeBoosterPacksInRoom(): Promise<void> {
+		// Remove existing booster packs
+		boosterPacks3D.forEach((pack) => {
+			scene.remove(pack);
+			pack.traverse((obj) => {
+				if (obj instanceof THREE.Mesh) {
+					obj.geometry.dispose();
+					if (Array.isArray(obj.material)) {
+						obj.material.forEach((m) => m.dispose());
+					} else {
+						obj.material.dispose();
+					}
+				}
+			});
+		});
+		boosterPacks3D = [];
+
+		if (boosterPackAlbums.length === 0) return;
+
+		// Find table surfaces to place packs on (same as albums)
+		const tableSurfaces = findTableSurfaces();
+
+		const spacing = 0.18; // Spacing between booster packs
+		const wrapperColors = ['#c0c0c0', '#ffd700', '#e94560', '#00bcd4', '#9c27b0'];
+
+		if (tableSurfaces.length > 0) {
+			// Place on the first table, next to the albums
+			const table = tableSurfaces[0];
+
+			// Albums are placed starting from table.centerX - totalAlbumWidth/2
+			// with spacing of 0.45. Place booster packs to the right of albums.
+			const albumSpacing = 0.45;
+			const albumCount = Math.min(ownedAlbums.length, Math.floor(table.width / albumSpacing));
+			const albumsTotalWidth = (albumCount - 1) * albumSpacing;
+			const albumsStartX = table.centerX - albumsTotalWidth / 2;
+			const albumsEndX = albumsStartX + albumsTotalWidth;
+
+			// Start booster packs after the last album with a small gap
+			const packStartX = albumsEndX + 0.35;
+
+			for (let i = 0; i < boosterPackAlbums.length; i++) {
+				const album = boosterPackAlbums[i];
+				const pack = await createBoosterPack3D(album, wrapperColors[i % wrapperColors.length]);
+
+				// Position packs in a row on the table, laying flat like the albums
+				pack.position.set(
+					packStartX + i * spacing,
+					table.topY + 0.13, // Slightly above table surface
+					table.centerZ
+				);
+
+				// Lay flat and add slight random rotation
+				pack.rotation.x = -Math.PI / 2;
+				pack.rotation.z = (Math.random() - 0.5) * 0.2;
+
+				// Store original position/rotation for returning after deselect
+				pack.userData.originalPosition.copy(pack.position);
+				pack.userData.originalRotation.copy(pack.rotation);
+				pack.userData.targetPosition.copy(pack.position);
+				pack.userData.targetRotation.copy(pack.rotation);
+
+				scene.add(pack);
+				boosterPacks3D.push(pack);
+			}
+		} else {
+			// Fallback: place on desk position
+			const roomDepth = currentRoom?.dimensions.depth ?? DEFAULT_ROOM.dimensions.depth;
+			const deskTopY = 0.75 + 0.04;
+			const deskZ = -roomDepth / 2 + 0.6 + 0.2;
+
+			// Place to the right of where albums would be
+			const packStartX = 0.8;
+
+			for (let i = 0; i < boosterPackAlbums.length; i++) {
+				const album = boosterPackAlbums[i];
+				const pack = await createBoosterPack3D(album, wrapperColors[i % wrapperColors.length]);
+
+				pack.position.set(
+					packStartX + i * spacing,
+					deskTopY + 0.1,
+					deskZ
+				);
+
+				pack.rotation.x = -Math.PI / 2;
+				pack.rotation.z = (Math.random() - 0.5) * 0.2;
+
+				// Store original position/rotation for returning after deselect
+				pack.userData.originalPosition.copy(pack.position);
+				pack.userData.originalRotation.copy(pack.rotation);
+				pack.userData.targetPosition.copy(pack.position);
+				pack.userData.targetRotation.copy(pack.rotation);
+
+				scene.add(pack);
+				boosterPacks3D.push(pack);
+			}
+		}
+	}
+
+	function selectBoosterPack(pack: THREE.Group): void {
+		const userData = pack.userData;
+
+		// If already selected, deselect it
+		if (userData.isSelected) {
+			deselectBoosterPack(pack);
+			return;
+		}
+
+		// Deselect any previously selected book or booster pack
+		if (selectedBook) {
+			deselectBook(selectedBook);
+		}
+		if (selectedBoosterPack && selectedBoosterPack !== pack) {
+			deselectBoosterPack(selectedBoosterPack);
+		}
+
+		// Mark as selected
+		userData.isSelected = true;
+		selectedBoosterPack = pack;
+
+		// Attach to camera
+		userData.isAttachedToCamera = true;
+		userData.targetPosition.copy(BOOSTER_PACK_CAMERA_OFFSET);
+		userData.currentCameraOffset.copy(BOOSTER_PACK_CAMERA_OFFSET);
+	}
+
+	function deselectBoosterPack(pack: THREE.Group): void {
+		const userData = pack.userData;
+
+		userData.isSelected = false;
+		userData.isAttachedToCamera = false;
+
+		if (selectedBoosterPack === pack) {
+			selectedBoosterPack = null;
+		}
+
+		// Reset cutting state
+		isCutting = false;
+		isPackOpened = false;
+		lastDrawPoint = null;
+		leftCrossY = null;
+		rightCrossY = null;
+		removeCutPlane();
+		removePackParts(pack);
+
+		// Return to original position on table
+		userData.targetPosition.copy(userData.originalPosition);
+		userData.targetRotation.copy(userData.originalRotation);
+	}
+
+	function getBoosterPackFromIntersection(intersects: THREE.Intersection[]): THREE.Group | null {
+		for (const intersect of intersects) {
+			let obj: THREE.Object3D | null = intersect.object;
+			while (obj) {
+				if (boosterPacks3D.includes(obj as THREE.Group)) {
+					return obj as THREE.Group;
+				}
+				obj = obj.parent;
+			}
+		}
+		return null;
+	}
+
 	async function createAlbumBook(album: Album): Promise<THREE.Group> {
 		const bookGroup = new THREE.Group();
 
@@ -426,16 +935,26 @@
 		return bookGroup;
 	}
 
+	function hexToThreeColor(hex: string): THREE.Color {
+		return new THREE.Color(hex);
+	}
+
 	function createRoom(): THREE.Group {
 		const room = new THREE.Group();
-		const roomWidth = 8;
-		const roomHeight = 4;
-		const roomDepth = 10;
+
+		// Use room configuration or defaults
+		const roomWidth = currentRoom?.dimensions.width ?? DEFAULT_ROOM.dimensions.width;
+		const roomHeight = currentRoom?.dimensions.height ?? DEFAULT_ROOM.dimensions.height;
+		const roomDepth = currentRoom?.dimensions.depth ?? DEFAULT_ROOM.dimensions.depth;
+
+		const floorColor = currentRoom?.colors.floor ?? DEFAULT_ROOM.colors.floor;
+		const ceilingColor = currentRoom?.colors.ceiling ?? DEFAULT_ROOM.colors.ceiling;
+		const wallsColor = currentRoom?.colors.walls ?? DEFAULT_ROOM.colors.walls;
 
 		// Floor
 		const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
 		const floorMaterial = new THREE.MeshStandardMaterial({
-			color: 0x8b7355,
+			color: hexToThreeColor(floorColor),
 			roughness: 0.8
 		});
 		const floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -447,7 +966,7 @@
 		// Ceiling
 		const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
 		const ceilingMaterial = new THREE.MeshStandardMaterial({
-			color: 0xf5f5f5,
+			color: hexToThreeColor(ceilingColor),
 			roughness: 0.9
 		});
 		const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
@@ -457,7 +976,7 @@
 
 		// Walls
 		const wallMaterial = new THREE.MeshStandardMaterial({
-			color: 0xe8e4de,
+			color: hexToThreeColor(wallsColor),
 			roughness: 0.9
 		});
 
@@ -680,10 +1199,10 @@
 		isEditMode = !isEditMode;
 
 		if (isEditMode) {
-			// Create floor grid - 8x10 units (room size), 1 unit per square
-			const roomWidth = 8;
-			const roomDepth = 10;
-			const roomHeight = 4;
+			// Use room dimensions from loaded config or defaults
+			const roomWidth = currentRoom?.dimensions.width ?? DEFAULT_ROOM.dimensions.width;
+			const roomDepth = currentRoom?.dimensions.depth ?? DEFAULT_ROOM.dimensions.depth;
+			const roomHeight = currentRoom?.dimensions.height ?? DEFAULT_ROOM.dimensions.height;
 
 			// Floor grid
 			floorGrid = new THREE.GridHelper(Math.max(roomWidth, roomDepth), Math.max(roomWidth, roomDepth), 0xff0000, 0xff0000);
@@ -932,6 +1451,47 @@
 		scene.add(deskLight.target);
 	}
 
+	interface TableSurface {
+		centerX: number;
+		centerZ: number;
+		topY: number;
+		width: number;
+		depth: number;
+	}
+
+	function findTableSurfaces(): TableSurface[] {
+		const tables: TableSurface[] = [];
+
+		if (!currentRoom || !roomFurnitureGroup) return tables;
+
+		// Iterate through room furniture items and find tables
+		for (let i = 0; i < currentRoom.furniture.length; i++) {
+			const roomFurnitureItem = currentRoom.furniture[i];
+			const furnitureDef = furnitureDefinitions.find((f) => String(f.id) === roomFurnitureItem.furnitureId);
+
+			if (!furnitureDef || furnitureDef.furnitureType !== 'table') continue;
+
+			// Get the corresponding loaded 3D model from roomFurnitureGroup
+			const model = roomFurnitureGroup.children[i];
+			if (!model) continue;
+
+			// Get the bounding box of the model to find its surface
+			const box = new THREE.Box3().setFromObject(model);
+			const size = box.getSize(new THREE.Vector3());
+			const center = box.getCenter(new THREE.Vector3());
+
+			tables.push({
+				centerX: center.x,
+				centerZ: center.z,
+				topY: box.max.y,
+				width: size.x,
+				depth: size.z
+			});
+		}
+
+		return tables;
+	}
+
 	async function placeAlbumsOnDesk(): Promise<void> {
 		// Remove existing album books
 		albumBooks.forEach((book) => {
@@ -951,55 +1511,204 @@
 
 		if (ownedAlbums.length === 0) return;
 
-		// Desk position (desk is against the back wall at Z=-4.4)
-		const deskX = 0;
-		const deskZ = -4.4;
-		const deskTopY = 0.75 + 0.04; // Desk height + half desk thickness
+		// Find all table surfaces in the room
+		const tableSurfaces = findTableSurfaces();
 
-		// Calculate layout - albums in a row on the desk
-		const maxAlbumsPerRow = 5;
-		const albumsToShow = ownedAlbums.slice(0, maxAlbumsPerRow);
+		// If no tables found, use fallback position
+		if (tableSurfaces.length === 0) {
+			// Fallback: Desk position - calculate based on room dimensions
+			const roomDepth = currentRoom?.dimensions.depth ?? DEFAULT_ROOM.dimensions.depth;
+			const deskX = 0;
+			const deskZ = -roomDepth / 2 + 0.6;
+			const deskTopY = 0.75 + 0.04;
+
+			const maxAlbumsPerRow = 5;
+			const albumsToShow = ownedAlbums.slice(0, maxAlbumsPerRow);
+			const spacing = 0.45;
+			const totalWidth = (albumsToShow.length - 1) * spacing;
+			const startX = -totalWidth / 2;
+
+			for (let i = 0; i < albumsToShow.length; i++) {
+				const album = albumsToShow[i];
+				const book = await createAlbumBook(album);
+
+				book.rotation.x = -Math.PI / 2;
+				book.rotation.z = (Math.random() - 0.5) * 0.15;
+
+				const stackHeight = i * 0.003;
+				book.position.set(
+					deskX + startX + i * spacing,
+					deskTopY + BOOK_DEPTH / 2 + stackHeight,
+					deskZ + 0.2
+				);
+
+				book.userData.originalPosition.copy(book.position);
+				book.userData.originalRotation.copy(book.rotation);
+				book.userData.targetPosition.copy(book.position);
+				book.userData.targetRotation.copy(book.rotation);
+
+				scene.add(book);
+				albumBooks.push(book);
+			}
+			return;
+		}
+
+		// Distribute albums across table surfaces
+		let albumIndex = 0;
 		const spacing = 0.45;
-		const totalWidth = (albumsToShow.length - 1) * spacing;
-		const startX = -totalWidth / 2;
 
-		for (let i = 0; i < albumsToShow.length; i++) {
-			const album = albumsToShow[i];
-			const book = await createAlbumBook(album);
+		for (const table of tableSurfaces) {
+			if (albumIndex >= ownedAlbums.length) break;
 
-			// Position book on desk - laying flat with cover facing up
-			book.rotation.x = -Math.PI / 2; // Lay flat
-			book.rotation.z = (Math.random() - 0.5) * 0.15; // Slight random rotation for natural look
-
-			// Stack slightly if many books
-			const stackHeight = i * 0.003;
-			book.position.set(
-				deskX + startX + i * spacing,
-				deskTopY + BOOK_DEPTH / 2 + stackHeight,
-				deskZ + 0.2 // Closer to player, in front of monitor
+			// Calculate how many albums can fit on this table
+			const maxAlbumsForTable = Math.floor(table.width / spacing);
+			const albumsForThisTable = Math.min(
+				maxAlbumsForTable,
+				ownedAlbums.length - albumIndex
 			);
 
-			// Store original position/rotation
-			book.userData.originalPosition.copy(book.position);
-			book.userData.originalRotation.copy(book.rotation);
-			book.userData.targetPosition.copy(book.position);
-			book.userData.targetRotation.copy(book.rotation);
+			const totalWidth = (albumsForThisTable - 1) * spacing;
+			const startX = table.centerX - totalWidth / 2;
 
-			scene.add(book);
-			albumBooks.push(book);
+			for (let i = 0; i < albumsForThisTable; i++) {
+				const album = ownedAlbums[albumIndex];
+				const book = await createAlbumBook(album);
+
+				// Position book on table - laying flat with cover facing up
+				book.rotation.x = -Math.PI / 2;
+				book.rotation.z = (Math.random() - 0.5) * 0.15;
+
+				const stackHeight = i * 0.003;
+				book.position.set(
+					startX + i * spacing,
+					table.topY + BOOK_DEPTH / 2 + stackHeight + 0.01, // Slightly above surface
+					table.centerZ // Center on table
+				);
+
+				book.userData.originalPosition.copy(book.position);
+				book.userData.originalRotation.copy(book.rotation);
+				book.userData.targetPosition.copy(book.position);
+				book.userData.targetRotation.copy(book.rotation);
+
+				scene.add(book);
+				albumBooks.push(book);
+				albumIndex++;
+			}
+		}
+	}
+
+	async function loadRoomConfiguration(): Promise<void> {
+		try {
+			// Load all rooms and furniture definitions from database
+			const [rooms, furniture] = await Promise.all([getAllRooms(), getAllFurniture()]);
+			furnitureDefinitions = furniture;
+
+			// Find the "default study" room (case-insensitive search)
+			// Falls back to first room, or null if no rooms exist
+			currentRoom =
+				rooms.find((r) => r.name.toLowerCase().includes('study') || r.name.toLowerCase().includes('default')) ||
+				rooms[0] ||
+				null;
+
+			if (currentRoom) {
+				// Update movement bounds from room configuration
+				ROOM_BOUNDS = {
+					minX: currentRoom.bounds.minX,
+					maxX: currentRoom.bounds.maxX,
+					minZ: currentRoom.bounds.minZ,
+					maxZ: currentRoom.bounds.maxZ
+				};
+				console.log(`[game/room] Loaded room: "${currentRoom.name}"`);
+			} else {
+				console.log('[game/room] No room found in database, using defaults');
+			}
+		} catch (error) {
+			console.error('[game/room] Failed to load room configuration:', error);
+			currentRoom = null;
+		}
+	}
+
+	async function loadRoomFurniture(): Promise<void> {
+		if (!currentRoom || !scene || currentRoom.furniture.length === 0) return;
+
+		// Create furniture group if it doesn't exist
+		if (!roomFurnitureGroup) {
+			roomFurnitureGroup = new THREE.Group();
+			scene.add(roomFurnitureGroup);
+		}
+
+		// Clear existing furniture
+		while (roomFurnitureGroup.children.length > 0) {
+			roomFurnitureGroup.remove(roomFurnitureGroup.children[0]);
+		}
+
+		const loader = new GLTFLoader();
+
+		for (const item of currentRoom.furniture) {
+			const furnitureDef = furnitureDefinitions.find((f) => f.id === item.furnitureId);
+			if (!furnitureDef) {
+				console.warn(`[game/room] Furniture definition not found for ID: ${item.furnitureId}`);
+				continue;
+			}
+
+			try {
+				let model: THREE.Group;
+
+				// Check if model is already cached
+				if (loadedFurnitureModels.has(furnitureDef.modelPath)) {
+					model = loadedFurnitureModels.get(furnitureDef.modelPath)!.clone();
+				} else {
+					const fullPath = `/model/${furnitureDef.modelPath}`;
+					const gltf = await new Promise<{ scene: THREE.Group }>((resolve, reject) => {
+						loader.load(fullPath, resolve, undefined, reject);
+					});
+					loadedFurnitureModels.set(furnitureDef.modelPath, gltf.scene.clone());
+					model = gltf.scene;
+				}
+
+				// Apply furniture base scale * room placement scale
+				const totalScale = furnitureDef.scale * item.scale;
+				model.scale.set(totalScale, totalScale, totalScale);
+
+				// Apply position
+				model.position.set(item.position.x, item.position.y, item.position.z);
+
+				// Apply rotation
+				model.rotation.set(item.rotation.x, item.rotation.y, item.rotation.z);
+
+				// Enable shadows
+				model.traverse((child) => {
+					if (child instanceof THREE.Mesh) {
+						child.castShadow = true;
+						child.receiveShadow = true;
+					}
+				});
+
+				// Make editable
+				model.userData.isEditable = true;
+				model.userData.name = furnitureDef.name;
+
+				roomFurnitureGroup.add(model);
+				editableObjects.push(model);
+			} catch (error) {
+				console.error(`[game/room] Failed to load furniture model: ${furnitureDef.modelPath}`, error);
+			}
 		}
 	}
 
 	async function initScene(): Promise<void> {
+		// Load room configuration from database first
+		await loadRoomConfiguration();
+
 		scene = new THREE.Scene();
 		scene.background = new THREE.Color(0x1a1a2e);
 
 		camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
-		// Position camera close to desk, slightly above desk height, looking down at books
-		camera.position.set(0, 1.4, -0.8);
 
-		// Set initial pitch to look down at the desk
-		pitch = -0.35; // Look slightly downward
+		// Use camera spawn from room configuration or defaults
+		const cameraSpawn = currentRoom?.cameraSpawn ?? DEFAULT_ROOM.cameraSpawn;
+		camera.position.set(cameraSpawn.position.x, cameraSpawn.position.y, cameraSpawn.position.z);
+		pitch = cameraSpawn.pitch;
 
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize(container.clientWidth, container.clientHeight);
@@ -1011,40 +1720,49 @@
 		// Initialize raycaster for book interaction
 		raycaster = new THREE.Raycaster();
 
-		// Create room elements
+		// Create room elements using loaded configuration
 		const room = createRoom();
 		scene.add(room);
 
-		const desk = createDesk();
-		// Position desk against the back wall (wall at Z=-5, desk depth 1.2, so center at -5 + 0.6 = -4.4)
-		desk.position.set(0, 0, -4.4);
-		desk.userData.isEditable = true;
-		desk.userData.name = 'Desk';
-		scene.add(desk);
-		editableObjects.push(desk);
+		// Load furniture from room configuration (from database)
+		await loadRoomFurniture();
 
-		// Add bookshelf on the wall above the desk
-		const bookshelf = createBookshelf();
-		bookshelf.position.set(0, SHELF_Y, -4.85); // Against the wall
-		bookshelf.userData.isEditable = true;
-		bookshelf.userData.name = 'Bookshelf';
-		scene.add(bookshelf);
-		editableObjects.push(bookshelf);
+		// If no furniture was loaded from the room config, create default furniture
+		if (!currentRoom || currentRoom.furniture.length === 0) {
+			const desk = createDesk();
+			// Position desk against the back wall
+			const roomDepth = currentRoom?.dimensions.depth ?? DEFAULT_ROOM.dimensions.depth;
+			desk.position.set(0, 0, -roomDepth / 2 + 0.6);
+			desk.userData.isEditable = true;
+			desk.userData.name = 'Desk';
+			scene.add(desk);
+			editableObjects.push(desk);
 
-		// Load IKEA desk model next to the existing desk
-		const ikeaDesk = await loadIkeaDesk();
-		if (ikeaDesk) {
-			ikeaDesk.userData.isEditable = true;
-			ikeaDesk.userData.name = 'IKEA Desk';
-			scene.add(ikeaDesk);
-			editableObjects.push(ikeaDesk);
+			// Add bookshelf on the wall above the desk
+			const bookshelf = createBookshelf();
+			bookshelf.position.set(0, SHELF_Y, -roomDepth / 2 + 0.15);
+			bookshelf.userData.isEditable = true;
+			bookshelf.userData.name = 'Bookshelf';
+			scene.add(bookshelf);
+			editableObjects.push(bookshelf);
+
+			// Load IKEA desk model next to the existing desk
+			const ikeaDesk = await loadIkeaDesk();
+			if (ikeaDesk) {
+				ikeaDesk.userData.isEditable = true;
+				ikeaDesk.userData.name = 'IKEA Desk';
+				scene.add(ikeaDesk);
+				editableObjects.push(ikeaDesk);
+			}
 		}
 
-		// No chair - player is standing/sitting at desk
 		setupLighting();
 
 		// Place albums on desk
 		await placeAlbumsOnDesk();
+
+		// Place booster packs in the room
+		await placeBoosterPacksInRoom();
 
 		// Apply initial camera rotation
 		updateCameraRotation();
@@ -1067,6 +1785,15 @@
 		// Store pixel position for crosshair (relative to container)
 		mouseScreenX = event.clientX - rect.left;
 		mouseScreenY = event.clientY - rect.top;
+
+		// If a booster pack is selected, block camera control
+		if (selectedBoosterPack) {
+			// Handle cutting if not yet opened
+			if (!isPackOpened) {
+				handleBoosterPackCutting(event);
+			}
+			return;
+		}
 
 		// Calculate mouse position relative to container (0 to 1)
 		const normalizedX = mouseScreenX / rect.width;
@@ -1095,8 +1822,433 @@
 		}
 	}
 
+	function handleBoosterPackCutting(event: MouseEvent): void {
+		if (!container || !selectedBoosterPack || !cutPlane) return;
+
+		// Only draw while mouse button is held
+		if (!isCutting) return;
+
+		// Raycast to find where mouse intersects the cut plane
+		const rect = container.getBoundingClientRect();
+		const ndcX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+		const ndcY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+		raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+		const intersects = raycaster.intersectObject(cutPlane);
+
+		if (intersects.length > 0 && cutCanvasCtx && cutTexture) {
+			const uv = intersects[0].uv;
+			if (uv) {
+				// Convert UV to canvas coordinates
+				const canvasX = uv.x * 512;
+				const canvasY = (1 - uv.y) * 512; // Flip Y
+
+				// Draw on canvas
+				cutCanvasCtx.strokeStyle = '#ff0000';
+				cutCanvasCtx.lineWidth = 8;
+				cutCanvasCtx.lineCap = 'round';
+				cutCanvasCtx.lineJoin = 'round';
+
+				if (lastDrawPoint) {
+					cutCanvasCtx.beginPath();
+					cutCanvasCtx.moveTo(lastDrawPoint.x, lastDrawPoint.y);
+					cutCanvasCtx.lineTo(canvasX, canvasY);
+					cutCanvasCtx.stroke();
+
+					// Check if line crosses the left blue guide
+					if ((lastDrawPoint.x < CUT_GUIDE_LEFT_X && canvasX >= CUT_GUIDE_LEFT_X) ||
+						(lastDrawPoint.x > CUT_GUIDE_LEFT_X && canvasX <= CUT_GUIDE_LEFT_X)) {
+						// Interpolate Y at crossing point
+						const t = (CUT_GUIDE_LEFT_X - lastDrawPoint.x) / (canvasX - lastDrawPoint.x);
+						leftCrossY = lastDrawPoint.y + t * (canvasY - lastDrawPoint.y);
+					}
+
+					// Check if line crosses the right blue guide
+					if ((lastDrawPoint.x < CUT_GUIDE_RIGHT_X && canvasX >= CUT_GUIDE_RIGHT_X) ||
+						(lastDrawPoint.x > CUT_GUIDE_RIGHT_X && canvasX <= CUT_GUIDE_RIGHT_X)) {
+						// Interpolate Y at crossing point
+						const t = (CUT_GUIDE_RIGHT_X - lastDrawPoint.x) / (canvasX - lastDrawPoint.x);
+						rightCrossY = lastDrawPoint.y + t * (canvasY - lastDrawPoint.y);
+					}
+
+					// Check if we've crossed both guides
+					if (leftCrossY !== null && rightCrossY !== null && !isPackOpened) {
+						completeCut(leftCrossY, rightCrossY);
+					}
+				}
+
+				lastDrawPoint = { x: canvasX, y: canvasY };
+				cutTexture.needsUpdate = true;
+			}
+		}
+	}
+
+	function onMouseDown(event: MouseEvent): void {
+		if (event.button !== 0) return; // Only left click
+
+		// Start cutting if booster pack is selected
+		if (selectedBoosterPack && !isPackOpened) {
+			isCutting = true;
+			lastDrawPoint = null;
+			createCutPlane();
+
+			// Clear previous drawing when starting a new stroke
+			if (cutCanvasCtx && cutCanvas) {
+				cutCanvasCtx.clearRect(0, 0, cutCanvas.width, cutCanvas.height);
+				drawCutGuides(); // Redraw the blue guide lines
+				if (cutTexture) {
+					cutTexture.needsUpdate = true;
+				}
+				leftCrossY = null;
+				rightCrossY = null;
+			}
+		}
+	}
+
+	function onMouseUp(event: MouseEvent): void {
+		if (event.button !== 0) return;
+
+		// Stop cutting
+		if (isCutting) {
+			isCutting = false;
+			lastDrawPoint = null;
+		}
+	}
+
+	// Cut guide line positions (in canvas coordinates)
+	// The plane is 3x the pack size, so the pack occupies the middle third
+	// Canvas is 512x512, pack edges are at 1/3 and 2/3 of the width
+	const CUT_GUIDE_LEFT_X = Math.floor(512 / 3);   // ~170
+	const CUT_GUIDE_RIGHT_X = Math.floor(512 * 2 / 3); // ~341
+
+	function drawCutGuides(): void {
+		if (!cutCanvasCtx || !cutCanvas) return;
+
+		// Draw blue vertical guide lines on each side of the pack
+		cutCanvasCtx.strokeStyle = '#4488ff';
+		cutCanvasCtx.lineWidth = 3;
+		cutCanvasCtx.setLineDash([10, 10]); // Dashed line
+
+		// Left guide line
+		cutCanvasCtx.beginPath();
+		cutCanvasCtx.moveTo(CUT_GUIDE_LEFT_X, 0);
+		cutCanvasCtx.lineTo(CUT_GUIDE_LEFT_X, cutCanvas.height);
+		cutCanvasCtx.stroke();
+
+		// Right guide line
+		cutCanvasCtx.beginPath();
+		cutCanvasCtx.moveTo(CUT_GUIDE_RIGHT_X, 0);
+		cutCanvasCtx.lineTo(CUT_GUIDE_RIGHT_X, cutCanvas.height);
+		cutCanvasCtx.stroke();
+
+		// Reset line dash for red drawing
+		cutCanvasCtx.setLineDash([]);
+	}
+
+	function createCutPlane(): void {
+		if (!selectedBoosterPack || cutPlane) return;
+
+		// Create canvas for drawing
+		cutCanvas = document.createElement('canvas');
+		cutCanvas.width = 512;
+		cutCanvas.height = 512;
+		cutCanvasCtx = cutCanvas.getContext('2d')!;
+
+		// Transparent background
+		cutCanvasCtx.clearRect(0, 0, 512, 512);
+
+		// Draw the blue guide lines
+		drawCutGuides();
+
+		// Create texture from canvas
+		cutTexture = new THREE.CanvasTexture(cutCanvas);
+		cutTexture.needsUpdate = true;
+
+		// Create a much larger plane so drawing can extend beyond the pack
+		// Make it 3x the pack size so strokes can go well outside
+		const planeWidth = 3.5 * 0.04 * 3;  // 0.42
+		const planeHeight = 5.5 * 0.04 * 3; // 0.66
+
+		const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+		const material = new THREE.MeshBasicMaterial({
+			map: cutTexture,
+			transparent: true,
+			side: THREE.DoubleSide,
+			depthTest: true,
+			depthWrite: false
+		});
+
+		cutPlane = new THREE.Mesh(geometry, material);
+		cutPlane.userData.isCutPlane = true; // Mark so we don't process it during split
+		// Position slightly in front of the pack
+		cutPlane.position.set(0, 0, 0.006);
+
+		selectedBoosterPack.add(cutPlane);
+	}
+
+	function removeCutPlane(): void {
+		if (cutPlane && selectedBoosterPack) {
+			selectedBoosterPack.remove(cutPlane);
+			cutPlane.geometry.dispose();
+			(cutPlane.material as THREE.Material).dispose();
+			cutPlane = null;
+		}
+		if (cutTexture) {
+			cutTexture.dispose();
+			cutTexture = null;
+		}
+		cutCanvas = null;
+		cutCanvasCtx = null;
+		lastDrawPoint = null;
+	}
+
+	function removePackParts(pack: THREE.Group): void {
+		// Remove cloned top meshes
+		const topMeshes = pack.userData.topMeshes as THREE.Mesh[] | undefined;
+		if (topMeshes) {
+			for (const mesh of topMeshes) {
+				mesh.parent?.remove(mesh);
+				mesh.geometry.dispose();
+				if (Array.isArray(mesh.material)) {
+					mesh.material.forEach((m) => m.dispose());
+				} else {
+					mesh.material.dispose();
+				}
+			}
+			pack.userData.topMeshes = undefined;
+		}
+
+		// Restore bottom meshes (originals) - restore material and position
+		const bottomMeshes = pack.userData.bottomMeshes as THREE.Mesh[] | undefined;
+		const originalPositions = pack.userData.originalPositions as Map<THREE.Mesh, THREE.Vector3> | undefined;
+
+		if (bottomMeshes) {
+			for (const mesh of bottomMeshes) {
+				// Dispose clipped material
+				if (mesh.material) {
+					if (Array.isArray(mesh.material)) {
+						mesh.material.forEach((m) => m.dispose());
+					} else {
+						mesh.material.dispose();
+					}
+				}
+				// Restore original material
+				if (mesh.userData.originalMaterial) {
+					mesh.material = mesh.userData.originalMaterial;
+					mesh.userData.originalMaterial = undefined;
+				}
+				// Restore original position
+				if (originalPositions) {
+					const origPos = originalPositions.get(mesh);
+					if (origPos) {
+						mesh.position.copy(origPos);
+					}
+				}
+				// Clear flags
+				mesh.userData.isBottomPart = undefined;
+			}
+			pack.userData.bottomMeshes = undefined;
+			pack.userData.originalPositions = undefined;
+		}
+	}
+
+	function completeCut(leftY: number, rightY: number): void {
+		if (!selectedBoosterPack) return;
+
+		isPackOpened = true;
+		isCutting = false;
+		lastDrawPoint = null;
+
+		// The drawing plane is 3x the pack size, centered on the pack
+		// Plane dimensions in local space
+		const planeHeight = 5.5 * 0.04 * 3; // 0.66
+		const planeWidth = 3.5 * 0.04 * 3;  // 0.42
+
+		// Convert canvas coordinates to local space
+		// Canvas: 512x512, Y=0 at top, Y=512 at bottom
+		// Local: Y+ is up, Y- is down
+		const leftYLocal = (0.5 - leftY / 512) * planeHeight;
+		const rightYLocal = (0.5 - rightY / 512) * planeHeight;
+
+		// X positions of the blue guides in local space
+		// Canvas X: left guide at 512/3, right guide at 512*2/3
+		// Local X: ranges from -planeWidth/2 to +planeWidth/2
+		const leftXLocal = (CUT_GUIDE_LEFT_X / 512 - 0.5) * planeWidth;
+		const rightXLocal = (CUT_GUIDE_RIGHT_X / 512 - 0.5) * planeWidth;
+
+		console.log('Cut line: left(', leftXLocal, leftYLocal, ') to right(', rightXLocal, rightYLocal, ')');
+
+		// Split the booster pack along this angled line
+		splitBoosterPack(leftXLocal, leftYLocal, rightXLocal, rightYLocal);
+	}
+
+	function splitBoosterPack(leftX: number, leftY: number, rightX: number, rightY: number): void {
+		if (!selectedBoosterPack) return;
+
+		// Enable clipping in renderer
+		if (renderer) {
+			renderer.localClippingEnabled = true;
+		}
+
+		// Calculate the cut line direction in local space (XY plane, Z=0)
+		// Line goes from (leftX, leftY) to (rightX, rightY)
+		const lineDir = new THREE.Vector2(rightX - leftX, rightY - leftY).normalize();
+
+		// Normal to the cut line (perpendicular, pointing "up" relative to the line)
+		// Rotate 90 degrees counter-clockwise: (x, y) -> (-y, x)
+		// This gives us the normal pointing towards the "top" side of the cut
+		const normal2D = new THREE.Vector2(-lineDir.y, lineDir.x);
+
+		// Make sure normal points upward (positive Y component on average)
+		if (normal2D.y < 0) {
+			normal2D.negate();
+		}
+
+		// The cut plane normal in 3D (in local space of the booster pack)
+		// The cut is in the XY plane, so Z component is 0
+		const localNormal = new THREE.Vector3(normal2D.x, normal2D.y, 0).normalize();
+
+		// A point on the cut line (use midpoint)
+		const midPoint = new THREE.Vector3(
+			(leftX + rightX) / 2,
+			(leftY + rightY) / 2,
+			0
+		);
+
+		// Calculate plane constant: for plane equation dot(normal, point) + d = 0
+		// d = -dot(normal, pointOnPlane)
+		const localConstant = -localNormal.dot(midPoint);
+
+		console.log('Cut plane local - normal:', localNormal, 'constant:', localConstant);
+
+		// Transform the plane to world space
+		// Get the normal matrix (inverse transpose of upper 3x3 of model matrix)
+		const normalMatrix = new THREE.Matrix3().getNormalMatrix(selectedBoosterPack.matrixWorld);
+		const worldNormal = localNormal.clone().applyMatrix3(normalMatrix).normalize();
+
+		// Transform the midpoint to world space
+		const worldMidPoint = midPoint.clone();
+		selectedBoosterPack.localToWorld(worldMidPoint);
+
+		// Recalculate constant in world space
+		const worldConstant = -worldNormal.dot(worldMidPoint);
+
+		console.log('Cut plane world - normal:', worldNormal, 'constant:', worldConstant);
+
+		// Create clipping planes in world space
+		// cutPlaneForTop: shows geometry ABOVE the cut (clips below)
+		// cutPlaneForBottom: shows geometry BELOW the cut (clips above)
+		const cutPlaneForTop = new THREE.Plane(worldNormal.clone(), worldConstant);
+		const cutPlaneForBottom = new THREE.Plane(worldNormal.clone().negate(), -worldConstant);
+
+		// Store clipping data and original positions for animation
+		const topMeshes: THREE.Mesh[] = [];
+		const bottomMeshes: THREE.Mesh[] = [];
+		const originalPositions: Map<THREE.Mesh, THREE.Vector3> = new Map();
+
+		// Collect meshes to process (avoid modifying during traverse)
+		const meshesToProcess: THREE.Mesh[] = [];
+		selectedBoosterPack.traverse((child) => {
+			if (child instanceof THREE.Mesh && !child.userData.isCutPlane) {
+				meshesToProcess.push(child);
+			}
+		});
+
+		// For each mesh, create a clone - one shows top half, original shows bottom half
+		for (const mesh of meshesToProcess) {
+			// Store original position
+			originalPositions.set(mesh, mesh.position.clone());
+
+			// Original mesh becomes bottom part
+			mesh.userData.isBottomPart = true;
+			mesh.userData.originalMaterial = mesh.material;
+			const bottomMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+			bottomMat.clippingPlanes = [cutPlaneForBottom];
+			bottomMat.clipShadows = true;
+			bottomMat.side = THREE.DoubleSide;
+			mesh.material = bottomMat;
+			bottomMeshes.push(mesh);
+
+			// Clone becomes top part (add to same parent to keep in same space)
+			const topClone = mesh.clone(true);
+			topClone.userData.isTopPart = true;
+			topClone.userData.originalPosition = mesh.position.clone();
+			const topMat = (topClone.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+			topMat.clippingPlanes = [cutPlaneForTop];
+			topMat.clipShadows = true;
+			topMat.side = THREE.DoubleSide;
+			topClone.material = topMat;
+
+			// Add clone as sibling (same parent as original)
+			mesh.parent?.add(topClone);
+			topMeshes.push(topClone);
+		}
+
+		// Store references for cleanup
+		selectedBoosterPack.userData.topMeshes = topMeshes;
+		selectedBoosterPack.userData.bottomMeshes = bottomMeshes;
+		selectedBoosterPack.userData.originalPositions = originalPositions;
+
+		console.log('Split complete. Top meshes:', topMeshes.length, 'Bottom meshes:', bottomMeshes.length);
+
+		// Animate meshes separating along the cut normal
+		animatePackOpen(localNormal, topMeshes, bottomMeshes);
+	}
+
+	function animatePackOpen(cutNormal: THREE.Vector3, topMeshes: THREE.Mesh[], bottomMeshes: THREE.Mesh[]): void {
+		// Move meshes slightly along the cut normal direction
+		const moveDistance = 0.02; // Small separation
+
+		// Calculate target offsets (in local space of the booster pack)
+		const topOffset = cutNormal.clone().multiplyScalar(moveDistance);
+		const bottomOffset = cutNormal.clone().multiplyScalar(-moveDistance);
+
+		// Store original positions and calculate targets
+		const topTargets: Map<THREE.Mesh, THREE.Vector3> = new Map();
+		const bottomTargets: Map<THREE.Mesh, THREE.Vector3> = new Map();
+
+		for (const mesh of topMeshes) {
+			topTargets.set(mesh, mesh.position.clone().add(topOffset));
+		}
+		for (const mesh of bottomMeshes) {
+			bottomTargets.set(mesh, mesh.position.clone().add(bottomOffset));
+		}
+
+		function animate() {
+			let totalDiff = 0;
+
+			// Animate top meshes
+			for (const mesh of topMeshes) {
+				const target = topTargets.get(mesh)!;
+				const diff = target.clone().sub(mesh.position);
+				totalDiff += diff.length();
+				mesh.position.add(diff.multiplyScalar(0.15));
+			}
+
+			// Animate bottom meshes
+			for (const mesh of bottomMeshes) {
+				const target = bottomTargets.get(mesh)!;
+				const diff = target.clone().sub(mesh.position);
+				totalDiff += diff.length();
+				mesh.position.add(diff.multiplyScalar(0.15));
+			}
+
+			if (totalDiff > 0.0001) {
+				requestAnimationFrame(animate);
+			}
+		}
+
+		animate();
+	}
+
 	function onKeyDown(event: KeyboardEvent): void {
 		const key = event.key.toLowerCase();
+
+		// Escape deselects booster pack
+		if (key === 'escape' && selectedBoosterPack) {
+			deselectBoosterPack(selectedBoosterPack);
+			return;
+		}
 
 		// Spacebar toggles edit mode
 		if (event.code === 'Space') {
@@ -1591,6 +2743,63 @@
 			}
 		}
 
+		// Animate booster packs
+		for (const pack of boosterPacks3D) {
+			const userData = pack.userData;
+
+			if (userData.isAttachedToCamera) {
+				// Animate the camera offset smoothly
+				const offsetDiff = userData.targetPosition.clone().sub(userData.currentCameraOffset);
+				if (offsetDiff.length() > 0.001) {
+					userData.currentCameraOffset.add(offsetDiff.multiplyScalar(ANIMATION_SPEED));
+				} else {
+					userData.currentCameraOffset.copy(userData.targetPosition);
+				}
+
+				// Get camera's local axes
+				const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+				const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+				const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+
+				// Get animated offset values
+				const offsetX = userData.currentCameraOffset.x;
+				const offsetY = userData.currentCameraOffset.y;
+				const offsetZ = userData.currentCameraOffset.z;
+
+				// Position pack in front of camera
+				const worldPos = camera.position.clone()
+					.add(forward.multiplyScalar(-offsetZ))
+					.add(right.multiplyScalar(offsetX))
+					.add(up.multiplyScalar(offsetY));
+
+				pack.position.copy(worldPos);
+
+				// Keep pack facing the camera (parallel to view)
+				pack.quaternion.copy(camera.quaternion);
+			} else {
+				// Animate position for non-attached packs
+				const posDiff = userData.targetPosition.clone().sub(pack.position);
+				if (posDiff.length() > 0.001) {
+					pack.position.add(posDiff.multiplyScalar(ANIMATION_SPEED));
+				} else {
+					pack.position.copy(userData.targetPosition);
+				}
+
+				// Animate rotation
+				const rotXDiff = userData.targetRotation.x - pack.rotation.x;
+				const rotYDiff = userData.targetRotation.y - pack.rotation.y;
+				const rotZDiff = userData.targetRotation.z - pack.rotation.z;
+
+				if (Math.abs(rotXDiff) > 0.001 || Math.abs(rotYDiff) > 0.001 || Math.abs(rotZDiff) > 0.001) {
+					pack.rotation.x += rotXDiff * ANIMATION_SPEED;
+					pack.rotation.y += rotYDiff * ANIMATION_SPEED;
+					pack.rotation.z += rotZDiff * ANIMATION_SPEED;
+				} else {
+					pack.rotation.copy(userData.targetRotation);
+				}
+			}
+		}
+
 		// Update cursor based on hover state
 		if (container) {
 			container.style.cursor = hoveredBook ? 'pointer' : 'crosshair';
@@ -1608,9 +2817,12 @@
 			return;
 		}
 
-		// Deselect any previously selected book
+		// Deselect any previously selected book or booster pack
 		if (selectedBook && selectedBook !== book) {
 			deselectBook(selectedBook);
+		}
+		if (selectedBoosterPack) {
+			deselectBoosterPack(selectedBoosterPack);
 		}
 
 		// Mark as selected
@@ -1762,6 +2974,9 @@
 		// Only handle left-click
 		if (event.button !== 0) return;
 
+		// Block all click interactions when a booster pack is selected
+		if (selectedBoosterPack) return;
+
 		if (!container || !camera) return;
 
 		const rect = container.getBoundingClientRect();
@@ -1790,15 +3005,33 @@
 			}
 		}
 
-		// Normal mode: check for album books
-		const intersects = raycaster.intersectObjects(albumBooks, true);
-		const bookGroup = getBookFromIntersection(intersects);
+		// Normal mode: check for album books and booster packs
+		const bookIntersects = raycaster.intersectObjects(albumBooks, true);
+		const bookGroup = getBookFromIntersection(bookIntersects);
+
+		const packIntersects = raycaster.intersectObjects(boosterPacks3D, true);
+		const packGroup = getBoosterPackFromIntersection(packIntersects);
 
 		if (bookGroup) {
+			// Deselect booster pack if one is selected
+			if (selectedBoosterPack) {
+				deselectBoosterPack(selectedBoosterPack);
+			}
 			selectBook(bookGroup);
-		} else if (selectedBook) {
-			// Clicked on empty space, deselect current book
-			deselectBook(selectedBook);
+		} else if (packGroup) {
+			// Deselect book if one is selected
+			if (selectedBook) {
+				deselectBook(selectedBook);
+			}
+			selectBoosterPack(packGroup);
+		} else {
+			// Clicked on empty space, deselect current selection
+			if (selectedBook) {
+				deselectBook(selectedBook);
+			}
+			if (selectedBoosterPack) {
+				deselectBoosterPack(selectedBoosterPack);
+			}
 		}
 	}
 
@@ -1810,10 +3043,23 @@
 		renderer.setSize(container.clientWidth, container.clientHeight);
 	}
 
+	function generateBoosterPackAlbums(albums: Album[]): Album[] {
+		if (albums.length === 0) return [];
+
+		// Generate 5 booster packs, each randomly assigned to an owned album
+		const packs: Album[] = [];
+		for (let i = 0; i < BOOSTER_PACK_COUNT; i++) {
+			const randomIndex = Math.floor(Math.random() * albums.length);
+			packs.push(albums[randomIndex]);
+		}
+		return packs;
+	}
+
 	async function loadOwnedAlbums(): Promise<void> {
 		const allAlbums = await getAlbumCollection();
 		const ownedAlbumIds = new Set(playerAlbumsService.all().map((o) => o.albumId));
 		ownedAlbums = allAlbums.filter((album) => ownedAlbumIds.has(album.id));
+		boosterPackAlbums = generateBoosterPackAlbums(ownedAlbums);
 		isLoading = false;
 	}
 
@@ -1827,11 +3073,14 @@
 			await loadOwnedAlbums();
 			if (scene) {
 				await placeAlbumsOnDesk();
+				await placeBoosterPacksInRoom();
 			}
 		});
 
 		document.addEventListener('mousemove', onMouseMove);
 		container.addEventListener('click', onBookClick);
+		container.addEventListener('mousedown', onMouseDown);
+		container.addEventListener('mouseup', onMouseUp);
 		container.addEventListener('contextmenu', onContextMenu);
 		window.addEventListener('keydown', onKeyDown);
 		window.addEventListener('keyup', onKeyUp);
@@ -1850,6 +3099,8 @@
 		document.removeEventListener('mousemove', onMouseMove);
 		if (container) {
 			container.removeEventListener('click', onBookClick);
+			container.removeEventListener('mousedown', onMouseDown);
+			container.removeEventListener('mouseup', onMouseUp);
 			container.removeEventListener('contextmenu', onContextMenu);
 		}
 		window.removeEventListener('keydown', onKeyDown);
@@ -1873,6 +3124,49 @@
 			});
 		});
 
+		// Cleanup booster packs
+		boosterPacks3D.forEach((pack) => {
+			pack.traverse((obj) => {
+				if (obj instanceof THREE.Mesh) {
+					obj.geometry.dispose();
+					if (Array.isArray(obj.material)) {
+						obj.material.forEach((m) => m.dispose());
+					} else {
+						obj.material.dispose();
+					}
+				}
+			});
+		});
+
+		// Cleanup booster pack base model
+		if (boosterPackBaseModel) {
+			boosterPackBaseModel.traverse((obj) => {
+				if (obj instanceof THREE.Mesh) {
+					obj.geometry.dispose();
+					if (Array.isArray(obj.material)) {
+						obj.material.forEach((m) => m.dispose());
+					} else {
+						obj.material.dispose();
+					}
+				}
+			});
+		}
+
+		// Cleanup loaded furniture models
+		loadedFurnitureModels.forEach((model) => {
+			model.traverse((obj) => {
+				if (obj instanceof THREE.Mesh) {
+					obj.geometry.dispose();
+					if (Array.isArray(obj.material)) {
+						obj.material.forEach((m) => m.dispose());
+					} else {
+						obj.material.dispose();
+					}
+				}
+			});
+		});
+		loadedFurnitureModels.clear();
+
 		if (renderer) {
 			renderer.dispose();
 		}
@@ -1882,10 +3176,12 @@
 <div class="flex flex-col h-full">
 	<div class="flex items-center justify-between mb-4">
 		<div>
-			<h1 class="text-2xl font-bold">Room</h1>
+			<h1 class="text-2xl font-bold">
+				{currentRoom?.name ?? 'Room'}
+			</h1>
 			<p class="text-sm text-base-content/60">
 				{#if isLoading}
-					Loading albums...
+					Loading...
 				{:else if ownedAlbums.length === 0}
 					No albums owned yet. Acquire albums from the Album page.
 				{:else if selectedAlbum}
@@ -1948,7 +3244,31 @@
 			</div>
 		{/if}
 
-		{#if selectedAlbum}
+		{#if selectedBoosterPack}
+			<div class="absolute top-4 left-1/2 -translate-x-1/2 bg-base-300/90 backdrop-blur-sm px-4 py-3 rounded-lg text-center">
+				<div class="font-bold text-lg mb-1">{selectedBoosterPack.userData.album.title}</div>
+				{#if isPackOpened}
+					<div class="text-success font-medium">Pack Opened!</div>
+				{:else}
+					<div class="text-sm text-base-content/70 mb-2">Draw a line across the blue guides to cut</div>
+					<div class="flex gap-2 justify-center">
+						<div class="flex items-center gap-1">
+							<div class="w-3 h-3 rounded-full {leftCrossY !== null ? 'bg-green-500' : 'bg-blue-500'}"></div>
+							<span class="text-xs">Left</span>
+						</div>
+						<div class="flex items-center gap-1">
+							<div class="w-3 h-3 rounded-full {rightCrossY !== null ? 'bg-green-500' : 'bg-blue-500'}"></div>
+							<span class="text-xs">Right</span>
+						</div>
+					</div>
+				{/if}
+			</div>
+			<div class="absolute bottom-4 left-1/2 -translate-x-1/2">
+				<button class="btn btn-ghost btn-sm" onclick={() => deselectBoosterPack(selectedBoosterPack!)}>
+					<span class="badge badge-xs mr-1">Esc</span> Put Back
+				</button>
+			</div>
+		{:else if selectedAlbum}
 			{#if isBookOpen}
 				<!-- Page counter above the book -->
 				<div class="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-base-300/80 backdrop-blur-sm px-4 py-2 rounded-lg">

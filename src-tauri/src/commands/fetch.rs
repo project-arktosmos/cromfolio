@@ -66,14 +66,26 @@ pub async fn search_games(
     igdb_state: State<'_, IgdbApi>,
 ) -> Result<Vec<GameSearchResult>, String> {
     let config = config_state.get_config().await;
-    let client_id = config.twitch_client_id
-        .ok_or_else(|| "Twitch Client ID not configured".to_string())?;
-    let client_secret = config.twitch_client_secret
-        .ok_or_else(|| "Twitch Client Secret not configured".to_string())?;
 
-    igdb_state.search_games(&client_state.client, &client_id, &client_secret, &query)
-        .await
-        .map_err(|e| e.to_string())
+    // Try IGDB first if credentials are available
+    if let (Some(client_id), Some(client_secret)) = (&config.twitch_client_id, &config.twitch_client_secret) {
+        if !client_id.is_empty() && !client_secret.is_empty() {
+            return igdb_state.search_games(&client_state.client, client_id, client_secret, &query)
+                .await
+                .map_err(|e| e.to_string());
+        }
+    }
+
+    // Fall back to SteamGridDB if IGDB not configured
+    if let Some(api_key) = &config.steamgriddb_api_key {
+        if !api_key.is_empty() {
+            return SgdbApi::search_games(&client_state.client, api_key, &query)
+                .await
+                .map_err(|e| e.to_string());
+        }
+    }
+
+    Err("No game search API configured. Set either Twitch credentials (for IGDB) or SteamGridDB API key.".to_string())
 }
 
 #[command]
@@ -323,21 +335,35 @@ pub async fn fetch_source_images(
 
                 let result = match source.as_str() {
                     "igdb" => {
-                        if let (Some(client_id), Some(client_secret)) =
+                        // IGDB images only work with IGDB IDs
+                        if externalIdType != "igdb" {
+                            Err(crate::apis::client::ApiError::InvalidResponse(
+                                "IGDB images require IGDB ID (search with Twitch credentials)".to_string()
+                            ))
+                        } else if let (Some(client_id), Some(client_secret)) =
                             (&config.twitch_client_id, &config.twitch_client_secret)
                         {
-                            igdb_state.get_game_images(&client_state.client, client_id, client_secret, game_id)
-                                .await
-                                .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
+                            if !client_id.is_empty() && !client_secret.is_empty() {
+                                igdb_state.get_game_images(&client_state.client, client_id, client_secret, game_id)
+                                    .await
+                                    .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
+                            } else {
+                                Err(crate::apis::client::ApiError::MissingApiKey("IGDB".to_string()))
+                            }
                         } else {
                             Err(crate::apis::client::ApiError::MissingApiKey("IGDB".to_string()))
                         }
                     }
                     "sgdb" => {
                         if let Some(api_key) = &config.steamgriddb_api_key {
-                            SgdbApi::get_game_images(&client_state.client, api_key, game_id)
-                                .await
-                                .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
+                            if !api_key.is_empty() {
+                                // Use SGDB ID directly if that's the source, otherwise search by ID
+                                SgdbApi::get_game_images(&client_state.client, api_key, game_id)
+                                    .await
+                                    .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
+                            } else {
+                                Err(crate::apis::client::ApiError::MissingApiKey("SteamGridDB".to_string()))
+                            }
                         } else {
                             Err(crate::apis::client::ApiError::MissingApiKey("SteamGridDB".to_string()))
                         }

@@ -79,18 +79,19 @@
 	}
 
 	// Check if source already exists in database
-	async function checkSourceExists(igdbId: number): Promise<boolean> {
-		if (sourceExistsMap.has(igdbId)) {
-			return sourceExistsMap.get(igdbId)!;
+	async function checkSourceExists(game: GameSearchResult): Promise<boolean> {
+		if (sourceExistsMap.has(game.id)) {
+			return sourceExistsMap.get(game.id)!;
 		}
-		const exists = await sourceExists('igdb', String(igdbId));
-		sourceExistsMap = new Map(sourceExistsMap).set(igdbId, exists);
+		const sourceType = game.source || 'igdb';
+		const exists = await sourceExists(sourceType, String(game.id));
+		sourceExistsMap = new Map(sourceExistsMap).set(game.id, exists);
 		return exists;
 	}
 
 	// Check if source is already added (from cache)
-	function isSourceAdded(igdbId: number): boolean {
-		return sourceExistsMap.get(igdbId) ?? false;
+	function isSourceAdded(gameId: number): boolean {
+		return sourceExistsMap.get(gameId) ?? false;
 	}
 
 	// Select a game and fetch images
@@ -103,7 +104,7 @@
 			albumCreated = null;
 			selectedCoverImage = game.coverUrl || null;
 			// Check source existence and fetch images in parallel
-			await Promise.all([checkSourceExists(game.id), fetchAllImages(game.id)]);
+			await Promise.all([checkSourceExists(game), fetchAllImages(game.id)]);
 		}
 	}
 
@@ -122,8 +123,12 @@
 		resetImages();
 		selectedCoverImage = preservedCover;
 
-		// Initialize progress for all sources
-		const sources = ['igdb', 'sgdb'];
+		// Determine source type from selected game
+		const idType = selectedGame?.source || 'igdb';
+
+		// Only fetch from sources that work with our ID type
+		// IGDB images require IGDB IDs, SGDB images work with SGDB IDs
+		const sources = idType === 'igdb' ? ['igdb', 'sgdb'] : ['sgdb'];
 		for (const source of sources) {
 			fetchProgress.set(source, { status: 'pending' });
 		}
@@ -133,7 +138,7 @@
 			const result = await fetchSourceImages({
 				contentType: 'game',
 				externalId: String(gameId),
-				externalIdType: 'igdb',
+				externalIdType: idType,
 				sources,
 				onProgress: handleProgress
 			});
@@ -182,9 +187,11 @@
 		isCreatingAlbum = true;
 		cardsCreated = 0;
 
+		const sourceType = selectedGame.source || 'igdb';
+
 		try {
 			// Check if already added
-			const alreadyAdded = await sourceExists('igdb', String(selectedGame.id));
+			const alreadyAdded = await sourceExists(sourceType, String(selectedGame.id));
 			if (alreadyAdded) {
 				toastService.warning('This game has already been added');
 				isCreatingAlbum = false;
@@ -200,7 +207,8 @@
 				title: selectedGame.name,
 				description: `Game${releaseYear !== 'TBA' ? ` (${releaseYear})` : ''}${genreNames ? ` - ${genreNames}` : ''}`,
 				coverImage: selectedCoverImage || undefined,
-				igdbId: selectedGame.id,
+				igdbId: sourceType === 'igdb' ? selectedGame.id : undefined,
+				sgdbId: sourceType === 'sgdb' ? selectedGame.id : undefined,
 				igdbSlug: selectedGame.slug,
 				addedAt: new Date().toISOString()
 			};
@@ -208,7 +216,7 @@
 			const createdAlbum = await addAlbum(album);
 			if (createdAlbum) {
 				// Create source entry to prevent duplicates
-				await createSource(createdAlbum.id, 'game', 'igdb', String(selectedGame.id));
+				await createSource(createdAlbum.id, 'game', sourceType, String(selectedGame.id));
 				albumCreated = createdAlbum;
 
 				let created = 0;

@@ -83,6 +83,8 @@ export interface GameSearchResult {
 	rating?: number;
 	platforms: string[];
 	genres: string[];
+	/** Source of the search result: "igdb" or "sgdb" */
+	source?: string;
 }
 
 export interface AnimeSearchResult {

@@ -251,3 +251,77 @@ pub fn delete_questions_by_album(album_id: String, db: State<'_, Database>) -> R
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::questions::delete_by_album_id(&conn, &album_id)
 }
+
+// ============================================================================
+// ROOMS
+// ============================================================================
+
+#[command]
+pub fn get_all_rooms(db: State<'_, Database>) -> Result<Vec<Room>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::rooms::get_all(&conn)
+}
+
+#[command]
+pub fn get_room(id: String, db: State<'_, Database>) -> Result<Option<Room>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::rooms::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn create_room(room: Room, db: State<'_, Database>) -> Result<Room, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::rooms::create(&conn, &room)
+}
+
+#[command]
+pub fn update_room(room: Room, db: State<'_, Database>) -> Result<Room, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::rooms::update(&conn, &room)
+}
+
+#[command]
+pub fn delete_room(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::rooms::delete(&conn, &id)
+}
+
+// ============================================================================
+// FURNITURE
+// ============================================================================
+
+#[command]
+pub fn get_all_furniture(db: State<'_, Database>) -> Result<Vec<Furniture>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::get_all(&conn)
+}
+
+#[command]
+pub fn get_furniture(id: String, db: State<'_, Database>) -> Result<Option<Furniture>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn get_furniture_by_type(furniture_type: String, db: State<'_, Database>) -> Result<Vec<Furniture>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::get_by_type(&conn, &furniture_type)
+}
+
+#[command]
+pub fn create_furniture(furniture: Furniture, db: State<'_, Database>) -> Result<Furniture, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::create(&conn, &furniture)
+}
+
+#[command]
+pub fn update_furniture(furniture: Furniture, db: State<'_, Database>) -> Result<Furniture, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::update(&conn, &furniture)
+}
+
+#[command]
+pub fn delete_furniture(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::furniture::delete(&conn, &id)
+}

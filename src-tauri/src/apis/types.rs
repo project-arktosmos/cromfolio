@@ -126,7 +126,7 @@ pub struct TvSearchResult {
     pub poster: Option<String>,
 }
 
-/// Game search result from IGDB
+/// Game search result from IGDB or SteamGridDB
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameSearchResult {
@@ -145,6 +145,13 @@ pub struct GameSearchResult {
     pub rating: Option<f64>,
     pub platforms: Vec<String>,
     pub genres: Vec<String>,
+    /// Source of the search result: "igdb" or "sgdb"
+    #[serde(default = "default_game_source")]
+    pub source: String,
+}
+
+fn default_game_source() -> String {
+    "igdb".to_string()
 }
 
 /// Anime search result from AniList
