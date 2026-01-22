@@ -31,6 +31,11 @@
 			"path": "/admin/metadata"
 		},
 		{
+			"id": "models",
+			"label": "Models",
+			"path": "/admin/models"
+		},
+		{
 			"id": "rarity",
 			"label": "Rarity",
 			"path": "/admin/rarity"
@@ -66,5 +71,5 @@
 			"path": "/admin/wordle"
 		}
 	],
-	"generatedAt": "2026-01-22T15:07:21.144Z"
+	"generatedAt": "2026-01-22T16:07:56.150Z"
 }

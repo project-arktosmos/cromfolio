@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
+	import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 	import { getAlbumCollection } from '$services/albums.service';
 	import { playerAlbumsService } from '$services/player-albums.service';
 	import type { Album } from '$types/album.type';
@@ -44,6 +45,10 @@
 
 	// Animation settings
 	const ANIMATION_SPEED = 0.08;
+
+	// Book page state
+	const TOTAL_PAGES = 10;
+	let currentPage = $state(1);
 
 	// Book dimensions (scaled for desk visibility)
 	const BOOK_WIDTH = 0.35;
@@ -188,6 +193,50 @@
 		return texture;
 	}
 
+	function createNumberedPageTexture(pageNumber: number, isLeftPage: boolean = false): THREE.CanvasTexture {
+		const canvas = document.createElement('canvas');
+		canvas.width = 512;
+		canvas.height = 512;
+		const ctx = canvas.getContext('2d')!;
+
+		// Cream colored page
+		ctx.fillStyle = '#faf8f0';
+		ctx.fillRect(0, 0, 512, 512);
+
+		// Subtle paper texture with light lines
+		ctx.strokeStyle = '#f0ede0';
+		ctx.lineWidth = 1;
+		for (let i = 30; i < 480; i += 24) {
+			ctx.beginPath();
+			ctx.moveTo(40, i);
+			ctx.lineTo(472, i);
+			ctx.stroke();
+		}
+
+		// Page border
+		ctx.strokeStyle = '#d0c8b0';
+		ctx.lineWidth = 2;
+		ctx.strokeRect(20, 20, 472, 472);
+
+		// Page number at bottom
+		ctx.fillStyle = '#4a4a4a';
+		ctx.font = 'bold 32px Georgia, serif';
+		ctx.textAlign = isLeftPage ? 'left' : 'right';
+		ctx.textBaseline = 'bottom';
+		const xPos = isLeftPage ? 50 : 462;
+		ctx.fillText(String(pageNumber), xPos, 480);
+
+		// Decorative element at top
+		ctx.fillStyle = '#8b7355';
+		ctx.font = 'italic 24px Georgia, serif';
+		ctx.textAlign = 'center';
+		ctx.fillText('~ ' + pageNumber + ' ~', 256, 50);
+
+		const texture = new THREE.CanvasTexture(canvas);
+		loadedTextures.push(texture);
+		return texture;
+	}
+
 	async function createAlbumBook(album: Album): Promise<THREE.Group> {
 		const bookGroup = new THREE.Group();
 
@@ -206,13 +255,14 @@
 		const pageTexture = createPageTexture();
 		const spineTexture = createSpineTexture(album.title);
 
-		// Page block (inner pages)
+		// Page block (inner pages - the bulk of pages visible from the side when book is closed)
 		const pageBlockWidth = BOOK_WIDTH - 0.01;
 		const pageBlockDepth = BOOK_DEPTH - COVER_THICKNESS * 2;
 		const pageBlockGeometry = new THREE.BoxGeometry(pageBlockWidth, BOOK_HEIGHT - 0.005, pageBlockDepth);
 		const pageBlockMaterial = new THREE.MeshStandardMaterial({ map: pageTexture, roughness: 0.9 });
 		const pageBlock = new THREE.Mesh(pageBlockGeometry, pageBlockMaterial);
 		pageBlock.position.x = 0.005;
+		pageBlock.position.z = 0; // Centered between covers
 		pageBlock.castShadow = true;
 		bookGroup.add(pageBlock);
 
@@ -224,39 +274,118 @@
 		spine.castShadow = true;
 		bookGroup.add(spine);
 
-		// Back cover (stationary)
+		// When opened, the book flattens out: back cover - spine - front cover all in same plane
+		// We only render TWO page surfaces: one on left, one on right, with dynamic textures
+
+		// Back cover (stationary when open, lies flat)
 		const coverGeometry = new THREE.BoxGeometry(BOOK_WIDTH, BOOK_HEIGHT, COVER_THICKNESS);
 		const backCoverMaterial = new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.7 });
 		const backCover = new THREE.Mesh(coverGeometry, backCoverMaterial);
-		backCover.position.z = -BOOK_DEPTH / 2;
+		backCover.position.z = -BOOK_DEPTH / 2 + COVER_THICKNESS / 2;
 		backCover.castShadow = true;
 		bookGroup.add(backCover);
 
-		// Front cover pivot - positioned at the spine edge (hinge point)
-		// The pivot is at the left edge of the cover where it meets the spine
+		// Front cover pivot - hinges at the spine edge
+		// When closed: front cover is on top (+Z)
+		// When open: front cover rotates -180° to lie flat on the LEFT side of the spine
 		const frontCoverPivot = new THREE.Group();
 		frontCoverPivot.position.set(-BOOK_WIDTH / 2, 0, BOOK_DEPTH / 2);
 		bookGroup.add(frontCoverPivot);
 
-		// Front cover - offset so its left edge is at the pivot point
+		// Front cover mesh - positioned so when rotated -180°, it lands to the LEFT of spine
 		const frontCoverMaterials = [
 			new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.7 }), // right
 			new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.7 }), // left
 			new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.7 }), // top
 			new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.7 }), // bottom
-			new THREE.MeshStandardMaterial({ map: coverTexture, roughness: 0.5 }), // front (cover image)
-			new THREE.MeshStandardMaterial({ color: 0x2d3748, roughness: 0.7 }) // back (inside cover)
+			new THREE.MeshStandardMaterial({ map: coverTexture, roughness: 0.5 }), // front (+Z, cover image)
+			new THREE.MeshStandardMaterial({ color: 0x2d3748, roughness: 0.7 }) // back (-Z, inside cover)
 		];
 		const frontCover = new THREE.Mesh(coverGeometry, frontCoverMaterials);
-		// Position so the left edge aligns with pivot (center + half width)
 		frontCover.position.x = BOOK_WIDTH / 2;
+		frontCover.position.z = 0;
 		frontCover.castShadow = true;
 		frontCoverPivot.add(frontCover);
+
+		// Create just TWO page surfaces that we'll update dynamically
+		// These are only visible when the book is open
+		const pageGeometry = new THREE.PlaneGeometry(BOOK_WIDTH - 0.02, BOOK_HEIGHT - 0.02);
+		const pageZ = BOOK_DEPTH / 2 + 0.02; // Positioned above the book, closer to the player
+		const pageOffsetX = BOOK_WIDTH / 2; // Distance from spine to page center
+		// When book opens, it shifts right by BOOK_WIDTH/2, so we shift pages left to compensate
+		const pageShiftX = -BOOK_WIDTH / 2;
+
+		// Left page (even numbers: 2, 4, 6, 8, 10) - positioned to left of spine when open
+		const leftPageTexture = createNumberedPageTexture(2, true);
+		const leftPageMaterial = new THREE.MeshStandardMaterial({
+			map: leftPageTexture,
+			roughness: 0.9,
+			side: THREE.DoubleSide
+		});
+		const leftPage = new THREE.Mesh(pageGeometry, leftPageMaterial);
+		leftPage.position.set(-pageOffsetX + pageShiftX, 0, pageZ);
+		leftPage.visible = false; // Hidden until book opens
+		bookGroup.add(leftPage);
+
+		// Right page (odd numbers: 1, 3, 5, 7, 9) - positioned to right of spine when open
+		const rightPageTexture = createNumberedPageTexture(1, false);
+		const rightPageMaterial = new THREE.MeshStandardMaterial({
+			map: rightPageTexture,
+			roughness: 0.9,
+			side: THREE.DoubleSide
+		});
+		const rightPage = new THREE.Mesh(pageGeometry, rightPageMaterial);
+		rightPage.position.set(pageOffsetX + pageShiftX, 0, pageZ);
+		rightPage.visible = false; // Hidden until book opens
+		bookGroup.add(rightPage);
+
+		// Flipping page - animates between left and right
+		// Uses TWO planes: front side (odd page) and back side (even page)
+		// Pivot is shifted left to match page positions
+		// When rotated -PI, the page lands exactly at leftPage position
+		const flippingPageFrontMaterial = new THREE.MeshStandardMaterial({
+			map: rightPageTexture.clone(),
+			roughness: 0.9,
+			side: THREE.FrontSide
+		});
+		const flippingPageBackMaterial = new THREE.MeshStandardMaterial({
+			map: createNumberedPageTexture(2, true),
+			roughness: 0.9,
+			side: THREE.FrontSide
+		});
+
+		const flippingPagePivot = new THREE.Group();
+		flippingPagePivot.position.set(pageShiftX, 0, pageZ); // Pivot shifted left to match pages
+		bookGroup.add(flippingPagePivot);
+
+		// Front of flipping page (faces player when on right side)
+		const flippingPageFront = new THREE.Mesh(pageGeometry, flippingPageFrontMaterial);
+		flippingPageFront.position.x = pageOffsetX; // Offset from pivot
+		flippingPageFront.position.z = 0.001; // Slightly forward
+		flippingPageFront.visible = false;
+		flippingPagePivot.add(flippingPageFront);
+
+		// Back of flipping page (faces player when flipped to left side)
+		const flippingPageBack = new THREE.Mesh(pageGeometry, flippingPageBackMaterial);
+		flippingPageBack.position.x = pageOffsetX; // Offset from pivot
+		flippingPageBack.position.z = -0.001; // Slightly backward
+		flippingPageBack.rotation.y = Math.PI; // Rotated 180° so it faces the other way
+		flippingPageBack.visible = false;
+		flippingPagePivot.add(flippingPageBack);
 
 		// Store references for animation
 		bookGroup.userData = {
 			album,
 			frontCoverPivot,
+			leftPage,
+			rightPage,
+			leftPageMaterial,
+			rightPageMaterial,
+			flippingPageFront,
+			flippingPageBack,
+			flippingPagePivot,
+			flippingPageFrontMaterial,
+			flippingPageBackMaterial,
 			// Original position/rotation for returning to desk
 			originalPosition: new THREE.Vector3(),
 			originalRotation: new THREE.Euler(),
@@ -269,6 +398,11 @@
 			currentCameraOffset: new THREE.Vector3(),
 			// Cover animation state
 			targetCoverRotation: 0,
+			// Page flip animation state
+			isFlipping: false,
+			flipDirection: 0, // -1 for left (prev), 1 for right (next)
+			flipProgress: 0, // 0 to 1
+			targetFlipRotation: 0,
 			// Animation state
 			isSelected: false,
 			isAnimating: false,
@@ -471,6 +605,40 @@
 		return shelf;
 	}
 
+	async function loadIkeaDesk(): Promise<THREE.Group | null> {
+		const loader = new GLTFLoader();
+
+		return new Promise((resolve) => {
+			loader.load(
+				'/model/ikea_linnmonalex_desk/scene.gltf',
+				(gltf) => {
+					const model = gltf.scene;
+
+					// Scale and position the model next to the existing desk
+					// Existing desk: 2.5 wide, 0.75 tall, 1.2 deep
+					// GLTF models from Sketchfab are typically in cm, scale to match
+					model.scale.set(1.5, 1.5, 1.5);
+					model.position.set(2.8, 0, -4.4);
+
+					// Enable shadows on all meshes
+					model.traverse((child) => {
+						if (child instanceof THREE.Mesh) {
+							child.castShadow = true;
+							child.receiveShadow = true;
+						}
+					});
+
+					resolve(model);
+				},
+				undefined,
+				(error) => {
+					console.error('Error loading IKEA desk model:', error);
+					resolve(null);
+				}
+			);
+		});
+	}
+
 	function setupLighting(): void {
 		// Strong ambient light for overall brightness
 		const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -593,6 +761,12 @@
 		bookshelf.position.set(0, SHELF_Y, -4.85); // Against the wall
 		scene.add(bookshelf);
 
+		// Load IKEA desk model next to the existing desk
+		const ikeaDesk = await loadIkeaDesk();
+		if (ikeaDesk) {
+			scene.add(ikeaDesk);
+		}
+
 		// No chair - player is standing/sitting at desk
 		setupLighting();
 
@@ -650,6 +824,20 @@
 
 	function onKeyDown(event: KeyboardEvent): void {
 		const key = event.key.toLowerCase();
+
+		// When book is open, A/D and arrow keys control page flipping instead of movement
+		if (isBookOpen) {
+			if (key === 'a' || key === 'arrowleft') {
+				event.preventDefault();
+				flipPageLeft();
+				return;
+			} else if (key === 'd' || key === 'arrowright') {
+				event.preventDefault();
+				flipPageRight();
+				return;
+			}
+		}
+
 		keysPressed.add(key);
 
 		// Book action shortcuts when a book is selected
@@ -665,6 +853,165 @@
 			} else if (key === 'c') {
 				handlePutAway();
 			}
+		}
+	}
+
+	function flipPageLeft(): void {
+		// Go back to previous spread (e.g., from page 3 to page 1)
+		if (currentPage <= 1 || !selectedBook) return;
+
+		const userData = selectedBook.userData;
+		if (userData.isFlipping) return;
+
+		// Save the page number that will be shown on the flipping page (the even number being flipped back)
+		const flippingPageNum = currentPage - 1;
+
+		// Update currentPage FIRST so startFlipAnimation can pre-render destination pages
+		const newPage = currentPage - 2;
+		currentPage = newPage < 1 ? 1 : newPage;
+
+		// Start flip animation: a page flips from left back to right
+		startFlipAnimation(selectedBook, 1, flippingPageNum);
+	}
+
+	function flipPageRight(): void {
+		// Go forward to next spread (e.g., from page 1 to page 3)
+		if (currentPage >= TOTAL_PAGES - 1 || !selectedBook) return;
+
+		const userData = selectedBook.userData;
+		if (userData.isFlipping) return;
+
+		// Save the page number that will be shown on the flipping page (the odd number being flipped)
+		const flippingPageNum = currentPage;
+
+		// Update currentPage FIRST so startFlipAnimation can pre-render destination pages
+		const newPage = currentPage + 2;
+		currentPage = newPage > TOTAL_PAGES ? TOTAL_PAGES : newPage;
+
+		// Start flip animation: a page flips from right to left
+		startFlipAnimation(selectedBook, -1, flippingPageNum);
+	}
+
+	function startFlipAnimation(book: THREE.Group, direction: number, pageNum: number): void {
+		const userData = book.userData;
+
+		const flippingPageFront = userData.flippingPageFront as THREE.Mesh;
+		const flippingPageBack = userData.flippingPageBack as THREE.Mesh;
+		const flippingPivot = userData.flippingPagePivot as THREE.Group;
+		const flippingFrontMaterial = userData.flippingPageFrontMaterial as THREE.MeshStandardMaterial;
+		const flippingBackMaterial = userData.flippingPageBackMaterial as THREE.MeshStandardMaterial;
+
+		// Pre-render the destination pages BEFORE starting the flip animation
+		// so they're visible underneath the flipping page
+		const rightPageMaterial = userData.rightPageMaterial as THREE.MeshStandardMaterial;
+		const leftPageMaterial = userData.leftPageMaterial as THREE.MeshStandardMaterial;
+
+		if (direction < 0) {
+			// Flipping right to left (going forward): page with odd number flips to reveal even+odd underneath
+			// currentPage has already been updated to the new value
+			// Show the destination pages (new left and right) underneath
+			const newRightPageNum = currentPage;
+			const newLeftPageNum = currentPage - 1;
+
+			// Update and show the destination right page (will be revealed as flip completes)
+			if (newRightPageNum >= 1 && newRightPageNum <= TOTAL_PAGES) {
+				rightPageMaterial.map = createNumberedPageTexture(newRightPageNum, false);
+				rightPageMaterial.needsUpdate = true;
+				(userData.rightPage as THREE.Mesh).visible = true;
+			}
+
+			// Update and show the destination left page
+			if (newLeftPageNum >= 1 && newLeftPageNum <= TOTAL_PAGES) {
+				leftPageMaterial.map = createNumberedPageTexture(newLeftPageNum, true);
+				leftPageMaterial.needsUpdate = true;
+				(userData.leftPage as THREE.Mesh).visible = true;
+			}
+
+			// The flipping page: front shows OLD right page (odd), back shows next even page
+			// When flipping from page 1 to page 3: front=1, back=2
+			flippingFrontMaterial.map = createNumberedPageTexture(pageNum, false);
+			flippingFrontMaterial.needsUpdate = true;
+			flippingBackMaterial.map = createNumberedPageTexture(pageNum + 1, true);
+			flippingBackMaterial.needsUpdate = true;
+
+			// Start at 0, go to -PI
+			flippingPivot.rotation.y = 0;
+			userData.targetFlipRotation = -Math.PI;
+
+		} else {
+			// Flipping left to right (going backward): page with even number flips back to reveal previous spread
+			// currentPage has already been updated to the new value
+			const newRightPageNum = currentPage;
+			const newLeftPageNum = currentPage - 1;
+
+			// Update and show the destination right page
+			if (newRightPageNum >= 1 && newRightPageNum <= TOTAL_PAGES) {
+				rightPageMaterial.map = createNumberedPageTexture(newRightPageNum, false);
+				rightPageMaterial.needsUpdate = true;
+				(userData.rightPage as THREE.Mesh).visible = true;
+			}
+
+			// Update and show the destination left page (or hide if going back to page 1)
+			if (newLeftPageNum >= 1 && newLeftPageNum <= TOTAL_PAGES) {
+				leftPageMaterial.map = createNumberedPageTexture(newLeftPageNum, true);
+				leftPageMaterial.needsUpdate = true;
+				(userData.leftPage as THREE.Mesh).visible = true;
+			} else {
+				(userData.leftPage as THREE.Mesh).visible = false;
+			}
+
+			// The flipping page: when going backward from page 3 to page 1
+			// Back shows the even page (2), front shows the odd page before it (1)
+			// But we're starting from left side (-PI), so back is facing player initially
+			flippingBackMaterial.map = createNumberedPageTexture(pageNum, true);
+			flippingBackMaterial.needsUpdate = true;
+			flippingFrontMaterial.map = createNumberedPageTexture(pageNum - 1, false);
+			flippingFrontMaterial.needsUpdate = true;
+
+			// Start at -PI, go to 0
+			flippingPivot.rotation.y = -Math.PI;
+			userData.targetFlipRotation = 0;
+		}
+
+		flippingPageFront.visible = true;
+		flippingPageBack.visible = true;
+		userData.isFlipping = true;
+		userData.flipDirection = direction;
+	}
+
+	function updatePageTextures(book: THREE.Group): void {
+		const userData = book.userData;
+
+		// currentPage represents which "spread" we're on
+		// Spread 1: right=1, left=none (inside cover)
+		// Spread 2: right=3, left=2
+		// Spread 3: right=5, left=4
+		// etc.
+		// So rightPageNum = currentPage * 2 - 1, leftPageNum = currentPage * 2 - 2
+
+		// Actually, let's keep it simple: currentPage is the right-hand page number (1, 3, 5, 7, 9)
+		// Left page = currentPage - 1 (0, 2, 4, 6, 8) - page 0 means no left page
+		const rightPageNum = currentPage;
+		const leftPageNum = currentPage - 1;
+
+		// Update right page texture
+		const rightPageMaterial = userData.rightPageMaterial as THREE.MeshStandardMaterial;
+		if (rightPageNum >= 1 && rightPageNum <= TOTAL_PAGES) {
+			rightPageMaterial.map = createNumberedPageTexture(rightPageNum, false);
+			rightPageMaterial.needsUpdate = true;
+			(userData.rightPage as THREE.Mesh).visible = true;
+		} else {
+			(userData.rightPage as THREE.Mesh).visible = false;
+		}
+
+		// Update left page texture (page 0 means inside cover, so hide it)
+		const leftPageMaterial = userData.leftPageMaterial as THREE.MeshStandardMaterial;
+		if (leftPageNum >= 1 && leftPageNum <= TOTAL_PAGES) {
+			leftPageMaterial.map = createNumberedPageTexture(leftPageNum, true);
+			leftPageMaterial.needsUpdate = true;
+			(userData.leftPage as THREE.Mesh).visible = true;
+		} else {
+			(userData.leftPage as THREE.Mesh).visible = false;
 		}
 	}
 
@@ -741,7 +1088,8 @@
 	// In camera local space: -Z is forward (where camera looks), +Z is toward the player's eyes
 	// Y is up/down in camera space, X is left/right
 	const BOOK_CAMERA_OFFSET = new THREE.Vector3(0, -0.2, -0.7); // In front of camera, slightly below center
-	const BOOK_CAMERA_OFFSET_OPEN = new THREE.Vector3(BOOK_WIDTH * 0.5, 0, -0.5); // Shifted right, centered vertically, and closer when open
+	// When open, shift book RIGHT so the spine/back stay in place and pages are centered in view
+	const BOOK_CAMERA_OFFSET_OPEN = new THREE.Vector3(BOOK_WIDTH / 2, 0, -0.5); // Shifted right by half page width
 
 	function attachBookToCamera(book: THREE.Group): void {
 		if (!book || !camera) return;
@@ -883,6 +1231,24 @@
 					frontCoverPivot.rotation.y = userData.targetCoverRotation;
 				}
 			}
+
+			// Animate page flipping
+			if (userData.isFlipping && userData.flippingPagePivot) {
+				const flipPivot = userData.flippingPagePivot as THREE.Group;
+				const targetRot = userData.targetFlipRotation;
+				const flipDiff = targetRot - flipPivot.rotation.y;
+
+				if (Math.abs(flipDiff) > 0.01) {
+					flipPivot.rotation.y += flipDiff * ANIMATION_SPEED * 2;
+				} else {
+					flipPivot.rotation.y = targetRot;
+					// Animation complete - hide both sides of the flipping page
+					// The destination pages were already pre-rendered before animation started
+					userData.isFlipping = false;
+					userData.flippingPageFront.visible = false;
+					userData.flippingPageBack.visible = false;
+				}
+			}
 		}
 
 		// Update cursor based on hover state
@@ -943,6 +1309,9 @@
 
 		const userData = book.userData;
 
+		// Reset to page 1 when opening a book
+		currentPage = 1;
+
 		// Set target rotation for smooth animation
 		userData.targetCoverRotation = -Math.PI; // Open fully flat (180 degrees)
 
@@ -958,6 +1327,9 @@
 			userData.targetPosition.copy(userData.selectedPosition).add(right.multiplyScalar(shiftAmount));
 		}
 
+		// Show the page surfaces and update their textures
+		updatePageTextures(book);
+
 		isBookOpen = true;
 	}
 
@@ -968,6 +1340,12 @@
 
 		// Set target rotation for smooth animation
 		userData.targetCoverRotation = 0; // Close the cover
+
+		// Hide page surfaces
+		(userData.leftPage as THREE.Mesh).visible = false;
+		(userData.rightPage as THREE.Mesh).visible = false;
+		(userData.flippingPageFront as THREE.Mesh).visible = false;
+		(userData.flippingPageBack as THREE.Mesh).visible = false;
 
 		// Return to the centered selected position
 		if (userData.isAttachedToCamera) {
@@ -1190,6 +1568,39 @@
 		</div>
 
 		{#if selectedAlbum}
+			{#if isBookOpen}
+				<!-- Page counter above the book -->
+				<div class="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-base-300/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+					<button
+						class="btn btn-circle btn-sm btn-ghost"
+						onclick={flipPageLeft}
+						disabled={currentPage <= 1}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+						</svg>
+					</button>
+					<span class="text-lg font-medium min-w-[100px] text-center">
+						{#if currentPage === 1}
+							Page 1
+						{:else}
+							Pages {currentPage - 1}-{currentPage}
+						{/if}
+					</span>
+					<button
+						class="btn btn-circle btn-sm btn-ghost"
+						onclick={flipPageRight}
+						disabled={currentPage >= TOTAL_PAGES - 1}
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+						</svg>
+					</button>
+					<span class="text-xs text-base-content/60 ml-2">
+						<span class="badge badge-xs">A/D</span> or <span class="badge badge-xs">←/→</span>
+					</span>
+				</div>
+			{/if}
 			<div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
 				{#if isBookOpen}
 					<button class="btn btn-primary btn-sm" onclick={handleCloseBook}>
