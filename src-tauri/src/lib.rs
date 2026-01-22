@@ -1,8 +1,10 @@
 mod apis;
 mod commands;
 mod db;
+mod evm;
 mod image_cache;
 mod models;
+mod torrent;
 
 use apis::{
     client::ApiClientState,
@@ -14,6 +16,7 @@ use image_cache::{
     cache_image, cache_images_batch, clear_image_cache, get_cache_path, get_cache_stats,
     get_cached_image, ImageCacheState,
 };
+use torrent::TorrentManagerState;
 #[cfg(desktop)]
 use tauri::menu::{Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 #[cfg(desktop)]
@@ -75,6 +78,17 @@ pub fn run() {
 
         // Initialize IGDB API (needs to maintain OAuth token state)
         app.manage(IgdbApi::new());
+
+        // Initialize torrent manager with downloads in app data directory
+        let torrent_download_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())) as Box<dyn std::error::Error>)?
+            .join("downloads");
+        std::fs::create_dir_all(&torrent_download_dir)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+        log::info!("Torrent download directory: {:?}", torrent_download_dir);
+        app.manage(TorrentManagerState::new(torrent_download_dir));
 
         // Build custom menu (desktop only)
         #[cfg(desktop)]
@@ -265,6 +279,31 @@ pub fn run() {
             // API Config
             commands::get_api_config,
             commands::update_api_config,
+            // Torrent
+            torrent::add_torrent,
+            torrent::list_torrents,
+            torrent::pause_torrent,
+            torrent::resume_torrent,
+            torrent::remove_torrent,
+            torrent::get_torrent_download_dir,
+            // EVM
+            commands::evm_get_balance,
+            commands::evm_get_nonce,
+            commands::evm_send_transaction,
+            commands::evm_call,
+            commands::evm_deploy_contract,
+            commands::evm_get_code,
+            commands::evm_set_balance,
+            commands::evm_create_wallet,
+            commands::evm_list_wallets,
+            commands::evm_get_wallet_private_key,
+            commands::evm_get_chain_state,
+            commands::evm_get_block,
+            commands::evm_get_blocks,
+            commands::evm_get_transaction,
+            commands::evm_get_transactions,
+            commands::evm_get_receipt,
+            commands::evm_get_block_transactions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

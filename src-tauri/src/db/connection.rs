@@ -180,6 +180,64 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create questions table: {}", e))?;
 
+        // Create torrents table if not exists
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS torrents (
+                id TEXT PRIMARY KEY,
+                info_hash TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                source TEXT NOT NULL,
+                download_dir TEXT NOT NULL,
+                total_bytes INTEGER NOT NULL DEFAULT 0,
+                downloaded_bytes INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending',
+                error_message TEXT,
+                added_at TEXT NOT NULL,
+                completed_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create torrents table: {}", e))?;
+
+        // Create torrent_files table if not exists
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS torrent_files (
+                id TEXT PRIMARY KEY,
+                torrent_id TEXT NOT NULL,
+                file_index INTEGER NOT NULL,
+                path TEXT NOT NULL,
+                size INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (torrent_id) REFERENCES torrents(id) ON DELETE CASCADE
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create torrent_files table: {}", e))?;
+
+        // Create indexes for torrents
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_torrents_info_hash ON torrents(info_hash)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create torrents index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_torrents_status ON torrents(status)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create torrents status index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_torrent_files_torrent_id ON torrent_files(torrent_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create torrent_files index: {}", e))?;
+
+        // EVM tables
+        Self::create_evm_tables(conn)?;
+
         Ok(())
     }
 
@@ -344,6 +402,130 @@ impl Database {
         }
 
         log::info!("Seeded {} default rarities (WoW-style)", rarities.len());
+        Ok(())
+    }
+
+    /// Create EVM-related tables
+    fn create_evm_tables(conn: &Connection) -> Result<(), String> {
+        // EVM Accounts (EOA + Contracts)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_accounts (
+                address TEXT PRIMARY KEY,
+                balance TEXT NOT NULL DEFAULT '0',
+                nonce INTEGER NOT NULL DEFAULT 0,
+                code_hash TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_accounts table: {}", e))?;
+
+        // Contract Bytecode (separate for efficiency)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_code (
+                code_hash TEXT PRIMARY KEY,
+                bytecode BLOB NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_code table: {}", e))?;
+
+        // Contract Storage (key-value per contract)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_storage (
+                address TEXT NOT NULL,
+                slot TEXT NOT NULL,
+                value TEXT NOT NULL,
+                PRIMARY KEY (address, slot)
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_storage table: {}", e))?;
+
+        // Blocks
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_blocks (
+                number INTEGER PRIMARY KEY,
+                hash TEXT UNIQUE NOT NULL,
+                parent_hash TEXT NOT NULL,
+                state_root TEXT NOT NULL,
+                transactions_root TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                proposer TEXT NOT NULL,
+                signature TEXT
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_blocks table: {}", e))?;
+
+        // Transactions
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_transactions (
+                hash TEXT PRIMARY KEY,
+                block_number INTEGER,
+                from_address TEXT NOT NULL,
+                to_address TEXT,
+                value TEXT NOT NULL,
+                input BLOB,
+                nonce INTEGER NOT NULL,
+                signature TEXT NOT NULL,
+                status INTEGER DEFAULT 0,
+                gas_used INTEGER,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (block_number) REFERENCES evm_blocks(number)
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_transactions table: {}", e))?;
+
+        // Transaction Receipts
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_receipts (
+                tx_hash TEXT PRIMARY KEY,
+                block_number INTEGER NOT NULL,
+                contract_address TEXT,
+                logs BLOB,
+                status INTEGER NOT NULL,
+                gas_used INTEGER NOT NULL,
+                FOREIGN KEY (tx_hash) REFERENCES evm_transactions(hash)
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_receipts table: {}", e))?;
+
+        // Local Wallets (encrypted private keys)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS evm_wallets (
+                address TEXT PRIMARY KEY,
+                private_key BLOB NOT NULL,
+                name TEXT,
+                created_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_wallets table: {}", e))?;
+
+        // Indexes for EVM tables
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_evm_storage_address ON evm_storage(address)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_storage index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_evm_transactions_block ON evm_transactions(block_number)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_transactions index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_evm_transactions_from ON evm_transactions(from_address)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create evm_transactions from index: {}", e))?;
+
+        log::info!("EVM tables created successfully");
         Ok(())
     }
 }

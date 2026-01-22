@@ -40,6 +40,14 @@ futures = "0.3"
 dotenvy = "0.15"
 librqbit = "8.1"
 
+# EVM
+revm = { version = "19", default-features = false, features = ["std", "serde"] }
+alloy-primitives = { version = "0.8", features = ["serde", "rlp"] }
+alloy-sol-types = "0.8"
+alloy-rlp = "0.3"
+k256 = { version = "0.13", features = ["ecdsa", "schnorr"] }
+rand = "0.8"
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
 

@@ -1,6 +1,9 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 use tauri::{command, AppHandle, Emitter, State};
+use librqbit::api::TorrentIdOrHash;
+use librqbit::{Session, TorrentStatsState};
 
 use super::events::{
     TorrentAddedEvent, TorrentFileInfo, TorrentInfo, TorrentProgressEvent, TorrentStatus,
@@ -19,29 +22,9 @@ pub async fn add_torrent(
 
     let custom_dir = download_dir.map(PathBuf::from);
 
-    let (handle_id, info_hash, name, total_bytes, files) = torrent_state
+    let (torrent_id, handle_id, info_hash, name, total_bytes, files) = torrent_state
         .add_torrent(&source, custom_dir)
         .await?;
-
-    // Generate our internal ID
-    let torrent_id = uuid::Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
-
-    // Track the torrent
-    {
-        let mut torrents = torrent_state.torrents().write().await;
-        torrents.insert(
-            torrent_id.clone(),
-            ManagedTorrent {
-                id: torrent_id.clone(),
-                handle_id,
-                info_hash: info_hash.clone(),
-                name: name.clone(),
-                source: source.clone(),
-                added_at: now.clone(),
-            },
-        );
-    }
 
     let file_infos: Vec<TorrentFileInfo> = files
         .into_iter()
@@ -60,9 +43,18 @@ pub async fn add_torrent(
     let _ = app.emit("torrent_added", &event);
 
     // Spawn progress monitoring task
+    let state_clone = TorrentManagerState::new(torrent_state.download_dir().clone());
+    // Copy the session reference
+    {
+        let session = torrent_state.get_session().await;
+        if let Some(s) = session {
+            state_clone.set_session(s).await;
+        }
+    }
+
     spawn_progress_monitor(
         app,
-        torrent_state.inner().clone(),
+        state_clone,
         torrent_id.clone(),
         handle_id,
         info_hash,
@@ -83,87 +75,94 @@ pub async fn list_torrents(
     let mut result = Vec::new();
 
     for managed in torrents.values() {
-        let (status, progress, downloaded, total, dl_speed, ul_speed, peers, seeds, eta, files) =
-            if let Some(ref session) = session {
-                if let Some(handle) = session.get(managed.handle_id) {
-                    let stats = handle.stats();
-                    let info = handle.info();
+        let torrent_info = get_torrent_info(managed, &session, torrent_state.download_dir());
+        result.push(torrent_info);
+    }
 
-                    let total_bytes: u64 = info.iter_file_lengths().map(|l| l as u64).sum();
-                    let downloaded_bytes = stats.total_bytes_downloaded;
-                    let progress = if total_bytes > 0 {
-                        (downloaded_bytes as f64 / total_bytes as f64).min(1.0)
-                    } else {
-                        0.0
-                    };
+    Ok(result)
+}
 
-                    let status = if stats.finished {
-                        TorrentStatus::Completed
-                    } else if handle.is_paused() {
-                        TorrentStatus::Paused
-                    } else if stats.total_bytes_downloaded > 0 {
-                        TorrentStatus::Downloading
-                    } else {
-                        TorrentStatus::Initializing
-                    };
+/// Get information about a single torrent
+fn get_torrent_info(
+    managed: &ManagedTorrent,
+    session: &Option<Arc<Session>>,
+    download_dir: &PathBuf,
+) -> TorrentInfo {
+    let (status, progress, downloaded, total, dl_speed, ul_speed, peers, seeds, eta, files) =
+        if let Some(ref session) = session {
+            if let Some(handle) = session.get(TorrentIdOrHash::Id(managed.handle_id)) {
+                let stats = handle.stats();
 
-                    let eta = if stats.download_speed.human_readable() > 0.0 && !stats.finished {
+                let total_bytes = stats.total_bytes;
+                let downloaded_bytes = stats.progress_bytes;
+                let progress = if total_bytes > 0 {
+                    (downloaded_bytes as f64 / total_bytes as f64).min(1.0)
+                } else {
+                    0.0
+                };
+
+                let status = if stats.finished {
+                    TorrentStatus::Completed
+                } else if matches!(stats.state, TorrentStatsState::Paused) {
+                    TorrentStatus::Paused
+                } else if matches!(stats.state, TorrentStatsState::Initializing) {
+                    TorrentStatus::Initializing
+                } else if matches!(stats.state, TorrentStatsState::Error) {
+                    TorrentStatus::Error
+                } else if stats.progress_bytes > 0 {
+                    TorrentStatus::Downloading
+                } else {
+                    TorrentStatus::Initializing
+                };
+
+                let (dl_speed, ul_speed, peers, seeds, eta) = if let Some(live) = &stats.live {
+                    // Speed is in MiB/s, convert to bytes/s
+                    let dl = (live.download_speed.mbps * 1024.0 * 1024.0) as u64;
+                    let ul = (live.upload_speed.mbps * 1024.0 * 1024.0) as u64;
+                    let peer_stats = &live.snapshot.peer_stats;
+
+                    let eta = if dl > 0 && !stats.finished {
                         let remaining = total_bytes.saturating_sub(downloaded_bytes);
-                        Some((remaining as f64 / stats.download_speed.human_readable()) as u64)
+                        Some(remaining / dl)
                     } else {
                         None
                     };
 
-                    let files: Vec<TorrentFileInfo> = info
-                        .iter_filenames_and_lengths()
-                        .ok()
-                        .map(|iter| {
-                            iter.enumerate()
-                                .map(|(idx, (path, len))| {
-                                    let path_str = path
-                                        .components()
-                                        .map(|c| c.as_os_str().to_string_lossy().to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("/");
-                                    TorrentFileInfo {
-                                        index: idx,
-                                        path: path_str,
-                                        size: len as u64,
-                                    }
-                                })
-                                .collect()
-                        })
-                        .unwrap_or_default();
-
-                    (
-                        status,
-                        progress,
-                        downloaded_bytes,
-                        total_bytes,
-                        stats.download_speed.human_readable() as u64,
-                        stats.upload_speed.human_readable() as u64,
-                        stats.live.peers.connecting as u32 + stats.live.peers.live as u32,
-                        stats.live.peers.seen as u32,
-                        eta,
-                        files,
-                    )
+                    (dl, ul, (peer_stats.connecting + peer_stats.live) as u32, peer_stats.seen as u32, eta)
                 } else {
-                    (
-                        TorrentStatus::Error,
-                        0.0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        None,
-                        vec![],
-                    )
-                }
+                    (0, 0, 0, 0, None)
+                };
+
+                // Get file info
+                let files: Vec<TorrentFileInfo> = handle
+                    .with_metadata(|meta| {
+                        meta.file_infos
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, fi)| TorrentFileInfo {
+                                index: idx,
+                                path: fi.relative_filename.to_string_lossy().to_string(),
+                                size: fi.len,
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                (
+                    status,
+                    progress,
+                    downloaded_bytes,
+                    total_bytes,
+                    dl_speed,
+                    ul_speed,
+                    peers,
+                    seeds,
+                    eta,
+                    files,
+                )
             } else {
                 (
-                    TorrentStatus::Pending,
+                    TorrentStatus::Error,
                     0.0,
                     0,
                     0,
@@ -174,31 +173,42 @@ pub async fn list_torrents(
                     None,
                     vec![],
                 )
-            };
+            }
+        } else {
+            (
+                TorrentStatus::Pending,
+                0.0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                None,
+                vec![],
+            )
+        };
 
-        result.push(TorrentInfo {
-            id: managed.id.clone(),
-            info_hash: managed.info_hash.clone(),
-            name: managed.name.clone(),
-            source: managed.source.clone(),
-            download_dir: torrent_state.download_dir().to_string_lossy().to_string(),
-            status,
-            progress,
-            downloaded_bytes: downloaded,
-            total_bytes: total,
-            download_speed: dl_speed,
-            upload_speed: ul_speed,
-            peers_connected: peers,
-            seeds_connected: seeds,
-            eta_seconds: eta,
-            error_message: None,
-            files,
-            added_at: managed.added_at.clone(),
-            completed_at: None,
-        });
+    TorrentInfo {
+        id: managed.id.clone(),
+        info_hash: managed.info_hash.clone(),
+        name: managed.name.clone(),
+        source: managed.source.clone(),
+        download_dir: download_dir.to_string_lossy().to_string(),
+        status,
+        progress,
+        downloaded_bytes: downloaded,
+        total_bytes: total,
+        download_speed: dl_speed,
+        upload_speed: ul_speed,
+        peers_connected: peers,
+        seeds_connected: seeds,
+        eta_seconds: eta,
+        error_message: None,
+        files,
+        added_at: managed.added_at.clone(),
+        completed_at: None,
     }
-
-    Ok(result)
 }
 
 /// Pause a torrent by ID
@@ -207,18 +217,22 @@ pub async fn pause_torrent(
     torrent_id: String,
     torrent_state: State<'_, TorrentManagerState>,
 ) -> Result<bool, String> {
-    let torrents = torrent_state.torrents().read().await;
-    let managed = torrents
-        .get(&torrent_id)
-        .ok_or_else(|| format!("Torrent not found: {}", torrent_id))?;
+    let handle_id = {
+        let torrents = torrent_state.torrents().read().await;
+        let managed = torrents
+            .get(&torrent_id)
+            .ok_or_else(|| format!("Torrent not found: {}", torrent_id))?;
+        managed.handle_id
+    };
 
     let session = torrent_state
         .get_session()
         .await
         .ok_or("Session not initialized")?;
 
-    if let Some(handle) = session.get(managed.handle_id) {
-        handle.pause();
+    if let Some(handle) = session.get(TorrentIdOrHash::Id(handle_id)) {
+        session.pause(&handle).await
+            .map_err(|e| format!("Failed to pause torrent: {}", e))?;
         log::info!("Paused torrent: {}", torrent_id);
         Ok(true)
     } else {
@@ -232,19 +246,21 @@ pub async fn resume_torrent(
     torrent_id: String,
     torrent_state: State<'_, TorrentManagerState>,
 ) -> Result<bool, String> {
-    let torrents = torrent_state.torrents().read().await;
-    let managed = torrents
-        .get(&torrent_id)
-        .ok_or_else(|| format!("Torrent not found: {}", torrent_id))?;
+    let handle_id = {
+        let torrents = torrent_state.torrents().read().await;
+        let managed = torrents
+            .get(&torrent_id)
+            .ok_or_else(|| format!("Torrent not found: {}", torrent_id))?;
+        managed.handle_id
+    };
 
     let session = torrent_state
         .get_session()
         .await
         .ok_or("Session not initialized")?;
 
-    if let Some(handle) = session.get(managed.handle_id) {
-        handle
-            .start()
+    if let Some(handle) = session.get(TorrentIdOrHash::Id(handle_id)) {
+        session.unpause(&handle).await
             .map_err(|e| format!("Failed to resume torrent: {}", e))?;
         log::info!("Resumed torrent: {}", torrent_id);
         Ok(true)
@@ -270,7 +286,7 @@ pub async fn remove_torrent(
 
     if let Some(session) = torrent_state.get_session().await {
         session
-            .delete(handle_id, delete_files)
+            .delete(TorrentIdOrHash::Id(handle_id), delete_files)
             .await
             .map_err(|e| format!("Failed to delete torrent: {}", e))?;
     }
@@ -323,7 +339,7 @@ fn spawn_progress_monitor(
                 }
             };
 
-            let handle = match session.get(handle_id) {
+            let handle = match session.get(TorrentIdOrHash::Id(handle_id)) {
                 Some(h) => h,
                 None => {
                     log::warn!("Torrent handle {} no longer exists", handle_id);
@@ -332,10 +348,9 @@ fn spawn_progress_monitor(
             };
 
             let stats = handle.stats();
-            let info = handle.info();
 
-            let total_bytes: u64 = info.iter_file_lengths().map(|l| l as u64).sum();
-            let downloaded_bytes = stats.total_bytes_downloaded;
+            let total_bytes = stats.total_bytes;
+            let downloaded_bytes = stats.progress_bytes;
             let progress = if total_bytes > 0 {
                 (downloaded_bytes as f64 / total_bytes as f64).min(1.0)
             } else {
@@ -344,19 +359,34 @@ fn spawn_progress_monitor(
 
             let status = if stats.finished {
                 TorrentStatus::Completed
-            } else if handle.is_paused() {
+            } else if matches!(stats.state, TorrentStatsState::Paused) {
                 TorrentStatus::Paused
-            } else if stats.total_bytes_downloaded > 0 {
+            } else if matches!(stats.state, TorrentStatsState::Initializing) {
+                TorrentStatus::Initializing
+            } else if matches!(stats.state, TorrentStatsState::Error) {
+                TorrentStatus::Error
+            } else if stats.progress_bytes > 0 {
                 TorrentStatus::Downloading
             } else {
                 TorrentStatus::Initializing
             };
 
-            let eta = if stats.download_speed.human_readable() > 0.0 && !stats.finished {
-                let remaining = total_bytes.saturating_sub(downloaded_bytes);
-                Some((remaining as f64 / stats.download_speed.human_readable()) as u64)
+            let (dl_speed, ul_speed, peers, seeds, eta) = if let Some(live) = &stats.live {
+                // Speed is in MiB/s, convert to bytes/s
+                let dl = (live.download_speed.mbps * 1024.0 * 1024.0) as u64;
+                let ul = (live.upload_speed.mbps * 1024.0 * 1024.0) as u64;
+                let peer_stats = &live.snapshot.peer_stats;
+
+                let eta = if dl > 0 && !stats.finished {
+                    let remaining = total_bytes.saturating_sub(downloaded_bytes);
+                    Some(remaining / dl)
+                } else {
+                    None
+                };
+
+                (dl, ul, (peer_stats.connecting + peer_stats.live) as u32, peer_stats.seen as u32, eta)
             } else {
-                None
+                (0, 0, 0, 0, None)
             };
 
             let event = TorrentProgressEvent {
@@ -367,10 +397,10 @@ fn spawn_progress_monitor(
                 progress,
                 downloaded_bytes,
                 total_bytes,
-                download_speed: stats.download_speed.human_readable() as u64,
-                upload_speed: stats.upload_speed.human_readable() as u64,
-                peers_connected: stats.live.peers.connecting as u32 + stats.live.peers.live as u32,
-                seeds_connected: stats.live.peers.seen as u32,
+                download_speed: dl_speed,
+                upload_speed: ul_speed,
+                peers_connected: peers,
+                seeds_connected: seeds,
                 eta_seconds: eta,
                 message: None,
             };

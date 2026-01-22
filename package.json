@@ -57,6 +57,7 @@
 	"dependencies": {
 		"@sveltejs/adapter-static": "^3.0.9",
 		"@tauri-apps/api": "^2.5.0",
+		"trystero": "^0.22.0",
 		"@types/three": "^0.182.0",
 		"audiomotion-analyzer": "^4.5.4",
 		"classnames": "^2.5.1",

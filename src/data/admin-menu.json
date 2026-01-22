@@ -16,6 +16,16 @@
 			"path": "/admin/components"
 		},
 		{
+			"id": "evm",
+			"label": "Evm",
+			"path": "/admin/evm"
+		},
+		{
+			"id": "internet-archive",
+			"label": "Internet Archive",
+			"path": "/admin/internet-archive"
+		},
+		{
 			"id": "metadata",
 			"label": "Metadata",
 			"path": "/admin/metadata"
@@ -36,6 +46,11 @@
 			"path": "/admin/sources"
 		},
 		{
+			"id": "torrent",
+			"label": "Torrent",
+			"path": "/admin/torrent"
+		},
+		{
 			"id": "trivia",
 			"label": "Trivia",
 			"path": "/admin/trivia"
@@ -51,5 +66,5 @@
 			"path": "/admin/wordle"
 		}
 	],
-	"generatedAt": "2026-01-22T12:52:02.533Z"
+	"generatedAt": "2026-01-22T15:07:21.144Z"
 }

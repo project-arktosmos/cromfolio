@@ -17,7 +17,7 @@ pub struct ManagedTorrent {
 /// State manager for the torrent client
 /// Uses librqbit Session for BitTorrent operations
 pub struct TorrentManagerState {
-    session: Arc<RwLock<Option<Session>>>,
+    session: Arc<RwLock<Option<Arc<Session>>>>,
     download_dir: PathBuf,
     /// Map of our internal torrent ID to managed torrent info
     torrents: Arc<RwLock<HashMap<String, ManagedTorrent>>>,
@@ -33,8 +33,14 @@ impl TorrentManagerState {
         }
     }
 
+    /// Set the session (used for cloning state for background tasks)
+    pub async fn set_session(&self, session: Arc<Session>) {
+        let mut guard = self.session.write().await;
+        *guard = Some(session);
+    }
+
     /// Get or initialize the librqbit session
-    pub async fn get_or_init_session(&self) -> Result<Session, String> {
+    pub async fn get_or_init_session(&self) -> Result<Arc<Session>, String> {
         let mut session_guard = self.session.write().await;
 
         if session_guard.is_none() {
@@ -78,11 +84,12 @@ impl TorrentManagerState {
     }
 
     /// Add a torrent from magnet URI or torrent file bytes
+    /// Returns (torrent_id, handle_id, info_hash, name, total_bytes, files)
     pub async fn add_torrent(
         &self,
         source: &str,
         custom_download_dir: Option<PathBuf>,
-    ) -> Result<(usize, String, String, u64, Vec<(usize, String, u64)>), String> {
+    ) -> Result<(String, usize, String, String, u64, Vec<(usize, String, u64)>), String> {
         let session = self.get_or_init_session().await?;
 
         let add_torrent = if source.starts_with("magnet:") {
@@ -95,7 +102,7 @@ impl TorrentManagerState {
         };
 
         let options = AddTorrentOptions {
-            output_folder: custom_download_dir,
+            output_folder: custom_download_dir.map(|p| p.to_string_lossy().to_string()),
             ..Default::default()
         };
 
@@ -104,44 +111,55 @@ impl TorrentManagerState {
             .await
             .map_err(|e| format!("Failed to add torrent: {}", e))?
             .into_handle()
-            .await
-            .map_err(|e| format!("Failed to get torrent handle: {}", e))?;
+            .ok_or("Failed to get torrent handle: torrent is list-only")?;
 
-        let handle_id = handle.id();
-        let info_hash = handle.info_hash().to_string();
+        let handle_id: usize = handle.id().into();
+        let info_hash = handle.info_hash().as_string();
 
-        // Get torrent info
-        let info = handle.info();
-        let name = info
-            .name
-            .as_ref()
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| info_hash.clone());
+        // Get torrent info - may need to wait for metadata
+        let name = handle.name().unwrap_or_else(|| info_hash.clone());
 
-        let total_bytes = info.iter_file_lengths().map(|l| l as u64).sum();
-
-        let files: Vec<(usize, String, u64)> = info
-            .iter_filenames_and_lengths()
-            .ok()
-            .map(|iter| {
-                iter.enumerate()
-                    .map(|(idx, (path, len))| {
-                        let path_str = path
-                            .components()
-                            .map(|c| c.as_os_str().to_string_lossy().to_string())
-                            .collect::<Vec<_>>()
-                            .join("/");
-                        (idx, path_str, len as u64)
+        // Try to get file info
+        let (total_bytes, files) = handle
+            .with_metadata(|meta| {
+                let total: u64 = meta.file_infos.iter().map(|f| f.len).sum();
+                let files: Vec<(usize, String, u64)> = meta
+                    .file_infos
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, fi)| {
+                        (idx, fi.relative_filename.to_string_lossy().to_string(), fi.len)
                     })
-                    .collect()
+                    .collect();
+                (total, files)
             })
-            .unwrap_or_default();
+            .unwrap_or((0, vec![]));
 
-        Ok((handle_id, info_hash, name, total_bytes, files))
+        // Generate our internal ID
+        let torrent_id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // Track the torrent
+        {
+            let mut torrents = self.torrents.write().await;
+            torrents.insert(
+                torrent_id.clone(),
+                ManagedTorrent {
+                    id: torrent_id.clone(),
+                    handle_id,
+                    info_hash: info_hash.clone(),
+                    name: name.clone(),
+                    source: source.to_string(),
+                    added_at: now,
+                },
+            );
+        }
+
+        Ok((torrent_id, handle_id, info_hash, name, total_bytes, files))
     }
 
     /// Get session for stats queries
-    pub async fn get_session(&self) -> Option<Session> {
+    pub async fn get_session(&self) -> Option<Arc<Session>> {
         self.session.read().await.clone()
     }
 }
