@@ -2092,48 +2092,56 @@
 
 		// Calculate the cut line direction in local space (XY plane, Z=0)
 		// Line goes from (leftX, leftY) to (rightX, rightY)
+		// These coordinates are in booster pack local space (already scaled)
 		const lineDir = new THREE.Vector2(rightX - leftX, rightY - leftY).normalize();
 
 		// Normal to the cut line (perpendicular, pointing "up" relative to the line)
 		// Rotate 90 degrees counter-clockwise: (x, y) -> (-y, x)
-		// This gives us the normal pointing towards the "top" side of the cut
 		const normal2D = new THREE.Vector2(-lineDir.y, lineDir.x);
 
-		// Make sure normal points upward (positive Y component on average)
+		// Make sure normal points upward (positive Y component)
 		if (normal2D.y < 0) {
 			normal2D.negate();
 		}
 
-		// The cut plane normal in 3D (in local space of the booster pack)
-		// The cut is in the XY plane, so Z component is 0
+		// The cut plane normal in 3D
 		const localNormal = new THREE.Vector3(normal2D.x, normal2D.y, 0).normalize();
 
-		// A point on the cut line (use midpoint)
+		// Midpoint of the cut line in booster pack local space
 		const midPoint = new THREE.Vector3(
 			(leftX + rightX) / 2,
 			(leftY + rightY) / 2,
 			0
 		);
 
-		// Calculate plane constant: for plane equation dot(normal, point) + d = 0
-		// d = -dot(normal, pointOnPlane)
-		const localConstant = -localNormal.dot(midPoint);
+		console.log('Cut: left(', leftX, leftY, ') right(', rightX, rightY, ') mid:', midPoint, 'normal:', localNormal);
 
-		console.log('Cut plane local - normal:', localNormal, 'constant:', localConstant);
+		// Find the model group inside the booster pack (it has the 0.04 scale)
+		let modelGroup: THREE.Object3D | null = null;
+		selectedBoosterPack.children.forEach((child) => {
+			if (child.scale.x === 0.04) {
+				modelGroup = child;
+			}
+		});
 
-		// Transform the plane to world space
-		// Get the normal matrix (inverse transpose of upper 3x3 of model matrix)
-		const normalMatrix = new THREE.Matrix3().getNormalMatrix(selectedBoosterPack.matrixWorld);
-		const worldNormal = localNormal.clone().applyMatrix3(normalMatrix).normalize();
+		if (!modelGroup) {
+			console.error('Could not find model group');
+			return;
+		}
 
-		// Transform the midpoint to world space
+		// Transform the midpoint from booster pack local space to world space
+		// The midpoint is in booster pack coordinates, need to go through model's transform
 		const worldMidPoint = midPoint.clone();
 		selectedBoosterPack.localToWorld(worldMidPoint);
 
-		// Recalculate constant in world space
+		// Transform the normal to world space
+		const normalMatrix = new THREE.Matrix3().getNormalMatrix(selectedBoosterPack.matrixWorld);
+		const worldNormal = localNormal.clone().applyMatrix3(normalMatrix).normalize();
+
+		// Calculate plane constant in world space
 		const worldConstant = -worldNormal.dot(worldMidPoint);
 
-		console.log('Cut plane world - normal:', worldNormal, 'constant:', worldConstant);
+		console.log('World cut - midPoint:', worldMidPoint, 'normal:', worldNormal, 'constant:', worldConstant);
 
 		// Create clipping planes in world space
 		// cutPlaneForTop: shows geometry ABOVE the cut (clips below)
@@ -2151,8 +2159,24 @@
 		selectedBoosterPack.traverse((child) => {
 			if (child instanceof THREE.Mesh && !child.userData.isCutPlane) {
 				meshesToProcess.push(child);
+				// Log mesh info for debugging
+				const worldPos = new THREE.Vector3();
+				child.getWorldPosition(worldPos);
+
+				// Get bounding box in world space
+				const bbox = new THREE.Box3().setFromObject(child);
+
+				// Test if clipping plane would cut through this mesh
+				const distToPlane = cutPlaneForTop.distanceToPoint(worldPos);
+				console.log('Mesh:', child.name,
+					'center Y:', worldPos.y.toFixed(3),
+					'bbox Y:', bbox.min.y.toFixed(3), 'to', bbox.max.y.toFixed(3),
+					'dist:', distToPlane.toFixed(3));
 			}
 		});
+
+		console.log('Total meshes:', meshesToProcess.length);
+		console.log('Cut plane Y (world midpoint):', worldMidPoint.y.toFixed(3));
 
 		// For each mesh, create a clone - one shows top half, original shows bottom half
 		for (const mesh of meshesToProcess) {
@@ -2162,37 +2186,121 @@
 			// Original mesh becomes bottom part
 			mesh.userData.isBottomPart = true;
 			mesh.userData.originalMaterial = mesh.material;
-			const bottomMat = (mesh.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
-			bottomMat.clippingPlanes = [cutPlaneForBottom];
-			bottomMat.clipShadows = true;
-			bottomMat.side = THREE.DoubleSide;
+
+			// Create a NEW material with clipping for the bottom part
+			const oldMat = mesh.material as THREE.Material;
+			let bottomMat: THREE.Material;
+
+			if (oldMat.type === 'MeshStandardMaterial') {
+				const oldStd = oldMat as THREE.MeshStandardMaterial;
+				bottomMat = new THREE.MeshStandardMaterial({
+					color: oldStd.color,
+					map: oldStd.map,
+					metalness: oldStd.metalness,
+					roughness: oldStd.roughness,
+					side: THREE.DoubleSide,
+					clippingPlanes: [cutPlaneForBottom],
+					clipShadows: true
+				});
+			} else {
+				const oldBasic = oldMat as THREE.MeshBasicMaterial;
+				bottomMat = new THREE.MeshBasicMaterial({
+					color: oldBasic.color,
+					map: oldBasic.map,
+					transparent: oldBasic.transparent,
+					side: THREE.DoubleSide,
+					clippingPlanes: [cutPlaneForBottom],
+					clipShadows: true
+				});
+			}
 			mesh.material = bottomMat;
 			bottomMeshes.push(mesh);
 
 			// Clone becomes top part (add to same parent to keep in same space)
-			const topClone = mesh.clone(true);
+			const topClone = mesh.clone(false); // Don't deep clone
 			topClone.userData.isTopPart = true;
 			topClone.userData.originalPosition = mesh.position.clone();
-			const topMat = (topClone.material as THREE.Material).clone() as THREE.MeshStandardMaterial;
-			topMat.clippingPlanes = [cutPlaneForTop];
-			topMat.clipShadows = true;
-			topMat.side = THREE.DoubleSide;
+
+			// Create a NEW material with clipping for the top part
+			let topMat: THREE.Material;
+			if (oldMat.type === 'MeshStandardMaterial') {
+				const oldStd = oldMat as THREE.MeshStandardMaterial;
+				topMat = new THREE.MeshStandardMaterial({
+					color: oldStd.color,
+					map: oldStd.map,
+					metalness: oldStd.metalness,
+					roughness: oldStd.roughness,
+					side: THREE.DoubleSide,
+					clippingPlanes: [cutPlaneForTop],
+					clipShadows: true
+				});
+			} else {
+				const oldBasic = oldMat as THREE.MeshBasicMaterial;
+				topMat = new THREE.MeshBasicMaterial({
+					color: oldBasic.color,
+					map: oldBasic.map,
+					transparent: oldBasic.transparent,
+					side: THREE.DoubleSide,
+					clippingPlanes: [cutPlaneForTop],
+					clipShadows: true
+				});
+			}
 			topClone.material = topMat;
 
 			// Add clone as sibling (same parent as original)
 			mesh.parent?.add(topClone);
 			topMeshes.push(topClone);
+
+			console.log('Applied clipping to', mesh.name || 'unnamed', '- bottom planes:', (mesh.material as any).clippingPlanes?.length, 'top planes:', (topClone.material as any).clippingPlanes?.length);
 		}
 
-		// Store references for cleanup
+		// Store references for cleanup and for updating clipping planes each frame
 		selectedBoosterPack.userData.topMeshes = topMeshes;
 		selectedBoosterPack.userData.bottomMeshes = bottomMeshes;
 		selectedBoosterPack.userData.originalPositions = originalPositions;
+		selectedBoosterPack.userData.cutPlaneForTop = cutPlaneForTop;
+		selectedBoosterPack.userData.cutPlaneForBottom = cutPlaneForBottom;
+		selectedBoosterPack.userData.localCutNormal = localNormal.clone();
+		selectedBoosterPack.userData.localCutPoint = midPoint.clone();
+		selectedBoosterPack.userData.modelGroup = modelGroup;
 
 		console.log('Split complete. Top meshes:', topMeshes.length, 'Bottom meshes:', bottomMeshes.length);
 
 		// Animate meshes separating along the cut normal
 		animatePackOpen(localNormal, topMeshes, bottomMeshes);
+	}
+
+	// Call this in the render loop to update clipping planes as the pack moves
+	function updateBoosterPackClipping(): void {
+		if (!selectedBoosterPack || !isPackOpened) return;
+
+		const cutPlaneForTop = selectedBoosterPack.userData.cutPlaneForTop as THREE.Plane | undefined;
+		const cutPlaneForBottom = selectedBoosterPack.userData.cutPlaneForBottom as THREE.Plane | undefined;
+		const localNormal = selectedBoosterPack.userData.localCutNormal as THREE.Vector3 | undefined;
+		const localPoint = selectedBoosterPack.userData.localCutPoint as THREE.Vector3 | undefined;
+		const modelGroup = selectedBoosterPack.userData.modelGroup as THREE.Object3D | undefined;
+
+		if (!cutPlaneForTop || !cutPlaneForBottom || !localNormal || !localPoint || !modelGroup) return;
+
+		// Transform local cut plane to world space using the MODEL GROUP's transform
+		// (not the booster pack, because the meshes are children of the model group)
+		const worldPoint = localPoint.clone();
+		// First transform from booster pack local to model local (account for model's scale)
+		// The model has scale 0.04, so model local coords = booster local / 0.04
+		// But localToWorld will handle this if we use the model group
+		selectedBoosterPack.localToWorld(worldPoint);
+
+		const normalMatrix = new THREE.Matrix3().getNormalMatrix(selectedBoosterPack.matrixWorld);
+		const worldNormal = localNormal.clone().applyMatrix3(normalMatrix).normalize();
+
+		const worldConstant = -worldNormal.dot(worldPoint);
+
+		// Update the clipping planes
+		cutPlaneForTop.normal.copy(worldNormal);
+		cutPlaneForTop.constant = worldConstant;
+
+		cutPlaneForBottom.normal.copy(worldNormal).negate();
+		cutPlaneForBottom.constant = -worldConstant;
 	}
 
 	function animatePackOpen(cutNormal: THREE.Vector3, topMeshes: THREE.Mesh[], bottomMeshes: THREE.Mesh[]): void {
@@ -2804,6 +2912,9 @@
 		if (container) {
 			container.style.cursor = hoveredBook ? 'pointer' : 'crosshair';
 		}
+
+		// Update booster pack clipping planes (they need to track camera movement)
+		updateBoosterPackClipping();
 
 		renderer.render(scene, camera);
 	}
