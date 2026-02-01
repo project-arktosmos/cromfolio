@@ -97,10 +97,22 @@ private collections
 
 ## Collection Types
 
-### Tv Show (standard)
-- season posters
-- main cast shots
-- 
+### Movie & TV Prize
+- use the award list collection api to produce an album for each year's nominees and winners
+    - assemble a single page per movie, using 4 of its images
+        - poster
+        - backdrop
+        - director?
+        - protagonist?
+        - nominee?
 
-### Movie List
-- 
+### Anime
+- each anime gets their own album
+    - has anime posters
+    - has character imagery
+
+### Sport Leagues
+- similar to the awards one
+- need to find a proper way to fetch the team and players data
+- make one for each sport, competition and year
+

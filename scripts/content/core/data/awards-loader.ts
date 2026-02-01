@@ -1,26 +1,19 @@
-import { AWARD_EVENTS } from '$data/awards';
+/**
+ * Awards data loader for CLI scripts
+ * Loads award event JSON files from the filesystem
+ */
 
-// Types for award data
-export interface AwardCategory {
-	nominee: string[];
-	winner: string[];
-}
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { AwardEvent, EventInfo } from '../types.js';
 
-export interface AwardType {
-	[categoryName: string]: AwardCategory;
-}
-
-export interface AwardYear {
-	[awardType: string]: AwardType;
-}
-
-export interface AwardEvent {
-	[year: string]: AwardYear;
-}
-
-export interface EventInfo {
-	id: string;
-	name: string;
+// Get the path to src/data/awards relative to this file
+function getAwardsDir(): string {
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = dirname(__filename);
+	// scripts/content/core/data -> src/data/awards
+	return join(__dirname, '../../../../src/data/awards');
 }
 
 // Static event metadata (extracted from comments in event_ids.yml)
@@ -66,10 +59,25 @@ export function getAwardEvents(): EventInfo[] {
 }
 
 /**
- * Load award data for a specific event
+ * Get event name by ID
+ */
+export function getEventName(eventId: string): string {
+	return EVENT_NAMES[eventId] || eventId;
+}
+
+/**
+ * Load award data for a specific event from JSON file
  */
 export function loadAwardEvent(eventId: string): AwardEvent | null {
-	return AWARD_EVENTS[eventId] ?? null;
+	const awardsDir = getAwardsDir();
+	const filePath = join(awardsDir, `${eventId}.json`);
+
+	if (!existsSync(filePath)) {
+		return null;
+	}
+
+	const content = readFileSync(filePath, 'utf-8');
+	return JSON.parse(content) as AwardEvent;
 }
 
 /**
@@ -109,15 +117,8 @@ export function getNomineesForCategory(
 	year: string,
 	awardType: string,
 	category: string
-): AwardCategory | null {
+): { nominee: string[]; winner: string[] } | null {
 	return event[year]?.[awardType]?.[category] || null;
-}
-
-/**
- * Get event name by ID
- */
-export function getEventName(eventId: string): string {
-	return EVENT_NAMES[eventId] || eventId;
 }
 
 /**
@@ -138,4 +139,19 @@ export function formatAwardTypeName(awardType: string): string {
 		.split(' ')
 		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 		.join(' ');
+}
+
+/**
+ * List all available event IDs
+ */
+export function listAvailableEventIds(): string[] {
+	const awardsDir = getAwardsDir();
+
+	if (!existsSync(awardsDir)) {
+		return [];
+	}
+
+	return readdirSync(awardsDir)
+		.filter((file) => file.endsWith('.json'))
+		.map((file) => file.replace('.json', ''));
 }

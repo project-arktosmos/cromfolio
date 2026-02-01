@@ -125,8 +125,6 @@
 	// Delete a collection
 	async function handleDeleteCollection(collection: Collection, event: MouseEvent) {
 		event.stopPropagation();
-		if (!confirm(`Delete collection "${collection.title}"?`)) return;
-
 		const success = await deleteCollection(collection.id);
 		if (success) {
 			collections = collections.filter((c) => c.id !== collection.id);
@@ -201,10 +199,11 @@
 			return;
 		}
 
-		// Create collection with source title
+		// Create collection with source title and cover image
 		const newCollection = await createCollection({
 			title: selectedSource.title,
-			description: `Auto-generated from source: ${selectedSource.title}`
+			description: `Auto-generated from source: ${selectedSource.title}`,
+			coverImage: selectedSource.coverImage
 		});
 
 		if (newCollection) {

@@ -1,0 +1,1111 @@
+{
+  "2014": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt2181831",
+          "tt2350496",
+          "tt2356180"
+        ],
+        "winner": [
+          "tt2350496",
+          "tt2356180"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt2215477",
+          "tt2224317",
+          "tt2350496",
+          "tt3322420"
+        ],
+        "winner": [
+          "tt3322420"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt1773764",
+          "tt2334779",
+          "tt2350496",
+          "tt2356180"
+        ],
+        "winner": [
+          "tt2356180"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt2215477",
+          "tt2224317",
+          "tt2356180"
+        ],
+        "winner": [
+          "tt2356180"
+        ]
+      },
+      "best short film": {
+        "nominee": [
+          "tt2386273"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2015": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt3390572",
+          "tt3767372"
+        ],
+        "winner": [
+          "tt3390572",
+          "tt3767372"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt2140465",
+          "tt2929690",
+          "tt3495030",
+          "tt3742284",
+          "tt3767372"
+        ],
+        "winner": [
+          "tt3495030"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt3767372"
+        ],
+        "winner": [
+          "tt3767372"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt3767372"
+        ],
+        "winner": [
+          "tt3767372"
+        ]
+      }
+    }
+  },
+  "2016": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt3495026",
+          "tt3735246",
+          "tt5121000",
+          "tt5662932"
+        ],
+        "winner": [
+          "tt5662932"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt3043252",
+          "tt3735246",
+          "tt4948632",
+          "tt5286444"
+        ],
+        "winner": [
+          "tt5286444"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt3043252",
+          "tt3735246",
+          "tt4881362",
+          "tt4900716",
+          "tt5286444"
+        ],
+        "winner": [
+          "tt3043252"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt3735246",
+          "tt4900716",
+          "tt5286444",
+          "tt5662932"
+        ],
+        "winner": [
+          "tt4900716"
+        ]
+      }
+    }
+  },
+  "2017": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt4169250",
+          "tt5074352",
+          "tt5460276",
+          "tt5571734",
+          "tt5997928",
+          "tt6206564"
+        ],
+        "winner": [
+          "tt4169250"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt4807830",
+          "tt5477608",
+          "tt5578722",
+          "tt5934324",
+          "tt5946128"
+        ],
+        "winner": [
+          "tt4807830"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt4807830",
+          "tt4849438",
+          "tt5074352",
+          "tt5593892",
+          "tt5918074",
+          "tt6206564",
+          "tt6289320",
+          "tt8869484"
+        ],
+        "winner": [
+          "tt5074352"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt4169250",
+          "tt4559006",
+          "tt4832640",
+          "tt5571734",
+          "tt5611648"
+        ],
+        "winner": [
+          "tt5571734"
+        ]
+      }
+    },
+    "honorary award": {
+      "best actor": {
+        "nominee": [
+          "tt6206564"
+        ],
+        "winner": [
+          "tt6206564"
+        ]
+      }
+    }
+  },
+  "2018": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt2302416",
+          "tt5935704",
+          "tt6452574",
+          "tt7218518",
+          "tt7570242",
+          "tt7700730",
+          "tt8188872"
+        ],
+        "winner": [
+          "tt6452574"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt5935704",
+          "tt6108090",
+          "tt6588966",
+          "tt6791730",
+          "tt7098658",
+          "tt7142506",
+          "tt7297966",
+          "tt7465992"
+        ],
+        "winner": [
+          "tt6588966"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt2302416",
+          "tt3823392",
+          "tt5935704",
+          "tt6108090",
+          "tt6452574",
+          "tt6588966",
+          "tt6791730",
+          "tt7098658",
+          "tt7142506",
+          "tt7218518",
+          "tt7297966",
+          "tt7700730",
+          "tt7838150"
+        ],
+        "winner": [
+          "tt6452574"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt5935704",
+          "tt6108090",
+          "tt6452574",
+          "tt6588966",
+          "tt7098658",
+          "tt7218518",
+          "tt7392212",
+          "tt7465992"
+        ],
+        "winner": [
+          "tt6452574"
+        ]
+      },
+      "best supporting performance": {
+        "nominee": [
+          "tt2302416",
+          "tt3823392",
+          "tt6108090",
+          "tt6452574",
+          "tt7465992",
+          "tt7981260"
+        ],
+        "winner": [
+          "tt3823392",
+          "tt6452574"
+        ]
+      }
+    },
+    "best indie film": {
+      "best indie film": {
+        "nominee": [
+          "tt3823392"
+        ],
+        "winner": [
+          "tt3823392"
+        ]
+      }
+    },
+    "best director": {
+      "best director": {
+        "nominee": [
+          "tt3823392"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2019": {
+    "best short film": {
+      "best short film": {
+        "nominee": [
+          "tt1394169",
+          "tt8334620"
+        ],
+        "winner": [
+          "tt1394169"
+        ]
+      }
+    },
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt2395469",
+          "tt7019942",
+          "tt8108198",
+          "tt8130968",
+          "tt8291224",
+          "tt8476998",
+          "tt8857610"
+        ],
+        "winner": [
+          "tt7019942"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt2395469",
+          "tt7725596",
+          "tt8108198",
+          "tt8779064",
+          "tt8972488",
+          "tt9828912",
+          "tt9834062"
+        ],
+        "winner": [
+          "tt8108198"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt2395469",
+          "tt7019942",
+          "tt8108198",
+          "tt8108200",
+          "tt8659050",
+          "tt8972488",
+          "tt9828912"
+        ],
+        "winner": [
+          "tt8108198"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt2395469",
+          "tt7019942",
+          "tt7147540",
+          "tt7725596",
+          "tt8108198"
+        ],
+        "winner": [
+          "tt2395469"
+        ]
+      },
+      "best indie film": {
+        "nominee": [
+          "tt8659050"
+        ],
+        "winner": [
+          "tt8659050"
+        ]
+      }
+    },
+    "best documentary": {
+      "best documentary": {
+        "nominee": [
+          "tt9058890"
+        ],
+        "winner": []
+      }
+    },
+    "best indie film": {
+      "best indie film": {
+        "nominee": [
+          "tt8476998"
+        ],
+        "winner": []
+      }
+    },
+    "best actor": {
+      "best actor": {
+        "nominee": [
+          "tt8476998"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2020": {
+    "best short film": {
+      "best short film": {
+        "nominee": [
+          "tt10900408",
+          "tt11860854",
+          "tt14411970",
+          "tt12471154",
+          "tt9230252"
+        ],
+        "winner": [
+          "tt11860854",
+          "tt14411970"
+        ]
+      }
+    },
+    "beyond bollywood": {
+      "beyond bollywood": {
+        "nominee": [
+          "tt10247160",
+          "tt10370116",
+          "tt10428284",
+          "tt10632744",
+          "tt10727128",
+          "tt10919600",
+          "tt10927784",
+          "tt11200922",
+          "tt11591490",
+          "tt11737756",
+          "tt11755040",
+          "tt13038150",
+          "tt13400154",
+          "tt8721556",
+          "tt8733760",
+          "tt8747492",
+          "tt8747560",
+          "tt9890322"
+        ],
+        "winner": []
+      }
+    },
+    "best documentary": {
+      "best documentary": {
+        "nominee": [
+          "tt10895566"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2021": {
+    "best short film": {
+      "best short film": {
+        "nominee": [
+          "tt14657104"
+        ],
+        "winner": [
+          "tt14657104"
+        ]
+      }
+    },
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt10189514",
+          "tt7212754"
+        ],
+        "winner": [
+          "tt10189514"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt10515526",
+          "tt10741542",
+          "tt12381206",
+          "tt12923150",
+          "tt14412532"
+        ],
+        "winner": [
+          "tt10741542"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt10741542",
+          "tt13299890",
+          "tt9890308"
+        ],
+        "winner": []
+      },
+      "best film": {
+        "nominee": [
+          "tt10909266"
+        ],
+        "winner": []
+      },
+      "best short film": {
+        "nominee": [
+          "tt10709592"
+        ],
+        "winner": [
+          "tt10709592"
+        ]
+      }
+    },
+    "beyond bollywood": {
+      "beyond bollywood": {
+        "nominee": [
+          "tt11612144"
+        ],
+        "winner": []
+      }
+    },
+    "best documentary": {
+      "best documentary": {
+        "nominee": [
+          "tt9015962",
+          "tt13021736"
+        ],
+        "winner": []
+      }
+    },
+    "best indie film": {
+      "best indie film": {
+        "nominee": [
+          "tt12312912",
+          "tt12670516"
+        ],
+        "winner": [
+          "tt12312912"
+        ]
+      }
+    },
+    "best director": {
+      "best director": {
+        "nominee": [
+          "tt12312912",
+          "tt10909266"
+        ],
+        "winner": []
+      },
+      "honorary mention": {
+        "nominee": [
+          "tt12670516"
+        ],
+        "winner": [
+          "tt12670516"
+        ]
+      }
+    },
+    "iffm disruptor award": {
+      "iffm disruptor award": {
+        "nominee": [
+          "tt10909266"
+        ],
+        "winner": [
+          "tt10909266"
+        ]
+      }
+    },
+    "best actress": {
+      "best actress": {
+        "nominee": [
+          "tt12312912"
+        ],
+        "winner": []
+      }
+    },
+    "honorary award": {
+      "best actress": {
+        "nominee": [
+          "tt13299890"
+        ],
+        "winner": [
+          "tt13299890"
+        ]
+      }
+    },
+    "iff award - streaming platform": {
+      "best actor in a series": {
+        "nominee": [
+          "tt11117570",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best actress in a series": {
+        "nominee": [
+          "tt10238792",
+          "tt10655506",
+          "tt12719250",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      }
+    }
+  },
+  "2022": {
+    "best short film": {
+      "best short film": {
+        "nominee": [
+          "tt15863540",
+          "tt21006082"
+        ],
+        "winner": []
+      }
+    },
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt10280296",
+          "tt11934846",
+          "tt14107554",
+          "tt15097216",
+          "tt15347602",
+          "tt16728368",
+          "tt7268738",
+          "tt7518786"
+        ],
+        "winner": [
+          "tt7518786"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt10083340",
+          "tt10733228",
+          "tt11934846",
+          "tt12381206",
+          "tt14412532",
+          "tt15097216",
+          "tt15361028"
+        ],
+        "winner": [
+          "tt15361028"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt10083340",
+          "tt10280296",
+          "tt14412532",
+          "tt15097216",
+          "tt15361028",
+          "tt16728368",
+          "tt7518786"
+        ],
+        "winner": [
+          "tt10280296",
+          "tt14412532"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt10083340",
+          "tt10280296",
+          "tt11934846",
+          "tt14412532",
+          "tt15097216",
+          "tt15125812",
+          "tt7268738",
+          "tt7518786"
+        ],
+        "winner": [
+          "tt7518786"
+        ]
+      },
+      "best indie film": {
+        "nominee": [
+          "tt19719976"
+        ],
+        "winner": [
+          "tt19719976"
+        ]
+      },
+      "disruptor in cinema award": {
+        "nominee": [
+          "tt12861850"
+        ],
+        "winner": [
+          "tt12861850"
+        ]
+      },
+      "leadership in cinema award": {
+        "nominee": [
+          "tt14107554"
+        ],
+        "winner": [
+          "tt14107554"
+        ]
+      }
+    },
+    "beyond bollywood": {
+      "australian premiere": {
+        "nominee": [
+          "tt13895976"
+        ],
+        "winner": []
+      }
+    },
+    "iff award - streaming platform": {
+      "best actor in a series": {
+        "nominee": [
+          "tt12714854",
+          "tt14160712",
+          "tt14167344",
+          "tt19355272",
+          "tt6522580"
+        ],
+        "winner": [
+          "tt12714854"
+        ]
+      },
+      "best actress in a series": {
+        "nominee": [
+          "tt12714854",
+          "tt14160684",
+          "tt14167344",
+          "tt19355272",
+          "tt6522580",
+          "tt9447956"
+        ],
+        "winner": [
+          "tt14160684"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt12714854",
+          "tt14160684",
+          "tt14160712",
+          "tt14167344",
+          "tt6522580",
+          "tt9447956"
+        ],
+        "winner": [
+          "tt12714854"
+        ]
+      }
+    }
+  },
+  "2023": {
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt10701074",
+          "tt11112532",
+          "tt12844910",
+          "tt14152140",
+          "tt15128068",
+          "tt15327088",
+          "tt18951176",
+          "tt20850406",
+          "tt21998526",
+          "tt22444570",
+          "tt23864864",
+          "tt7782402"
+        ],
+        "winner": [
+          "tt11112532"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt10233718",
+          "tt10701074",
+          "tt12670516",
+          "tt14152140",
+          "tt14295590",
+          "tt15567704",
+          "tt15680228",
+          "tt18413766",
+          "tt20850406",
+          "tt21261388",
+          "tt22444570"
+        ],
+        "winner": [
+          "tt14295590"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt10701074",
+          "tt11112532",
+          "tt12844910",
+          "tt15128068",
+          "tt21638044",
+          "tt21741994",
+          "tt21998526",
+          "tt22444570",
+          "tt23337204",
+          "tt23864864",
+          "tt26541225",
+          "tt27502523",
+          "tt7782402"
+        ],
+        "winner": [
+          "tt21741994"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt10701074",
+          "tt12844910",
+          "tt14099334",
+          "tt14152140",
+          "tt15128068",
+          "tt15327088",
+          "tt20850406",
+          "tt21848358",
+          "tt22444570",
+          "tt6277462"
+        ],
+        "winner": [
+          "tt20850406"
+        ]
+      }
+    },
+    "best documentary": {
+      "best documentary": {
+        "nominee": [
+          "tt12937566",
+          "tt18335580",
+          "tt21688772"
+        ],
+        "winner": [
+          "tt21688772"
+        ]
+      }
+    },
+    "best indie film": {
+      "best indie film": {
+        "nominee": [
+          "tt15500608",
+          "tt21741994",
+          "tt23864864"
+        ],
+        "winner": []
+      }
+    },
+    "honorary award": {
+      "rainbow stories award": {
+        "nominee": [
+          "tt23326218"
+        ],
+        "winner": [
+          "tt23326218"
+        ]
+      }
+    },
+    "iff award - streaming platform": {
+      "best actor in a series": {
+        "nominee": [
+          "tt11611698",
+          "tt12405230",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804"
+        ],
+        "winner": [
+          "tt19868314"
+        ]
+      },
+      "best actress in a series": {
+        "nominee": [
+          "tt11611698",
+          "tt19868314",
+          "tt19868804",
+          "tt20319332",
+          "tt20873118",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt11611698"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt11611698",
+          "tt11905720",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804",
+          "tt20319332",
+          "tt20873118",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      }
+    }
+  },
+  "2024": {
+    "best short film": {
+      "best short film": {
+        "nominee": [
+          "tt26439350",
+          "tt26786392",
+          "tt30836390",
+          "tt31639673",
+          "tt32461304"
+        ],
+        "winner": [
+          "tt26439350"
+        ]
+      },
+      "special mention": {
+        "nominee": [
+          "tt36292483"
+        ],
+        "winner": [
+          "tt36292483"
+        ]
+      }
+    },
+    "iff award": {
+      "best actor": {
+        "nominee": [
+          "tt10786774",
+          "tt14993250",
+          "tt15354916",
+          "tt15428134",
+          "tt21626284",
+          "tt22818604",
+          "tt23849204",
+          "tt26658272",
+          "tt26660021",
+          "tt27470893",
+          "tt28541110"
+        ],
+        "winner": [
+          "tt27470893"
+        ]
+      },
+      "best actress": {
+        "nominee": [
+          "tt14993250",
+          "tt18277182",
+          "tt21361340",
+          "tt21626284",
+          "tt22818604",
+          "tt27032419",
+          "tt29301456",
+          "tt29451582",
+          "tt32537777"
+        ],
+        "winner": []
+      },
+      "best director": {
+        "nominee": [
+          "tt14993250",
+          "tt15428134",
+          "tt23849204",
+          "tt26548265",
+          "tt26658272",
+          "tt27431598",
+          "tt27470893"
+        ],
+        "winner": [
+          "tt27470893"
+        ]
+      },
+      "best director - critic": {
+        "nominee": [
+          "tt11992424",
+          "tt18277182",
+          "tt21626284",
+          "tt28297544",
+          "tt28364877",
+          "tt29295178",
+          "tt29451496",
+          "tt32537777"
+        ],
+        "winner": []
+      },
+      "best film": {
+        "nominee": [
+          "tt14993250",
+          "tt15354916",
+          "tt15428134",
+          "tt22818604",
+          "tt23849204",
+          "tt26548265",
+          "tt26658272",
+          "tt27470893",
+          "tt28288786"
+        ],
+        "winner": []
+      },
+      "best film - critic": {
+        "nominee": [
+          "tt11992424",
+          "tt18277182",
+          "tt21626284",
+          "tt26542557",
+          "tt28297544",
+          "tt28541110",
+          "tt29451582"
+        ],
+        "winner": []
+      }
+    },
+    "beyond bollywood": {
+      "australian premiere": {
+        "nominee": [
+          "tt31102368"
+        ],
+        "winner": []
+      }
+    },
+    "best documentary": {
+      "best documentary": {
+        "nominee": [
+          "tt32058765"
+        ],
+        "winner": []
+      }
+    },
+    "best indie film": {
+      "best indie film": {
+        "nominee": [
+          "tt9885000"
+        ],
+        "winner": []
+      }
+    },
+    "iff award - streaming platform": {
+      "best actor in a series": {
+        "nominee": [
+          "tt12004706",
+          "tt16296870",
+          "tt17524566",
+          "tt24364990",
+          "tt27853283",
+          "tt31701070",
+          "tt6494622"
+        ],
+        "winner": []
+      },
+      "best actress in a series": {
+        "nominee": [
+          "tt12004706",
+          "tt19868374",
+          "tt20319332",
+          "tt22297178",
+          "tt24364990",
+          "tt27853283",
+          "tt6494622"
+        ],
+        "winner": []
+      },
+      "best series": {
+        "nominee": [
+          "tt12004706",
+          "tt15204292",
+          "tt16296870",
+          "tt19868374",
+          "tt24364990",
+          "tt27853283",
+          "tt6494622"
+        ],
+        "winner": []
+      },
+      "best short": {
+        "nominee": [
+          "tt31068033"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2025": {
+    "iff award": {
+      "best actress": {
+        "nominee": [
+          "tt15245240",
+          "tt27510174",
+          "tt33575372",
+          "tt33581310",
+          "tt33746407",
+          "tt35144943",
+          "tt35503482",
+          "tt36733421"
+        ],
+        "winner": [
+          "tt33581310"
+        ]
+      }
+    }
+  }
+}

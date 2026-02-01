@@ -1,0 +1,3026 @@
+{
+  "2020": {
+    "popular award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt11854694",
+          "tt11912196",
+          "tt12405230",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt10174244",
+          "tt12004706",
+          "tt12387500",
+          "tt6522580",
+          "tt8305218"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best actor: web original film": {
+        "nominee": [
+          "tt10671436",
+          "tt12567088",
+          "tt8472964",
+          "tt8476998",
+          "tt9766310"
+        ],
+        "winner": [
+          "tt12567088"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt11536424",
+          "tt12405230",
+          "tt12448030",
+          "tt8242548",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12448030"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt12207704",
+          "tt12387500",
+          "tt6522580",
+          "tt7675948",
+          "tt8242548"
+        ],
+        "winner": [
+          "tt6522580"
+        ]
+      },
+      "best actress: web original film": {
+        "nominee": [
+          "tt10062614",
+          "tt10645878",
+          "tt11651780",
+          "tt12393526",
+          "tt12567088"
+        ],
+        "winner": [
+          "tt12393526"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt11854694",
+          "tt11912196",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt10183688",
+          "tt11262978",
+          "tt12241424",
+          "tt12417942",
+          "tt14490450"
+        ],
+        "winner": [
+          "tt12417942"
+        ]
+      },
+      "best series - comedy": {
+        "nominee": [
+          "tt11262978",
+          "tt11518300",
+          "tt12004706",
+          "tt6522580"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best series - drama": {
+        "nominee": [
+          "tt11854694",
+          "tt11912196",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best supporting actor - drama": {
+        "nominee": [
+          "tt11912196",
+          "tt12405230",
+          "tt6077448",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt12405230"
+        ]
+      },
+      "best supporting actor: comedy": {
+        "nominee": [
+          "tt11947358",
+          "tt12004706",
+          "tt12405230"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best supporting actor: web original film": {
+        "nominee": [
+          "tt10062614",
+          "tt11651780",
+          "tt12393526",
+          "tt12567088",
+          "tt9766310"
+        ],
+        "winner": [
+          "tt12393526"
+        ]
+      },
+      "best supporting actress - drama": {
+        "nominee": [
+          "tt11854694",
+          "tt12448030",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt11854694"
+        ]
+      },
+      "best supporting actress: comedy": {
+        "nominee": [
+          "tt10462858",
+          "tt11407524",
+          "tt12004706",
+          "tt8305218"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best supporting actress: web original film": {
+        "nominee": [
+          "tt10062614",
+          "tt10230404",
+          "tt12567088",
+          "tt8472964"
+        ],
+        "winner": [
+          "tt8472964"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt11651780",
+          "tt12393526",
+          "tt12567088",
+          "tt8472964",
+          "tt8476998"
+        ],
+        "winner": [
+          "tt12567088"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt6522580"
+        ],
+        "winner": [
+          "tt6522580"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt7675948"
+        ],
+        "winner": [
+          "tt7675948"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      }
+    },
+    "technical award": {
+      "best art direction": {
+        "nominee": [
+          "tt10289938",
+          "tt11102296",
+          "tt11854694",
+          "tt12448030",
+          "tt8069036"
+        ],
+        "winner": [
+          "tt10289938"
+        ]
+      },
+      "best background music": {
+        "nominee": [
+          "tt11102296",
+          "tt11854694",
+          "tt12448030",
+          "tt6077448",
+          "tt8069036"
+        ],
+        "winner": [
+          "tt6077448"
+        ]
+      },
+      "best cinematography": {
+        "nominee": [
+          "tt10651790",
+          "tt11102296",
+          "tt11725706",
+          "tt6077448",
+          "tt8069036"
+        ],
+        "winner": [
+          "tt6077448"
+        ]
+      },
+      "best costume design": {
+        "nominee": [
+          "tt10289938",
+          "tt11854694",
+          "tt12448030",
+          "tt6077448",
+          "tt9193600"
+        ],
+        "winner": [
+          "tt10289938"
+        ]
+      },
+      "best dialogues": {
+        "nominee": [
+          "tt11150912",
+          "tt12004706",
+          "tt12405230",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best editor": {
+        "nominee": [
+          "tt10651790",
+          "tt11854694",
+          "tt11905720",
+          "tt12448030",
+          "tt8069036"
+        ],
+        "winner": [
+          "tt11854694"
+        ]
+      },
+      "best original soundtrack": {
+        "nominee": [
+          "tt10045256",
+          "tt11854694",
+          "tt12448030",
+          "tt8317568"
+        ],
+        "winner": [
+          "tt11854694"
+        ]
+      },
+      "best original story": {
+        "nominee": [
+          "tt11912196",
+          "tt12004706",
+          "tt12405230",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best screenplay": {
+        "nominee": [
+          "tt11150912",
+          "tt12004706",
+          "tt12405230",
+          "tt9544034",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      }
+    }
+  },
+  "2021": {
+    "popular award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt12392504",
+          "tt12805346",
+          "tt13690576",
+          "tt14820482",
+          "tt9094442",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt11407524",
+          "tt13304410",
+          "tt13994872",
+          "tt14182442",
+          "tt9838090"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best actor: web original film": {
+        "nominee": [
+          "tt10230414",
+          "tt10230422",
+          "tt12743636",
+          "tt14091818",
+          "tt14160660",
+          "tt9569610"
+        ],
+        "winner": [
+          "tt10230414"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt12392504",
+          "tt13690576",
+          "tt14420552",
+          "tt14820482",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt10655506",
+          "tt13994872",
+          "tt14182442"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best actress: web original film": {
+        "nominee": [
+          "tt11102314",
+          "tt11142762",
+          "tt12743636",
+          "tt13491620",
+          "tt14091818"
+        ],
+        "winner": [
+          "tt14091818"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt12392504",
+          "tt12805346",
+          "tt13690576",
+          "tt14820482",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt12923630",
+          "tt13452100",
+          "tt13577982",
+          "tt14216014",
+          "tt14412928"
+        ],
+        "winner": [
+          "tt12923630"
+        ]
+      },
+      "best series - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt10655506",
+          "tt11407524",
+          "tt14671004",
+          "tt8809646",
+          "tt9838090"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best series - drama": {
+        "nominee": [
+          "tt12392504",
+          "tt12805346",
+          "tt13690576",
+          "tt14820482",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best supporting actor - drama": {
+        "nominee": [
+          "tt12805346",
+          "tt6473300",
+          "tt9544034",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best supporting actor: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt11407524",
+          "tt13994872"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best supporting actor: web original film": {
+        "nominee": [
+          "tt10230414",
+          "tt10230422",
+          "tt11142762",
+          "tt9569610"
+        ],
+        "winner": [
+          "tt11142762"
+        ]
+      },
+      "best supporting actress - drama": {
+        "nominee": [
+          "tt10238792",
+          "tt12392504",
+          "tt13690576",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt10238792"
+        ]
+      },
+      "best supporting actress: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt10655506",
+          "tt9024790",
+          "tt9838090"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best supporting actress: web original film": {
+        "nominee": [
+          "tt11102314",
+          "tt11142762",
+          "tt12887178",
+          "tt14160660"
+        ],
+        "winner": [
+          "tt14160660"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt10230414",
+          "tt12743636",
+          "tt14091818",
+          "tt14160660",
+          "tt14418234",
+          "tt9569610"
+        ],
+        "winner": [
+          "tt10230414"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt13304410"
+        ],
+        "winner": [
+          "tt13304410"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt14420552"
+        ],
+        "winner": [
+          "tt14420552"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt14182442"
+        ],
+        "winner": [
+          "tt14182442"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt9544034"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt6473300"
+        ],
+        "winner": [
+          "tt6473300"
+        ]
+      }
+    },
+    "technical award": {
+      "best background music": {
+        "nominee": [
+          "tt10530900",
+          "tt12392504",
+          "tt14820482",
+          "tt6473300",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best cinematography": {
+        "nominee": [
+          "tt12392504",
+          "tt12805346",
+          "tt14820482",
+          "tt6473300",
+          "tt9544034",
+          "tt9805612"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best costume design": {
+        "nominee": [
+          "tt10530900",
+          "tt12392504",
+          "tt14820482",
+          "tt6473300",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best dialogue": {
+        "nominee": [
+          "tt10530900",
+          "tt11407524",
+          "tt12392504",
+          "tt12719250",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best editor": {
+        "nominee": [
+          "tt12392504",
+          "tt14820482",
+          "tt6473300",
+          "tt7441984",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best original soundtrack": {
+        "nominee": [
+          "tt10530900",
+          "tt12392504",
+          "tt14392248",
+          "tt9544034",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best original story": {
+        "nominee": [
+          "tt12805346",
+          "tt14420552",
+          "tt6473300",
+          "tt9544034",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best production design": {
+        "nominee": [
+          "tt12392504",
+          "tt12805346",
+          "tt13174524",
+          "tt14820482",
+          "tt6473300",
+          "tt9544034"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best screenplay (adapted)": {
+        "nominee": [
+          "tt11646658",
+          "tt12392504",
+          "tt13690576",
+          "tt14733466",
+          "tt14820482"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      },
+      "best screenplay (original)": {
+        "nominee": [
+          "tt12805346",
+          "tt14392248",
+          "tt14420552",
+          "tt6473300",
+          "tt9544034",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt9544034"
+        ]
+      },
+      "best vfx": {
+        "nominee": [
+          "tt12392504",
+          "tt14182442",
+          "tt15085838",
+          "tt7441984"
+        ],
+        "winner": [
+          "tt12392504"
+        ]
+      }
+    }
+  },
+  "2022": {
+    "popular award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt12714854",
+          "tt12805346",
+          "tt13868972",
+          "tt15404324",
+          "tt19355272",
+          "tt9420618"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt14167338",
+          "tt14650074",
+          "tt6522580",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best actor: web original film": {
+        "nominee": [
+          "tt13510660",
+          "tt13529034",
+          "tt14107554",
+          "tt14479746",
+          "tt15121860",
+          "tt18568902"
+        ],
+        "winner": [
+          "tt14107554"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt12448030",
+          "tt14160684",
+          "tt14167344",
+          "tt15128088",
+          "tt20753964",
+          "tt9447956"
+        ],
+        "winner": [
+          "tt14167344"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt10655506",
+          "tt14167338",
+          "tt19862474",
+          "tt21267694",
+          "tt6522580"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best actress: web original film": {
+        "nominee": [
+          "tt13028258",
+          "tt13529034",
+          "tt14479746",
+          "tt15121860",
+          "tt8907974"
+        ],
+        "winner": [
+          "tt8907974"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt12392496",
+          "tt12714854",
+          "tt12805346",
+          "tt13868972",
+          "tt15404324",
+          "tt19355272",
+          "tt20319332"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt0445883",
+          "tt10183688",
+          "tt10436314",
+          "tt14167390",
+          "tt15368922",
+          "tt7336778"
+        ],
+        "winner": [
+          "tt14167390"
+        ]
+      },
+      "best series - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt19862474",
+          "tt21267694",
+          "tt6522580",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best series - drama": {
+        "nominee": [
+          "tt12714854",
+          "tt12805346",
+          "tt13868972",
+          "tt14167344",
+          "tt15404324",
+          "tt19355272",
+          "tt8392006"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best supporting actor - drama": {
+        "nominee": [
+          "tt10308632",
+          "tt12805346",
+          "tt15128088",
+          "tt15404324",
+          "tt16729514",
+          "tt9420618"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best supporting actor: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt19862474",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best supporting actor: web original film": {
+        "nominee": [
+          "tt11460818",
+          "tt13028258",
+          "tt13793230",
+          "tt14479746"
+        ],
+        "winner": [
+          "tt14479746"
+        ]
+      },
+      "best supporting actress - drama": {
+        "nominee": [
+          "tt12714854",
+          "tt13868972",
+          "tt15012366",
+          "tt15128122",
+          "tt15404324",
+          "tt20319332"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best supporting actress: comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt10655506",
+          "tt12004706"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best supporting actress: web original film": {
+        "nominee": [
+          "tt11460818",
+          "tt12861212",
+          "tt13028258",
+          "tt13510660",
+          "tt8907974"
+        ],
+        "winner": [
+          "tt12861212"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt13028258",
+          "tt13529034",
+          "tt13793230",
+          "tt14107554",
+          "tt14479746",
+          "tt18568902",
+          "tt8907974"
+        ],
+        "winner": [
+          "tt14107554"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt13868972"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt12004706"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt14160684"
+        ],
+        "winner": [
+          "tt14160684"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt6522580"
+        ],
+        "winner": [
+          "tt6522580"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt15404324"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt15404324"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      }
+    },
+    "technical award": {
+      "best background music": {
+        "nominee": [
+          "tt15404324"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best cinematography": {
+        "nominee": [
+          "tt13868972"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best costume design": {
+        "nominee": [
+          "tt13868972"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best dialogue": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt13868972",
+          "tt14160712",
+          "tt21267694",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best editor": {
+        "nominee": [
+          "tt14167344",
+          "tt15404324"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best original soundtrack": {
+        "nominee": [
+          "tt14160712"
+        ],
+        "winner": [
+          "tt14160712"
+        ]
+      },
+      "best original story": {
+        "nominee": [
+          "tt12004706",
+          "tt12392496",
+          "tt12805346",
+          "tt13868972",
+          "tt15404324",
+          "tt8392006"
+        ],
+        "winner": [
+          "tt15404324"
+        ]
+      },
+      "best production design": {
+        "nominee": [
+          "tt13868972"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best screenplay (original)": {
+        "nominee": [
+          "tt12004706",
+          "tt13868972",
+          "tt14160684",
+          "tt14167344",
+          "tt15404324",
+          "tt21267694"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      },
+      "best vfx": {
+        "nominee": [
+          "tt13868972"
+        ],
+        "winner": [
+          "tt13868972"
+        ]
+      }
+    },
+    "filmfare award": {
+      "best original screenplay, series": {
+        "nominee": [
+          "tt6112414"
+        ],
+        "winner": []
+      }
+    }
+  },
+  "2023": {
+    "popular award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt11611698",
+          "tt13868972",
+          "tt15477488",
+          "tt15576504",
+          "tt19868314",
+          "tt19868804",
+          "tt21818260",
+          "tt27759189",
+          "tt27853283"
+        ],
+        "winner": [
+          "tt27853283"
+        ]
+      },
+      "best actor: comedy": {
+        "nominee": [
+          "tt16227240",
+          "tt20118220",
+          "tt26315676",
+          "tt26931120",
+          "tt6005644"
+        ],
+        "winner": [
+          "tt16227240"
+        ]
+      },
+      "best actor: web original film": {
+        "nominee": [
+          "tt14152140",
+          "tt15128068",
+          "tt18951176",
+          "tt19755170",
+          "tt21848358",
+          "tt24485052",
+          "tt27501039"
+        ],
+        "winner": [
+          "tt24485052"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt11611698",
+          "tt19868314",
+          "tt19868804",
+          "tt21975100",
+          "tt22297178",
+          "tt27442834",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt11611698"
+        ]
+      },
+      "best actress: comedy": {
+        "nominee": [
+          "tt16975352",
+          "tt20118220",
+          "tt26315676",
+          "tt6005644",
+          "tt8595766"
+        ],
+        "winner": [
+          "tt6005644"
+        ]
+      },
+      "best actress: web original film": {
+        "nominee": [
+          "tt14152140",
+          "tt14428598",
+          "tt15048606",
+          "tt15128068",
+          "tt18413766",
+          "tt18951176",
+          "tt19755170",
+          "tt19838608"
+        ],
+        "winner": [
+          "tt14152140"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt11611698"
+        ],
+        "winner": []
+      },
+      "best director - series": {
+        "nominee": [
+          "tt11611698",
+          "tt13868972",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804",
+          "tt22297178",
+          "tt27759189",
+          "tt27853283",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best director: web original film": {
+        "nominee": [
+          "tt14152140",
+          "tt15048606",
+          "tt15128068",
+          "tt18951176",
+          "tt24485052",
+          "tt27989067"
+        ],
+        "winner": [
+          "tt24485052"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt13452100",
+          "tt21186282",
+          "tt21908726",
+          "tt21908844",
+          "tt24224996",
+          "tt26542635"
+        ],
+        "winner": [
+          "tt21908844"
+        ]
+      },
+      "best series - comedy": {
+        "nominee": [
+          "tt11407524",
+          "tt16975352",
+          "tt20118220",
+          "tt20916800",
+          "tt21068346",
+          "tt4742876",
+          "tt6005644"
+        ],
+        "winner": [
+          "tt4742876"
+        ]
+      },
+      "best series - drama": {
+        "nominee": [
+          "tt11611698",
+          "tt11912196",
+          "tt13868972",
+          "tt15477488",
+          "tt15576504",
+          "tt19868314",
+          "tt19868804",
+          "tt22297178",
+          "tt27759189",
+          "tt27853283"
+        ],
+        "winner": [
+          "tt22297178"
+        ]
+      },
+      "best supporting actor - drama": {
+        "nominee": [
+          "tt15477488",
+          "tt15576504",
+          "tt19868314",
+          "tt19868804",
+          "tt22014226",
+          "tt22297178",
+          "tt27853283"
+        ],
+        "winner": [
+          "tt27853283"
+        ]
+      },
+      "best supporting actor: comedy": {
+        "nominee": [
+          "tt16975352",
+          "tt28259300",
+          "tt4742876",
+          "tt6005644"
+        ],
+        "winner": [
+          "tt4742876"
+        ]
+      },
+      "best supporting actor: web original film": {
+        "nominee": [
+          "tt15048606",
+          "tt18951176",
+          "tt19864958",
+          "tt21387380",
+          "tt27816768"
+        ],
+        "winner": [
+          "tt18951176"
+        ]
+      },
+      "best supporting actress - drama": {
+        "nominee": [
+          "tt15576504",
+          "tt27442834",
+          "tt27759189",
+          "tt27853283",
+          "tt28106779",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt9398466"
+        ]
+      },
+      "best supporting actress: comedy": {
+        "nominee": [
+          "tt11407524",
+          "tt16227240",
+          "tt20118220",
+          "tt22014226",
+          "tt6005644"
+        ],
+        "winner": [
+          "tt6005644"
+        ]
+      },
+      "best supporting actress: web original film": {
+        "nominee": [
+          "tt14152140",
+          "tt14428598",
+          "tt15128068",
+          "tt18951176",
+          "tt20872920",
+          "tt27989067"
+        ],
+        "winner": [
+          "tt14152140",
+          "tt27989067"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt14152140",
+          "tt14428598",
+          "tt15048606",
+          "tt15128068",
+          "tt18413766",
+          "tt18951176",
+          "tt19838608",
+          "tt24485052"
+        ],
+        "winner": [
+          "tt24485052"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt19868314"
+        ],
+        "winner": [
+          "tt19868314"
+        ]
+      },
+      "best actor - web original film": {
+        "nominee": [
+          "tt15128068"
+        ],
+        "winner": [
+          "tt15128068"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt19868314",
+          "tt22297178"
+        ],
+        "winner": [
+          "tt19868314",
+          "tt22297178"
+        ]
+      },
+      "best actress - web original film": {
+        "nominee": [
+          "tt18413766",
+          "tt18951176"
+        ],
+        "winner": [
+          "tt18413766",
+          "tt18951176"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt27853283"
+        ],
+        "winner": [
+          "tt27853283"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt11611698"
+        ],
+        "winner": [
+          "tt11611698"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt15128068",
+          "tt27989067"
+        ],
+        "winner": [
+          "tt15128068",
+          "tt27989067"
+        ]
+      }
+    },
+    "technical award": {
+      "best adapted screenplay (series)": {
+        "nominee": [
+          "tt15576504",
+          "tt21811062",
+          "tt21916016",
+          "tt21975100",
+          "tt22297178",
+          "tt22297684",
+          "tt27618691"
+        ],
+        "winner": [
+          "tt22297178"
+        ]
+      },
+      "best background music (series)": {
+        "nominee": [
+          "tt11912196",
+          "tt13868972",
+          "tt15477488",
+          "tt19868678",
+          "tt19868804",
+          "tt22297684",
+          "tt27759189"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best background music (web original film)": {
+        "nominee": [
+          "tt14152140",
+          "tt14428598",
+          "tt15128068",
+          "tt18951176",
+          "tt19755170",
+          "tt24485052",
+          "tt27501039"
+        ],
+        "winner": [
+          "tt15128068"
+        ]
+      },
+      "best cinematographer (series)": {
+        "nominee": [
+          "tt13868972",
+          "tt19868804",
+          "tt22297178",
+          "tt27442834",
+          "tt27759189",
+          "tt27853283"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best cinematographer (web original film)": {
+        "nominee": [
+          "tt14428598",
+          "tt15128068",
+          "tt18951176",
+          "tt19755170",
+          "tt27501039",
+          "tt28282716"
+        ],
+        "winner": [
+          "tt15128068"
+        ]
+      },
+      "best costume design (series)": {
+        "nominee": [
+          "tt13868972",
+          "tt15752618",
+          "tt19868804",
+          "tt22185582",
+          "tt22297684",
+          "tt27442834",
+          "tt4742876"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best dialogue (series)": {
+        "nominee": [
+          "tt11912196",
+          "tt13868972",
+          "tt14420552",
+          "tt19868314",
+          "tt19868804",
+          "tt22297178",
+          "tt4742876"
+        ],
+        "winner": [
+          "tt22297178"
+        ]
+      },
+      "best dialogue (web original film)": {
+        "nominee": [
+          "tt14152140",
+          "tt18951176",
+          "tt20872920",
+          "tt24485052",
+          "tt27501039",
+          "tt28282716"
+        ],
+        "winner": [
+          "tt24485052"
+        ]
+      },
+      "best editing (series)": {
+        "nominee": [
+          "tt11611698",
+          "tt13868972",
+          "tt15477488",
+          "tt19868804",
+          "tt22297178",
+          "tt27853283",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best editing (web original film)": {
+        "nominee": [
+          "tt14152140",
+          "tt18951176",
+          "tt19755170",
+          "tt24485052",
+          "tt27501039"
+        ],
+        "winner": [
+          "tt14152140"
+        ]
+      },
+      "best original screenplay (series)": {
+        "nominee": [
+          "tt13868972",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804",
+          "tt21818260",
+          "tt27759189",
+          "tt27853283",
+          "tt4742876"
+        ],
+        "winner": [
+          "tt27853283"
+        ]
+      },
+      "best original screenplay (web original film)": {
+        "nominee": [
+          "tt12312912",
+          "tt14152140",
+          "tt18951176",
+          "tt19755170",
+          "tt19838608",
+          "tt27989067",
+          "tt28282716"
+        ],
+        "winner": [
+          "tt14152140"
+        ]
+      },
+      "best original soundtrack (series)": {
+        "nominee": [
+          "tt12719250",
+          "tt13868972",
+          "tt15477488",
+          "tt16085542",
+          "tt19868678",
+          "tt19868804",
+          "tt22297684"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best production design (series)": {
+        "nominee": [
+          "tt13868972",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804",
+          "tt22297178",
+          "tt4742876",
+          "tt8254348"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best production design (web original film)": {
+        "nominee": [
+          "tt14428598",
+          "tt18951176",
+          "tt19755170",
+          "tt27501039",
+          "tt5316648"
+        ],
+        "winner": [
+          "tt14428598"
+        ]
+      },
+      "best sound design (series)": {
+        "nominee": [
+          "tt13847564",
+          "tt13868972",
+          "tt19868804",
+          "tt22185582",
+          "tt22297684",
+          "tt9398466"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      },
+      "best sound design (web original film)": {
+        "nominee": [
+          "tt14152140",
+          "tt15128068",
+          "tt18951176",
+          "tt19755170",
+          "tt27501039"
+        ],
+        "winner": [
+          "tt14152140"
+        ]
+      },
+      "best story (series)": {
+        "nominee": [
+          "tt14420552",
+          "tt15477488",
+          "tt19868314",
+          "tt19868804",
+          "tt27442834",
+          "tt27759189",
+          "tt27853283"
+        ],
+        "winner": [
+          "tt27853283"
+        ]
+      },
+      "best story (web original film)": {
+        "nominee": [
+          "tt14152140",
+          "tt15128068",
+          "tt18951176",
+          "tt19755170",
+          "tt19838608",
+          "tt24485052",
+          "tt27989067"
+        ],
+        "winner": [
+          "tt24485052"
+        ]
+      },
+      "best vfx (series)": {
+        "nominee": [
+          "tt11611698",
+          "tt13868972",
+          "tt19868804"
+        ],
+        "winner": [
+          "tt19868804"
+        ]
+      }
+    },
+    "short film award": {
+      "best actor - short film": {
+        "nominee": [
+          "tt21976772"
+        ],
+        "winner": [
+          "tt21976772"
+        ]
+      },
+      "best actress - short film": {
+        "nominee": [
+          "tt18813694"
+        ],
+        "winner": [
+          "tt18813694"
+        ]
+      },
+      "best director - short film": {
+        "nominee": [
+          "tt20319414"
+        ],
+        "winner": [
+          "tt20319414"
+        ]
+      },
+      "best short film (fiction)": {
+        "nominee": [
+          "tt18813694"
+        ],
+        "winner": [
+          "tt18813694"
+        ]
+      },
+      "best short film (people's choice)": {
+        "nominee": [
+          "tt28441741"
+        ],
+        "winner": [
+          "tt28441741"
+        ]
+      }
+    }
+  },
+  "2024": {
+    "popular award": {
+      "best actor - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt17524566",
+          "tt22297290",
+          "tt31183656",
+          "tt32832648"
+        ],
+        "winner": [
+          "tt17524566"
+        ]
+      },
+      "best actor - drama": {
+        "nominee": [
+          "tt12392496",
+          "tt19868466",
+          "tt19868722",
+          "tt28804856",
+          "tt32729607",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt28804856"
+        ]
+      },
+      "best actor - web original film": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt22188452",
+          "tt23865712",
+          "tt26658272",
+          "tt29613587"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best actress - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt29473170",
+          "tt32832648",
+          "tt6328940"
+        ],
+        "winner": [
+          "tt10530900"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt12714854",
+          "tt14420552",
+          "tt15204292",
+          "tt22531848",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt15204292"
+        ]
+      },
+      "best actress - web original film": {
+        "nominee": [
+          "tt15433600",
+          "tt15748830",
+          "tt23865712",
+          "tt27028399",
+          "tt29613587",
+          "tt4501268"
+        ],
+        "winner": [
+          "tt15748830"
+        ]
+      },
+      "best comedy (series/specials)": {
+        "nominee": [
+          "tt10530900",
+          "tt11407524",
+          "tt12004706",
+          "tt13304410",
+          "tt31183656",
+          "tt32832648"
+        ],
+        "winner": [
+          "tt31183656"
+        ]
+      },
+      "best debut director, film": {
+        "nominee": [
+          "tt15434074"
+        ],
+        "winner": [
+          "tt15434074"
+        ]
+      },
+      "best debut director, series": {
+        "nominee": [
+          "tt16296870"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      },
+      "best debut male, film": {
+        "nominee": [
+          "tt15979666"
+        ],
+        "winner": [
+          "tt15979666"
+        ]
+      },
+      "best director - series": {
+        "nominee": [
+          "tt12714854",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt19072562",
+          "tt22297290",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt19072562"
+        ]
+      },
+      "best director - web original film": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt23865712",
+          "tt26658272",
+          "tt27936770",
+          "tt29613587"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best film, web original": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt23865712",
+          "tt26658272",
+          "tt27936770",
+          "tt29613587"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt28306965",
+          "tt29414624",
+          "tt30003786",
+          "tt30146840",
+          "tt30177031",
+          "tt31124686"
+        ],
+        "winner": [
+          "tt28306965"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt12714854",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt19072562",
+          "tt6494622",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      },
+      "best supporting actor - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt13304410",
+          "tt32832648"
+        ],
+        "winner": [
+          "tt12004706"
+        ]
+      },
+      "best supporting actor - drama": {
+        "nominee": [
+          "tt16296870",
+          "tt17524566",
+          "tt19072562",
+          "tt19868722",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      },
+      "best supporting actor - web original film": {
+        "nominee": [
+          "tt15433600",
+          "tt15748830",
+          "tt19864942",
+          "tt25434258",
+          "tt29613587",
+          "tt4501268"
+        ],
+        "winner": [
+          "tt4501268"
+        ]
+      },
+      "best supporting actor male (comedy)": {
+        "nominee": [
+          "tt8595766"
+        ],
+        "winner": []
+      },
+      "best supporting actress - comedy": {
+        "nominee": [
+          "tt10530900",
+          "tt11407524",
+          "tt12004706",
+          "tt31183656",
+          "tt32832648",
+          "tt4156586"
+        ],
+        "winner": [
+          "tt31183656"
+        ]
+      },
+      "best supporting actress - drama": {
+        "nominee": [
+          "tt10530900",
+          "tt15204292",
+          "tt19868722",
+          "tt28681409",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt6494622"
+        ]
+      },
+      "best supporting actress - web original film": {
+        "nominee": [
+          "tt15433600",
+          "tt23865712",
+          "tt27028399",
+          "tt29613587",
+          "tt4501268"
+        ],
+        "winner": [
+          "tt15433600"
+        ]
+      },
+      "special recognition": {
+        "nominee": [
+          "tt15434074"
+        ],
+        "winner": [
+          "tt15434074"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor - drama": {
+        "nominee": [
+          "tt19868466"
+        ],
+        "winner": [
+          "tt19868466"
+        ]
+      },
+      "best actor - film": {
+        "nominee": [
+          "tt15748830"
+        ],
+        "winner": [
+          "tt15748830"
+        ]
+      },
+      "best actress - drama": {
+        "nominee": [
+          "tt14420552"
+        ],
+        "winner": [
+          "tt14420552"
+        ]
+      },
+      "best actress - film": {
+        "nominee": [
+          "tt15434074"
+        ],
+        "winner": [
+          "tt15434074"
+        ]
+      },
+      "best director": {
+        "nominee": [
+          "tt12714854"
+        ],
+        "winner": [
+          "tt12714854"
+        ]
+      },
+      "best film": {
+        "nominee": [
+          "tt15748830"
+        ],
+        "winner": [
+          "tt15748830"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt17524566"
+        ],
+        "winner": [
+          "tt17524566"
+        ]
+      }
+    },
+    "technical award": {
+      "best adapted screenplay (series)": {
+        "nominee": [
+          "tt16296870",
+          "tt28804856",
+          "tt29959616",
+          "tt32258354"
+        ],
+        "winner": [
+          "tt28804856"
+        ]
+      },
+      "best background music (series)": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      },
+      "best background music (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt15979666",
+          "tt23865712",
+          "tt26658272",
+          "tt29613587"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best cinematographer": {
+        "nominee": [
+          "tt28681409"
+        ],
+        "winner": []
+      },
+      "best cinematographer (series)": {
+        "nominee": [
+          "tt12004706",
+          "tt12714854",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt19072562"
+        ],
+        "winner": [
+          "tt15204292"
+        ]
+      },
+      "best cinematographer (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt15979666",
+          "tt23865712",
+          "tt26658272",
+          "tt29613587"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best costume design (series)": {
+        "nominee": [
+          "tt12004706",
+          "tt15204292",
+          "tt17524566",
+          "tt19868466",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt15204292"
+        ]
+      },
+      "best dialogue (series)": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt15204292",
+          "tt17524566",
+          "tt32832648",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt17524566"
+        ]
+      },
+      "best dialogue (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt26658272",
+          "tt29613587",
+          "tt4501268",
+          "tt9691290"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best editing (series)": {
+        "nominee": [
+          "tt12004706",
+          "tt14392248",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt19072562"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      },
+      "best editing (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt23865712",
+          "tt26658272",
+          "tt27936770"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best music album": {
+        "nominee": [
+          "tt15434074",
+          "tt15979666",
+          "tt23865712",
+          "tt26658272"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best original screenplay (series)": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt15204292",
+          "tt17524566",
+          "tt19072562",
+          "tt32832648"
+        ],
+        "winner": [
+          "tt17524566"
+        ]
+      },
+      "best original screenplay (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt23865712",
+          "tt26658272",
+          "tt29613587",
+          "tt9691290"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best original soundtrack (series)": {
+        "nominee": [
+          "tt12004706",
+          "tt15204292",
+          "tt16296870",
+          "tt31215866",
+          "tt32379268",
+          "tt32832648"
+        ],
+        "winner": [
+          "tt15204292"
+        ]
+      },
+      "best original story, series": {
+        "nominee": [
+          "tt10530900",
+          "tt12004706",
+          "tt15204292",
+          "tt17524566",
+          "tt19072562",
+          "tt32832648",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt19072562"
+        ]
+      },
+      "best production design (series)": {
+        "nominee": [
+          "tt12714854",
+          "tt15204292",
+          "tt16296870",
+          "tt17524566",
+          "tt30460964",
+          "tt6494622"
+        ],
+        "winner": [
+          "tt15204292"
+        ]
+      },
+      "best production design (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt15979666",
+          "tt22188452",
+          "tt23865712",
+          "tt26658272"
+        ],
+        "winner": [
+          "tt15979666"
+        ]
+      },
+      "best sound design (series)": {
+        "nominee": [
+          "tt12004706",
+          "tt12714854",
+          "tt15204292",
+          "tt17524566",
+          "tt19072562",
+          "tt9432978"
+        ],
+        "winner": [
+          "tt19072562"
+        ]
+      },
+      "best sound design (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt15748830",
+          "tt15979666",
+          "tt22188452",
+          "tt26658272"
+        ],
+        "winner": [
+          "tt26658272"
+        ]
+      },
+      "best story (web original film)": {
+        "nominee": [
+          "tt15434074",
+          "tt22188452",
+          "tt23865712",
+          "tt29613587",
+          "tt9691290"
+        ],
+        "winner": [
+          "tt15434074"
+        ]
+      },
+      "best vfx (series)": {
+        "nominee": [
+          "tt12714854",
+          "tt15204292",
+          "tt16296870",
+          "tt28681409"
+        ],
+        "winner": [
+          "tt16296870"
+        ]
+      }
+    },
+    "filmfare award": {
+      "best non fiction series": {
+        "nominee": [
+          "tt28306965"
+        ],
+        "winner": [
+          "tt28306965"
+        ]
+      }
+    }
+  },
+  "2025": {
+    "popular award": {
+      "best actor (female), short film": {
+        "nominee": [
+          "tt32889642"
+        ],
+        "winner": [
+          "tt32889642"
+        ]
+      },
+      "best actor (male), short film": {
+        "nominee": [
+          "tt32135874"
+        ],
+        "winner": [
+          "tt32135874"
+        ]
+      },
+      "best actor, series (female): comedy": {
+        "nominee": [
+          "tt12004706",
+          "tt21908964",
+          "tt30819853",
+          "tt31925820"
+        ],
+        "winner": [
+          "tt21908964"
+        ]
+      },
+      "best actor, series (female): drama": {
+        "nominee": [
+          "tt12805346",
+          "tt15340954",
+          "tt27111295",
+          "tt27411674",
+          "tt29473170",
+          "tt31898201"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      },
+      "best actor, series (male): comedy": {
+        "nominee": [
+          "tt12004706",
+          "tt30819853",
+          "tt31925820",
+          "tt34773311"
+        ],
+        "winner": [
+          "tt30819853",
+          "tt31925820"
+        ]
+      },
+      "best actor, series (male): drama": {
+        "nominee": [
+          "tt27411674",
+          "tt28106741",
+          "tt30820007",
+          "tt35064818",
+          "tt37365626",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best actor, web original film (female)": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt21194868",
+          "tt26225118",
+          "tt26655658",
+          "tt27032419",
+          "tt28075881"
+        ],
+        "winner": [
+          "tt27032419"
+        ]
+      },
+      "best actor, web original film (male)": {
+        "nominee": [
+          "tt13261550",
+          "tt15260176",
+          "tt21626774",
+          "tt22480126",
+          "tt27866781",
+          "tt27930683",
+          "tt28494851",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt28494851"
+        ]
+      },
+      "best comedy (series/specials)": {
+        "nominee": [
+          "tt12004706",
+          "tt21908964",
+          "tt30819853",
+          "tt31925820",
+          "tt34773311",
+          "tt35528920"
+        ],
+        "winner": [
+          "tt30819853"
+        ]
+      },
+      "best debut director, series": {
+        "nominee": [
+          "tt35822727"
+        ],
+        "winner": [
+          "tt35822727"
+        ]
+      },
+      "best debut director, web original film": {
+        "nominee": [
+          "tt21626774",
+          "tt28494851"
+        ],
+        "winner": [
+          "tt21626774",
+          "tt28494851"
+        ]
+      },
+      "best director (short film)": {
+        "nominee": [
+          "tt36410206"
+        ],
+        "winner": [
+          "tt36410206"
+        ]
+      },
+      "best director, series": {
+        "nominee": [
+          "tt28102595",
+          "tt28106741",
+          "tt31898201",
+          "tt35064818",
+          "tt35822727",
+          "tt37365626",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "best director, web original film": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt21626774",
+          "tt27930683",
+          "tt28494851",
+          "tt31897917"
+        ],
+        "winner": [
+          "tt18277182"
+        ]
+      },
+      "best film, web original": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt21626774",
+          "tt27930683",
+          "tt28494851",
+          "tt31897917"
+        ],
+        "winner": [
+          "tt18277182"
+        ]
+      },
+      "best nonfiction original, series/special": {
+        "nominee": [
+          "tt13452100",
+          "tt14866598",
+          "tt31189484",
+          "tt31898045",
+          "tt31898077",
+          "tt35668659"
+        ],
+        "winner": [
+          "tt14866598"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt28102595",
+          "tt28106741",
+          "tt31898201",
+          "tt35064818",
+          "tt37365626",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "best short film (fiction)": {
+        "nominee": [
+          "tt32889642"
+        ],
+        "winner": [
+          "tt32889642"
+        ]
+      },
+      "best short film (non-fiction or documentary)": {
+        "nominee": [
+          "tt37038535"
+        ],
+        "winner": [
+          "tt37038535"
+        ]
+      },
+      "best short film (people’s choice)": {
+        "nominee": [
+          "tt39182736"
+        ],
+        "winner": [
+          "tt39182736"
+        ]
+      },
+      "best supporting actor, series (female): comedy": {
+        "nominee": [
+          "tt12004706",
+          "tt31925820",
+          "tt34773311",
+          "tt35528920"
+        ],
+        "winner": [
+          "tt31925820"
+        ]
+      },
+      "best supporting actor, series (female): drama": {
+        "nominee": [
+          "tt15340954",
+          "tt28106741",
+          "tt31898201",
+          "tt9680440",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best supporting actor, series (male): comedy": {
+        "nominee": [
+          "tt12004706",
+          "tt34773311"
+        ],
+        "winner": [
+          "tt34773311"
+        ]
+      },
+      "best supporting actor, series (male): drama": {
+        "nominee": [
+          "tt28102595",
+          "tt31898201",
+          "tt35064818",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "best supporting actor, web original film (female)": {
+        "nominee": [
+          "tt15260176",
+          "tt16436848",
+          "tt18277182",
+          "tt27930683",
+          "tt28494851",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt18277182"
+        ]
+      },
+      "best supporting actor, web original film (male)": {
+        "nominee": [
+          "tt21626774",
+          "tt27866781",
+          "tt27930683",
+          "tt28075881",
+          "tt28494851",
+          "tt31897917"
+        ],
+        "winner": [
+          "tt21626774"
+        ]
+      },
+      "breakthrough performance by a newcomer (female), series": {
+        "nominee": [
+          "tt21908964"
+        ],
+        "winner": [
+          "tt21908964"
+        ]
+      },
+      "breakthrough performance by a newcomer (female), web original film": {
+        "nominee": [
+          "tt15260176"
+        ],
+        "winner": [
+          "tt15260176"
+        ]
+      },
+      "breakthrough performance by a newcomer (male), series": {
+        "nominee": [
+          "tt35064818"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "breakthrough performance by a newcomer (male), web original film": {
+        "nominee": [
+          "tt28494851"
+        ],
+        "winner": [
+          "tt28494851"
+        ]
+      }
+    },
+    "critics choice award": {
+      "best actor (female) critics web original film": {
+        "nominee": [
+          "tt18277182"
+        ],
+        "winner": [
+          "tt18277182"
+        ]
+      },
+      "best actor (female), series, critics: drama": {
+        "nominee": [
+          "tt27411674"
+        ],
+        "winner": [
+          "tt27411674"
+        ]
+      },
+      "best actor (male) critics web original film": {
+        "nominee": [
+          "tt21626774"
+        ],
+        "winner": [
+          "tt21626774"
+        ]
+      },
+      "best actor (male), series, critics: drama": {
+        "nominee": [
+          "tt35064818"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "best director: series": {
+        "nominee": [
+          "tt28106741",
+          "tt37365626"
+        ],
+        "winner": [
+          "tt28106741",
+          "tt37365626"
+        ]
+      },
+      "best series": {
+        "nominee": [
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best web original film": {
+        "nominee": [
+          "tt31897917"
+        ],
+        "winner": [
+          "tt31897917"
+        ]
+      }
+    },
+    "technical award": {
+      "best adapted screenplay, series": {
+        "nominee": [
+          "tt21916016",
+          "tt28102595",
+          "tt28106741",
+          "tt30820007",
+          "tt35064818",
+          "tt37365626"
+        ],
+        "winner": [
+          "tt35064818"
+        ]
+      },
+      "best background music (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt21194868",
+          "tt28494851",
+          "tt31897917",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt12736014"
+        ]
+      },
+      "best background music, series": {
+        "nominee": [
+          "tt28102595",
+          "tt28106741",
+          "tt31898201",
+          "tt33098081",
+          "tt9680440",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      },
+      "best cinematographer (web original film)": {
+        "nominee": [
+          "tt15260176",
+          "tt21626774",
+          "tt27930683",
+          "tt28494851",
+          "tt31897917",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt28494851"
+        ]
+      },
+      "best cinematographer, series": {
+        "nominee": [
+          "tt15340954",
+          "tt28106741",
+          "tt31898201",
+          "tt35064818",
+          "tt37365626",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      },
+      "best costume design, series": {
+        "nominee": [
+          "tt15340954",
+          "tt28102595",
+          "tt28106741",
+          "tt33098081",
+          "tt37365626"
+        ],
+        "winner": [
+          "tt28102595"
+        ]
+      },
+      "best dialogue (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt21194868",
+          "tt26225118",
+          "tt27866781",
+          "tt27930683",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt27930683"
+        ]
+      },
+      "best dialogue, series": {
+        "nominee": [
+          "tt28106741",
+          "tt31898201",
+          "tt31925820",
+          "tt35064818",
+          "tt35822727",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt28106741"
+        ]
+      },
+      "best editing (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt15260176",
+          "tt21626774",
+          "tt27930683",
+          "tt28075881"
+        ],
+        "winner": [
+          "tt12736014"
+        ]
+      },
+      "best editing, series": {
+        "nominee": [
+          "tt15340954",
+          "tt28106741",
+          "tt31898201",
+          "tt34773311",
+          "tt35064818",
+          "tt37365626",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      },
+      "best music album (web original film)": {
+        "nominee": [
+          "tt33888131"
+        ],
+        "winner": [
+          "tt33888131"
+        ]
+      },
+      "best music album, series": {
+        "nominee": [
+          "tt9814458"
+        ],
+        "winner": [
+          "tt9814458"
+        ]
+      },
+      "best original screenplay (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt21626774",
+          "tt27930683",
+          "tt31897917"
+        ],
+        "winner": [
+          "tt12736014"
+        ]
+      },
+      "best original screenplay, series": {
+        "nominee": [
+          "tt12004706",
+          "tt31898201",
+          "tt35822727",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt9680440"
+        ]
+      },
+      "best original soundtrack, series": {
+        "nominee": [
+          "tt12004706",
+          "tt12719250",
+          "tt14160712",
+          "tt15340954",
+          "tt28106741",
+          "tt9814458"
+        ],
+        "winner": []
+      },
+      "best original story, series": {
+        "nominee": [
+          "tt12004706",
+          "tt31898201",
+          "tt31924979",
+          "tt31925820",
+          "tt35822727",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt31898201",
+          "tt9680440"
+        ]
+      },
+      "best production design (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt15260176",
+          "tt18277182",
+          "tt21626774",
+          "tt27930683",
+          "tt33888131"
+        ],
+        "winner": [
+          "tt27930683"
+        ]
+      },
+      "best production design, series": {
+        "nominee": [
+          "tt15340954",
+          "tt28102595",
+          "tt28106741",
+          "tt31898201",
+          "tt33098081",
+          "tt35064818",
+          "tt9680440"
+        ],
+        "winner": [
+          "tt28102595"
+        ]
+      },
+      "best sound design (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt15260176",
+          "tt18277182",
+          "tt27930683",
+          "tt28494851"
+        ],
+        "winner": [
+          "tt28494851"
+        ]
+      },
+      "best sound design, series": {
+        "nominee": [
+          "tt15340954",
+          "tt28106741",
+          "tt31898201",
+          "tt37365626",
+          "tt9680440",
+          "tt9814458"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      },
+      "best story (web original film)": {
+        "nominee": [
+          "tt12736014",
+          "tt18277182",
+          "tt27866781",
+          "tt27930683",
+          "tt28494851",
+          "tt31897917"
+        ],
+        "winner": [
+          "tt28494851"
+        ]
+      },
+      "best vfx (series)": {
+        "nominee": [
+          "tt26626214",
+          "tt28106741",
+          "tt31898201"
+        ],
+        "winner": [
+          "tt31898201"
+        ]
+      }
+    }
+  }
+}

@@ -144,25 +144,18 @@
 
 	let loadEventError = $state<string | null>(null);
 
-	async function loadEvent(eventId: string) {
+	function loadEvent(eventId: string) {
 		isLoadingEvent = true;
 		eventData = null;
 		loadEventError = null;
-		try {
-			const data = await loadAwardEvent(eventId);
-			if (!data) {
-				loadEventError = 'Failed to load award data. Check console for details.';
-				toastService.error('Failed to load award event data');
-			} else {
-				eventData = data;
-			}
-		} catch (error) {
-			console.error('Failed to load event:', error);
-			loadEventError = error instanceof Error ? error.message : 'Unknown error';
+		const data = loadAwardEvent(eventId);
+		if (!data) {
+			loadEventError = 'Failed to load award data. Event not found.';
 			toastService.error('Failed to load award event data');
-		} finally {
-			isLoadingEvent = false;
+		} else {
+			eventData = data;
 		}
+		isLoadingEvent = false;
 	}
 
 	async function loadAllNominees() {

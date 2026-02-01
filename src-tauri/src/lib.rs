@@ -373,7 +373,6 @@ pub fn run() {
             commands::delete_stamp_pack_files,
             // Utility
             commands::get_cwd,
-            commands::read_award_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

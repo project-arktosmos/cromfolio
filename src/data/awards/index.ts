@@ -1,0 +1,67 @@
+import type { AwardEvent } from '$services/awards.service';
+
+import ev0000003 from './ev0000003.json';
+import ev0000091 from './ev0000091.json';
+import ev0000123 from './ev0000123.json';
+import ev0000133 from './ev0000133.json';
+import ev0000147 from './ev0000147.json';
+import ev0000157 from './ev0000157.json';
+import ev0000223 from './ev0000223.json';
+import ev0000245 from './ev0000245.json';
+import ev0000280 from './ev0000280.json';
+import ev0000292 from './ev0000292.json';
+import ev0000329 from './ev0000329.json';
+import ev0000349 from './ev0000349.json';
+import ev0000361 from './ev0000361.json';
+import ev0000415 from './ev0000415.json';
+import ev0000467 from './ev0000467.json';
+import ev0000468 from './ev0000468.json';
+import ev0000530 from './ev0000530.json';
+import ev0000558 from './ev0000558.json';
+import ev0000598 from './ev0000598.json';
+import ev0000631 from './ev0000631.json';
+import ev0000659 from './ev0000659.json';
+import ev0000681 from './ev0000681.json';
+import ev0001931 from './ev0001931.json';
+import ev0005699 from './ev0005699.json';
+import ev0005770 from './ev0005770.json';
+import ev0011808 from './ev0011808.json';
+import ev0035513 from './ev0035513.json';
+import ev0036701 from './ev0036701.json';
+import ev0057191 from './ev0057191.json';
+import ev0060658 from './ev0060658.json';
+import ev0073358 from './ev0073358.json';
+
+export const AWARD_EVENTS: Record<string, AwardEvent> = {
+	ev0000003: ev0000003 as AwardEvent,
+	ev0000091: ev0000091 as AwardEvent,
+	ev0000123: ev0000123 as AwardEvent,
+	ev0000133: ev0000133 as AwardEvent,
+	ev0000147: ev0000147 as AwardEvent,
+	ev0000157: ev0000157 as AwardEvent,
+	ev0000223: ev0000223 as AwardEvent,
+	ev0000245: ev0000245 as AwardEvent,
+	ev0000280: ev0000280 as AwardEvent,
+	ev0000292: ev0000292 as AwardEvent,
+	ev0000329: ev0000329 as AwardEvent,
+	ev0000349: ev0000349 as AwardEvent,
+	ev0000361: ev0000361 as AwardEvent,
+	ev0000415: ev0000415 as AwardEvent,
+	ev0000467: ev0000467 as AwardEvent,
+	ev0000468: ev0000468 as AwardEvent,
+	ev0000530: ev0000530 as AwardEvent,
+	ev0000558: ev0000558 as AwardEvent,
+	ev0000598: ev0000598 as AwardEvent,
+	ev0000631: ev0000631 as AwardEvent,
+	ev0000659: ev0000659 as AwardEvent,
+	ev0000681: ev0000681 as AwardEvent,
+	ev0001931: ev0001931 as AwardEvent,
+	ev0005699: ev0005699 as AwardEvent,
+	ev0005770: ev0005770 as AwardEvent,
+	ev0011808: ev0011808 as AwardEvent,
+	ev0035513: ev0035513 as AwardEvent,
+	ev0036701: ev0036701 as AwardEvent,
+	ev0057191: ev0057191 as AwardEvent,
+	ev0060658: ev0060658 as AwardEvent,
+	ev0073358: ev0073358 as AwardEvent
+};

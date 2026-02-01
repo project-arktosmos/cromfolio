@@ -3,7 +3,11 @@
 	import { onMount } from 'svelte';
 	import { getAllCollections, getStickersForCollection, getCollection } from '$services/collections.service';
 	import { getCollectionType } from '$services/collection-types.service';
-	import { getOwnedStickerIds, getStickerCopyCount } from '$services/user-stickers.service';
+	import {
+	acquireSticker,
+	getOwnedStickerIds,
+	getStickerCopyCount
+} from '$services/user-stickers.service';
 	import { getRarityCollection } from '$services/rarities.service';
 	import { sourceExists } from '$services/sources.service';
 	import { getStickerType } from '$services/sticker-types.service';
@@ -47,6 +51,17 @@
 	let currentSpread = $state(0);
 	let selectedCollectionType = $state<CollectionType | null>(null);
 
+	// Cached stickers per collection (for booster packs)
+	let collectionStickers = $state<Map<string, Sticker[]>>(new Map());
+
+	// Booster pack modal state
+	const BOOSTER_PACK_SIZE = 5;
+	let showBoosterModal = $state(false);
+	let boosterStickers = $state<Sticker[]>([]);
+	let boosterCollection = $state<Collection | null>(null);
+	let revealedStickers = $state<Set<number>>(new Set());
+	let isOpeningPack = $state(false);
+
 	// Hover preview state
 	let hoveredSticker = $state<Sticker | null>(null);
 	let mousePosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -67,17 +82,20 @@
 
 	async function loadCollectionStats() {
 		const counts = new Map<string, { total: number; owned: number }>();
+		const stickersMap = new Map<string, Sticker[]>();
 		const ownedIds = await getOwnedStickerIds();
 		const ownedSet = new Set(ownedIds);
 
 		for (const collection of collections) {
-			const collectionStickers = await getStickersForCollection(collection.id);
-			const ownedCount = collectionStickers.filter((bp) =>
+			const collectionStickersData = await getStickersForCollection(collection.id);
+			const ownedCount = collectionStickersData.filter((bp) =>
 				ownedSet.has(String(bp.id))
 			).length;
-			counts.set(String(collection.id), { total: collectionStickers.length, owned: ownedCount });
+			counts.set(String(collection.id), { total: collectionStickersData.length, owned: ownedCount });
+			stickersMap.set(String(collection.id), collectionStickersData);
 		}
 		collectionStickerCounts = counts;
+		collectionStickers = stickersMap;
 	}
 
 	async function refreshOwnedSet() {
@@ -407,23 +425,92 @@
 		previewStickerType = null;
 		previewTags = [];
 	}
+
+	// Booster pack functions
+	function getCollectionStickers(collectionId: string | number): Sticker[] {
+		return collectionStickers.get(String(collectionId)) ?? [];
+	}
+
+	function hasStickersInCollection(collectionId: string | number): boolean {
+		return getCollectionStickers(collectionId).length > 0;
+	}
+
+	async function updateCollectionStats() {
+		const ownedIds = await getOwnedStickerIds();
+		const ownedSet = new Set(ownedIds);
+		const counts = new Map(collectionStickerCounts);
+
+		for (const collection of collections) {
+			const sts = collectionStickers.get(String(collection.id)) ?? [];
+			const ownedCount = sts.filter((s) => ownedSet.has(String(s.id))).length;
+			counts.set(String(collection.id), {
+				total: sts.length,
+				owned: ownedCount
+			});
+		}
+		collectionStickerCounts = counts;
+	}
+
+	async function openBoosterPack(collection: Collection, event: MouseEvent) {
+		event.stopPropagation();
+
+		const allStickers = getCollectionStickers(collection.id);
+		if (allStickers.length === 0) return;
+
+		isOpeningPack = true;
+		boosterCollection = collection;
+		revealedStickers = new Set();
+
+		// Shuffle and pick up to BOOSTER_PACK_SIZE random stickers (duplicates allowed)
+		const shuffled = [...allStickers].sort(() => Math.random() - 0.5);
+		boosterStickers = shuffled.slice(0, BOOSTER_PACK_SIZE);
+
+		showBoosterModal = true;
+		isOpeningPack = false;
+	}
+
+	async function revealSticker(index: number) {
+		if (revealedStickers.has(index)) return;
+
+		const sticker = boosterStickers[index];
+		await acquireSticker(sticker.id, sticker.sourceId);
+		revealedStickers = new Set([...revealedStickers, index]);
+		await refreshOwnedSet();
+		await refreshCopyCount(String(sticker.id));
+		await updateCollectionStats();
+	}
+
+	async function revealAllStickers() {
+		for (let i = 0; i < boosterStickers.length; i++) {
+			if (!revealedStickers.has(i)) {
+				const sticker = boosterStickers[i];
+				await acquireSticker(sticker.id, sticker.sourceId);
+				await refreshCopyCount(String(sticker.id));
+			}
+		}
+		revealedStickers = new Set(boosterStickers.map((_, i) => i));
+		await refreshOwnedSet();
+		await updateCollectionStats();
+	}
+
+	function closeBoosterModal() {
+		showBoosterModal = false;
+		boosterStickers = [];
+		boosterCollection = null;
+		revealedStickers = new Set();
+	}
+
+	function allStickersRevealed(): boolean {
+		return revealedStickers.size === boosterStickers.length;
+	}
 </script>
 
-<div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<div>
-			<h1 class="text-3xl font-bold">Albums</h1>
-			<p class="text-base-content/70 mt-1">
-				Browse your collection albums
-			</p>
-		</div>
-		<div class="stats bg-base-200">
-			<div class="stat">
-				<div class="stat-title">Stickers Owned</div>
-				<div class="stat-value text-primary">{getTotalOwned()}</div>
-				<div class="stat-desc">of {getTotalStickers()} total stickers</div>
-			</div>
-		</div>
+<div class="flex flex-col h-full">
+	<div class="mb-6">
+		<h1 class="text-3xl font-bold">Albums</h1>
+		<p class="text-base-content/70 mt-1">
+			Browse your collection albums
+		</p>
 	</div>
 
 	{#if isLoading}
@@ -435,13 +522,13 @@
 			<span>No collections available. Create collections in the admin panel first.</span>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
 			<!-- Collections Column -->
-			<div class="lg:col-span-1">
-				<div class="card bg-base-200">
-					<div class="card-body">
-						<h2 class="card-title">Collections</h2>
-						<div class="space-y-2 max-h-[600px] overflow-y-auto">
+			<div class="lg:col-span-1 flex flex-col min-h-0">
+				<div class="card bg-base-200 flex-1 flex flex-col min-h-0">
+					<div class="card-body flex flex-col min-h-0">
+						<h2 class="card-title shrink-0">Collections</h2>
+						<div class="space-y-2 flex-1 overflow-y-auto min-h-0">
 							{#each collections as collection (collection.id)}
 								{@const stats = getCollectionStats(collection.id)}
 								{@const isComplete = stats.total > 0 && stats.owned === stats.total}
@@ -493,6 +580,15 @@
 													value={stats.owned}
 													max={stats.total}
 												></progress>
+											{/if}
+											{#if stats.total > 0}
+												<button
+													class="btn btn-primary btn-xs mt-2 w-full"
+													onclick={(e) => openBoosterPack(collection, e)}
+													disabled={!hasStickersInCollection(collection.id)}
+												>
+													Open Booster Pack
+												</button>
 											{/if}
 										</div>
 									</div>
@@ -1385,5 +1481,76 @@
 			tags={previewTags}
 			classes="shadow-2xl"
 		/>
+	</div>
+{/if}
+
+<!-- Booster Pack Modal -->
+{#if showBoosterModal}
+	<div class="modal modal-open">
+		<div class="modal-box max-w-3xl">
+			<h3 class="font-bold text-xl mb-2">Booster Pack</h3>
+			{#if boosterCollection}
+				<p class="text-base-content/70 mb-4">{boosterCollection.title}</p>
+			{/if}
+
+			<div class="grid grid-cols-5 gap-3 mb-6">
+				{#each boosterStickers as sticker, index (sticker.id)}
+					{@const isRevealed = revealedStickers.has(index)}
+					<div
+						class={classNames(
+							'aspect-[3/4] rounded-lg cursor-pointer transition-all duration-300',
+							{
+								'bg-gradient-to-br from-primary to-secondary': !isRevealed,
+								'hover:scale-105 hover:shadow-lg': !isRevealed,
+								'ring-2 ring-primary': isRevealed
+							}
+						)}
+						onclick={() => revealSticker(index)}
+						onkeydown={(e) => e.key === 'Enter' && revealSticker(index)}
+						role="button"
+						tabindex="0"
+					>
+						{#if isRevealed}
+							<div class="h-full flex flex-col">
+								<img
+									src={sticker.image}
+									alt={sticker.name}
+									class="w-full flex-1 object-cover rounded-t-lg"
+									onerror={(e) => {
+										(e.target as HTMLImageElement).src =
+											'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect fill="%23374151" width="128" height="128"/><text x="64" y="68" text-anchor="middle" fill="%239CA3AF" font-size="16">?</text></svg>';
+									}}
+								/>
+								<div class="p-2 bg-base-100 rounded-b-lg">
+									<p class="text-xs font-medium truncate text-center" title={sticker.name}>{sticker.name}</p>
+								</div>
+							</div>
+						{:else}
+							<div class="h-full flex items-center justify-center">
+								<span class="text-4xl">?</span>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+
+			<div class="modal-action">
+				{#if !allStickersRevealed()}
+					<button class="btn btn-secondary" onclick={revealAllStickers}>
+						Reveal All
+					</button>
+				{/if}
+				<button
+					class={classNames('btn', {
+						'btn-primary': allStickersRevealed(),
+						'btn-ghost': !allStickersRevealed()
+					})}
+					onclick={closeBoosterModal}
+				>
+					{allStickersRevealed() ? 'Done' : 'Close'}
+				</button>
+			</div>
+		</div>
+		<div class="modal-backdrop bg-black/50" onclick={closeBoosterModal}></div>
 	</div>
 {/if}
