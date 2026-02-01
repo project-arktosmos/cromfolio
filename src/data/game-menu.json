@@ -1,24 +1,19 @@
 {
 	"items": [
 		{
-			"id": "album",
-			"label": "Album",
-			"path": "/game/album"
+			"id": "albums",
+			"label": "Albums",
+			"path": "/game/albums"
 		},
 		{
-			"id": "card",
-			"label": "Card",
-			"path": "/game/card"
+			"id": "cards",
+			"label": "Cards",
+			"path": "/game/cards"
 		},
 		{
 			"id": "player",
 			"label": "Player",
 			"path": "/game/player"
-		},
-		{
-			"id": "room",
-			"label": "Room",
-			"path": "/game/room"
 		},
 		{
 			"id": "guess-the-name",
@@ -39,5 +34,5 @@
 			"group": "Minigames"
 		}
 	],
-	"generatedAt": "2026-01-26T18:03:16.323Z"
+	"generatedAt": "2026-01-31T17:08:55.571Z"
 }

@@ -20,13 +20,13 @@ export async function getQuestionCollection(): Promise<Question[]> {
 }
 
 /**
- * Get questions for a specific album
+ * Get questions for a specific source
  */
-export async function getQuestionsByAlbum(albumId: ID): Promise<Question[]> {
+export async function getQuestionsBySource(sourceId: ID): Promise<Question[]> {
 	try {
-		return await invoke<Question[]>('get_questions_by_album', { albumId: String(albumId) });
+		return await invoke<Question[]>('get_questions_by_source', { sourceId: String(sourceId) });
 	} catch (e) {
-		console.error(`[questions.service] getQuestionsByAlbum(${albumId}):`, e);
+		console.error(`[questions.service] getQuestionsBySource(${sourceId}):`, e);
 		return [];
 	}
 }
@@ -80,13 +80,13 @@ export async function removeQuestion(question: Question): Promise<boolean> {
 }
 
 /**
- * Remove all questions for an album
+ * Remove all questions for a source
  */
-export async function removeQuestionsByAlbum(albumId: ID): Promise<boolean> {
+export async function removeQuestionsBySource(sourceId: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_questions_by_album', { albumId: String(albumId) });
+		return await invoke<boolean>('delete_questions_by_source', { sourceId: String(sourceId) });
 	} catch (e) {
-		console.error(`[questions.service] removeQuestionsByAlbum(${albumId}):`, e);
+		console.error(`[questions.service] removeQuestionsBySource(${sourceId}):`, e);
 		return false;
 	}
 }

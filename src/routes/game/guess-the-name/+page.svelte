@@ -2,10 +2,10 @@
 	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import { getAlbumCollection } from '$services/albums.service';
-	import { getCardsByAlbum } from '$services/cards.service';
-	import type { Album } from '$types/album.type';
-	import type { Card } from '$types/card.type';
+	import { getSourceCollection } from '$services/sources.service';
+	import { getStickersBySource } from '$services/stickers.service';
+	import type { Source } from '$types/source.type';
+	import type { Sticker } from '$types/sticker.type';
 
 	// Game configuration
 	const MAX_BLUR = 20; // pixels - maximum blur at start
@@ -14,17 +14,17 @@
 	const MIN_POINTS = 100;
 
 	// View state
-	type ViewState = 'album-select' | 'playing' | 'result';
-	let viewState = $state<ViewState>('album-select');
+	type ViewState = 'source-select' | 'playing' | 'result';
+	let viewState = $state<ViewState>('source-select');
 
-	// Album selection state
-	let albums: Album[] = $state([]);
-	let albumCardCounts = $state<Map<string, number>>(new Map());
+	// Source selection state
+	let sources: Source[] = $state([]);
+	let sourceStickerCounts = $state<Map<string, number>>(new Map());
 	let isLoading = $state(true);
 
 	// Game state
-	let selectedAlbum = $state<Album | null>(null);
-	let currentCard = $state<Card | null>(null);
+	let selectedSource = $state<Source | null>(null);
+	let currentSticker = $state<Sticker | null>(null);
 	let targetName = $state('');
 	let normalizedTargetName = $state('');
 	let revealedLetters = $state<Set<number>>(new Set());
@@ -50,15 +50,15 @@
 		if (browser) {
 			loadStats();
 		}
-		albums = await getAlbumCollection();
+		sources = await getSourceCollection();
 
-		// Count cards per album
+		// Count stickers per source
 		const counts = new Map<string, number>();
-		for (const album of albums) {
-			const cards = await getCardsByAlbum(album.id);
-			counts.set(String(album.id), cards.length);
+		for (const source of sources) {
+			const stickers = await getStickersBySource(source.id);
+			counts.set(String(source.id), stickers.length);
 		}
-		albumCardCounts = counts;
+		sourceStickerCounts = counts;
 		isLoading = false;
 	});
 
@@ -87,12 +87,12 @@
 		);
 	}
 
-	function getCardCount(albumId: string | number): number {
-		return albumCardCounts.get(String(albumId)) ?? 0;
+	function getStickerCount(sourceId: string | number): number {
+		return sourceStickerCounts.get(String(sourceId)) ?? 0;
 	}
 
-	function canPlayAlbum(albumId: string | number): boolean {
-		return getCardCount(albumId) >= 1;
+	function canPlaySource(sourceId: string | number): boolean {
+		return getStickerCount(sourceId) >= 1;
 	}
 
 	function normalizeForGame(name: string): string {
@@ -113,8 +113,8 @@
 		return letters;
 	}
 
-	async function startGame(album: Album) {
-		selectedAlbum = album;
+	async function startGame(source: Source) {
+		selectedSource = source;
 		viewState = 'playing';
 		gameResult = null;
 		earnedPoints = 0;
@@ -123,11 +123,11 @@
 		correctGuesses = 0;
 		wrongGuesses = 0;
 
-		// Get cards for this album and pick a random one
-		const albumCards = await getCardsByAlbum(album.id);
-		const randomIndex = Math.floor(Math.random() * albumCards.length);
-		currentCard = albumCards[randomIndex];
-		targetName = currentCard.name;
+		// Get stickers for this source and pick a random one
+		const sourceStickers = await getStickersBySource(source.id);
+		const randomIndex = Math.floor(Math.random() * sourceStickers.length);
+		currentSticker = sourceStickers[randomIndex];
+		targetName = currentSticker!.name;
 		normalizedTargetName = normalizeForGame(targetName);
 	}
 
@@ -224,15 +224,15 @@
 	}
 
 	function playAgain() {
-		if (selectedAlbum) {
-			startGame(selectedAlbum);
+		if (selectedSource) {
+			startGame(selectedSource);
 		}
 	}
 
-	function backToAlbums() {
-		viewState = 'album-select';
-		selectedAlbum = null;
-		currentCard = null;
+	function backToSources() {
+		viewState = 'source-select';
+		selectedSource = null;
+		currentSticker = null;
 		gameResult = null;
 	}
 
@@ -266,10 +266,10 @@
 		<div>
 			<h1 class="text-3xl font-bold">Guess the Name</h1>
 			<p class="text-base-content/70 mt-1">
-				{#if viewState === 'album-select'}
-					Pick an album to start the game
+				{#if viewState === 'source-select'}
+					Pick a source to start the game
 				{:else if viewState === 'playing'}
-					Guess letters to reveal the card's name!
+					Guess letters to reveal the name!
 				{:else}
 					{gameResult === 'won' ? 'Well done!' : 'Better luck next time!'}
 				{/if}
@@ -288,30 +288,30 @@
 		<div class="flex justify-center p-8">
 			<span class="loading loading-spinner loading-lg"></span>
 		</div>
-	{:else if viewState === 'album-select'}
-		<!-- Album Selection View -->
-		{#if albums.length === 0}
+	{:else if viewState === 'source-select'}
+		<!-- Source Selection View -->
+		{#if sources.length === 0}
 			<div class="alert alert-info">
-				<span>No albums available. Create albums with cards in the admin panel first.</span>
+				<span>No sources available. Create sources with stickers in the admin panel first.</span>
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-				{#each albums as album (album.id)}
-					{@const cardCount = getCardCount(album.id)}
-					{@const canPlay = canPlayAlbum(album.id)}
+				{#each sources as source (source.id)}
+					{@const stickerCount = getStickerCount(source.id)}
+					{@const canPlay = canPlaySource(source.id)}
 					<div
 						class={classNames('card bg-base-200 transition-all', {
 							'cursor-pointer hover:shadow-lg hover:scale-[1.02]': canPlay,
 							'opacity-50 cursor-not-allowed': !canPlay
 						})}
-						onclick={() => canPlay && startGame(album)}
-						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(album)}
+						onclick={() => canPlay && startGame(source)}
+						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(source)}
 						role="button"
 						tabindex={canPlay ? 0 : -1}
 					>
-						{#if album.coverImage}
+						{#if source.coverImage}
 							<figure class="relative">
-								<img src={album.coverImage} alt={album.title} class="w-full h-48 object-cover" />
+								<img src={source.coverImage} alt={source.title} class="w-full h-48 object-cover" />
 							</figure>
 						{:else}
 							<figure class="relative bg-base-300 h-48 flex items-center justify-center">
@@ -332,12 +332,12 @@
 							</figure>
 						{/if}
 						<div class="card-body p-4">
-							<h2 class="card-title text-lg">{album.title}</h2>
+							<h2 class="card-title text-lg">{source.title}</h2>
 							<p class="text-sm text-base-content/60">
-								{cardCount} cards
+								{stickerCount} stickers
 							</p>
 							{#if !canPlay}
-								<p class="text-xs text-error">Need at least 1 card</p>
+								<p class="text-xs text-error">Need at least 1 sticker</p>
 							{/if}
 							<div class="card-actions justify-end mt-2">
 								<button
@@ -358,9 +358,9 @@
 	{:else if viewState === 'playing' || viewState === 'result'}
 		<!-- Game View -->
 		<div class="flex flex-col items-center gap-6">
-			<!-- Album info and back button -->
+			<!-- Source info and back button -->
 			<div class="flex items-center justify-between w-full max-w-3xl">
-				<button class="btn btn-ghost btn-sm gap-2" onclick={backToAlbums}>
+				<button class="btn btn-ghost btn-sm gap-2" onclick={backToSources}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-4 w-4"
@@ -375,10 +375,10 @@
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					Back to Albums
+					Back to Sources
 				</button>
-				{#if selectedAlbum}
-					<span class="badge badge-lg badge-outline">{selectedAlbum.title}</span>
+				{#if selectedSource}
+					<span class="badge badge-lg badge-outline">{selectedSource.title}</span>
 				{/if}
 			</div>
 
@@ -397,14 +397,14 @@
 				<span class="text-base-content/70 text-sm">{wrongGuesses}/6 wrong guesses</span>
 			</div>
 
-			<!-- Card Display with blur -->
-			{#if currentCard}
+			<!-- Sticker Display with blur -->
+			{#if currentSticker}
 				<div class="relative w-full max-w-md">
 					<div class="card bg-base-200 overflow-hidden">
 						<figure class="relative aspect-[3/4]">
 							<img
-								src={currentCard.image}
-								alt={viewState === 'result' ? currentCard.name : 'Mystery card'}
+								src={currentSticker.image}
+								alt={viewState === 'result' ? currentSticker.name : 'Mystery'}
 								class="w-full h-full object-cover transition-all duration-300"
 								style={`filter: blur(${getCurrentBlur()}px)`}
 								onerror={(e) => {
@@ -469,7 +469,7 @@
 							<div class="text-6xl mb-2">🎉</div>
 							<h2 class="card-title text-success">You got it!</h2>
 							<p class="text-base-content/70">
-								The card was: <span class="font-bold">{targetName}</span>
+								The answer was: <span class="font-bold">{targetName}</span>
 							</p>
 							<p class="text-base-content/60 text-sm">
 								You made {wrongGuesses} wrong {wrongGuesses === 1 ? 'guess' : 'guesses'}
@@ -482,7 +482,7 @@
 							<div class="text-6xl mb-2">😔</div>
 							<h2 class="card-title text-error">Game Over</h2>
 							<p class="text-base-content/70">
-								The card was: <span class="font-bold">{targetName}</span>
+								The answer was: <span class="font-bold">{targetName}</span>
 							</p>
 							<div class="stat">
 								<div class="stat-title">Points Earned</div>
@@ -491,7 +491,7 @@
 						{/if}
 						<div class="card-actions mt-4 gap-2">
 							<button class="btn btn-primary" onclick={playAgain}> Play Again </button>
-							<button class="btn btn-outline" onclick={backToAlbums}> Choose Album </button>
+							<button class="btn btn-outline" onclick={backToSources}> Choose Source </button>
 						</div>
 					</div>
 				</div>
@@ -500,7 +500,7 @@
 			<!-- Instructions -->
 			{#if viewState === 'playing' && guessedLetters.size === 0}
 				<div class="mt-4 text-center text-sm text-base-content/50">
-					<p>Guess letters to reveal the card's name.</p>
+					<p>Guess letters to reveal the name.</p>
 					<p class="mt-1">Each correct guess removes blur from the image!</p>
 					<p class="mt-1">
 						<span class="inline-block h-4 w-4 bg-success rounded"></span> Correct &nbsp;

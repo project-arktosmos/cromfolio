@@ -1,34 +1,34 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount } from 'svelte';
-	import { getAlbumCollection } from '$services/albums.service';
+	import { getSourceCollection } from '$services/sources.service';
 	import {
-		getQuestionsByAlbum,
+		getQuestionsBySource,
 		addQuestion as addQuestionService,
 		updateQuestion as updateQuestionService,
 		removeQuestion as removeQuestionService
 	} from '$services/questions.service';
 	import {
-		fetchTriviaForAlbum,
+		fetchTriviaForSource,
 		convertToQuestion
 	} from '$services/trivia-fetch.service';
-	import type { Album, AlbumType } from '$types/album.type';
+	import type { Source, SourceType } from '$types/source.type';
 	import type { Question, CorrectAnswer, Difficulty } from '$types/question.type';
 	import type { FetchedTrivia, TriviaSource } from '$types/trivia-api.type';
 
 	// Collection state
-	let albums: Album[] = $state([]);
+	let sources: Source[] = $state([]);
 	let questions: Question[] = $state([]);
-	let isLoadingAlbums = $state(true);
+	let isLoadingSources = $state(true);
 	let isLoadingQuestions = $state(false);
 	let isSaving = $state(false);
 
 	// Selection state
-	let selectedAlbum = $state<Album | null>(null);
+	let selectedSource = $state<Source | null>(null);
 	let selectedQuestion = $state<Question | null>(null);
 
 	// Filter state
-	let albumTypeFilter = $state<AlbumType | 'all'>('all');
+	let sourceTypeFilter = $state<SourceType | 'all'>('all');
 	let searchQuery = $state('');
 
 	// Form state
@@ -49,46 +49,42 @@
 	let fetchDifficulty = $state<Difficulty | ''>('');
 	let fetchAmount = $state(10);
 	let fetchErrors = $state<{ source: TriviaSource; message: string }[]>([]);
-	let modelsLabApiKey = $state('');
 	let isImporting = $state(false);
 
-	// Album type labels for display
-	const albumTypeLabels: Record<AlbumType, string> = {
+	// Source type labels for display
+	const sourceTypeLabels: Record<SourceType, string> = {
 		movie: 'Movies',
 		tv: 'TV Shows',
 		videogame: 'Video Games',
 		anime: 'Anime',
 		sports_league: 'Sports',
 		animal: 'Animals',
-		musician: 'Musicians',
-		author: 'Authors'
+		award_list: 'Award Lists'
 	};
 
 	// Source labels
 	const sourceLabels: Record<TriviaSource, string> = {
 		thetriviaapi: 'Trivia API',
-		wikipedia: 'Wikipedia',
-		modelslab: 'AI Generated'
+		wikipedia: 'Wikipedia'
 	};
 
 	// Source badge colors
 	const sourceBadgeClasses: Record<TriviaSource, string> = {
 		thetriviaapi: 'badge-info',
-		wikipedia: 'badge-warning',
-		modelslab: 'badge-secondary'
+		wikipedia: 'badge-warning'
 	};
 
-	// Get all unique album types from loaded albums
+	// Get all unique source types from loaded sources
 	$effect(() => {
-		// Reactive effect to track album types
+		// Reactive effect to track source types
 	});
 
-	// Filtered albums based on type and search
-	let filteredAlbums = $derived.by(() => {
-		let result = albums;
+	// Filtered sources based on type and search
+	let filteredSources = $derived.by(() => {
+		let result = sources;
 
-		if (albumTypeFilter !== 'all') {
-			result = result.filter((a) => a.albumType === albumTypeFilter);
+		if (sourceTypeFilter !== 'all') {
+			result = result.filter((a) => a.sourceType === sourceTypeFilter);
 		}
 
 		if (searchQuery.trim()) {
@@ -103,8 +99,8 @@
 	let selectedTriviaCount = $derived(fetchedTrivia.filter((t) => t.selected).length);
 
 	onMount(async () => {
-		albums = await getAlbumCollection();
-		isLoadingAlbums = false;
+		sources = await getSourceCollection();
+		isLoadingSources = false;
 	});
 
 	// Reset form
@@ -119,20 +115,20 @@
 		selectedQuestion = null;
 	}
 
-	// Select an album
-	async function selectAlbum(album: Album) {
-		if (selectedAlbum?.id === album.id) {
+	// Select a source
+	async function selectSource(source: Source) {
+		if (selectedSource?.id === source.id) {
 			// Deselect
-			selectedAlbum = null;
+			selectedSource = null;
 			questions = [];
 			resetForm();
 			closeFetchPreview();
 		} else {
-			selectedAlbum = album;
+			selectedSource = source;
 			resetForm();
 			closeFetchPreview();
 			isLoadingQuestions = true;
-			questions = await getQuestionsByAlbum(album.id);
+			questions = await getQuestionsBySource(source.id);
 			isLoadingQuestions = false;
 		}
 	}
@@ -155,13 +151,13 @@
 
 	// Add a new question
 	async function addQuestion() {
-		if (!selectedAlbum || !formQuestionText.trim() || isSaving) return;
+		if (!selectedSource || !formQuestionText.trim() || isSaving) return;
 		if (!formAnswerA.trim() || !formAnswerB.trim() || !formAnswerC.trim()) return;
 
 		isSaving = true;
 		const question: Question = {
 			id: crypto.randomUUID(),
-			albumId: selectedAlbum.id,
+			sourceId: selectedSource.id,
 			questionText: formQuestionText.trim(),
 			answerA: formAnswerA.trim(),
 			answerB: formAnswerB.trim(),
@@ -172,7 +168,7 @@
 
 		const result = await addQuestionService(question);
 		if (result) {
-			questions = await getQuestionsByAlbum(selectedAlbum.id);
+			questions = await getQuestionsBySource(selectedSource.id);
 			resetForm();
 		}
 		isSaving = false;
@@ -180,7 +176,7 @@
 
 	// Update an existing question
 	async function updateQuestion() {
-		if (!selectedAlbum || !selectedQuestion || !formQuestionText.trim() || isSaving) return;
+		if (!selectedSource || !selectedQuestion || !formQuestionText.trim() || isSaving) return;
 		if (!formAnswerA.trim() || !formAnswerB.trim() || !formAnswerC.trim()) return;
 
 		isSaving = true;
@@ -196,7 +192,7 @@
 
 		const result = await updateQuestionService(updatedQuestion);
 		if (result) {
-			questions = await getQuestionsByAlbum(selectedAlbum.id);
+			questions = await getQuestionsBySource(selectedSource.id);
 			resetForm();
 		}
 		isSaving = false;
@@ -205,11 +201,11 @@
 	// Remove a question
 	async function removeQuestion(question: Question, event: MouseEvent) {
 		event.stopPropagation();
-		if (!selectedAlbum) return;
+		if (!selectedSource) return;
 
 		const success = await removeQuestionService(question);
 		if (success) {
-			questions = await getQuestionsByAlbum(selectedAlbum.id);
+			questions = await getQuestionsBySource(selectedSource.id);
 			if (selectedQuestion?.id === question.id) {
 				resetForm();
 			}
@@ -231,7 +227,7 @@
 			formAnswerA.trim() &&
 			formAnswerB.trim() &&
 			formAnswerC.trim() &&
-			selectedAlbum
+			selectedSource
 	);
 
 	// Get answer label color based on correct answer
@@ -268,20 +264,19 @@
 
 	// Fetch trivia from selected sources
 	async function fetchTrivia() {
-		if (!selectedAlbum || fetchSources.length === 0) return;
+		if (!selectedSource || fetchSources.length === 0) return;
 
 		isFetching = true;
 		fetchErrors = [];
 
 		try {
-			const result = await fetchTriviaForAlbum(
-				selectedAlbum,
+			const result = await fetchTriviaForSource(
+				selectedSource,
 				{
 					sources: fetchSources,
 					difficulty: fetchDifficulty || undefined,
 					amount: fetchAmount
-				},
-				modelsLabApiKey || undefined
+				}
 			);
 
 			fetchedTrivia = result.trivia;
@@ -315,7 +310,7 @@
 
 	// Import selected trivia
 	async function importSelectedTrivia() {
-		if (!selectedAlbum || selectedTriviaCount === 0) return;
+		if (!selectedSource || selectedTriviaCount === 0) return;
 
 		isImporting = true;
 
@@ -323,12 +318,12 @@
 			const selectedItems = fetchedTrivia.filter((t) => t.selected);
 
 			for (const trivia of selectedItems) {
-				const question = convertToQuestion(trivia, selectedAlbum.id);
+				const question = convertToQuestion(trivia, selectedSource.id);
 				await addQuestionService(question);
 			}
 
 			// Refresh questions
-			questions = await getQuestionsByAlbum(selectedAlbum.id);
+			questions = await getQuestionsBySource(selectedSource.id);
 			closeFetchPreview();
 		} catch (error) {
 			console.error('Failed to import trivia:', error);
@@ -342,61 +337,61 @@
 	<h1 class="text-2xl font-bold mb-4">Trivia Manager</h1>
 
 	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
-		<!-- Column 1: Albums List -->
+		<!-- Column 1: Sources List -->
 		<div class="card bg-base-200 overflow-hidden flex flex-col">
 			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Albums</h2>
+				<h2 class="card-title text-lg mb-2">Sources</h2>
 
 				<!-- Filters -->
 				<div class="space-y-2 mb-3">
 					<input
 						type="text"
-						placeholder="Search albums..."
+						placeholder="Search sources..."
 						class="input input-bordered input-sm w-full"
 						bind:value={searchQuery}
 					/>
 					<select
 						class="select select-bordered select-sm w-full"
-						bind:value={albumTypeFilter}
+						bind:value={sourceTypeFilter}
 					>
 						<option value="all">All Types</option>
-						{#each Object.entries(albumTypeLabels) as [value, label]}
+						{#each Object.entries(sourceTypeLabels) as [value, label]}
 							<option {value}>{label}</option>
 						{/each}
 					</select>
 				</div>
 
 				<div class="flex-1 overflow-y-auto">
-					{#if isLoadingAlbums}
+					{#if isLoadingSources}
 						<div class="flex justify-center p-4">
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
-					{:else if filteredAlbums.length === 0}
+					{:else if filteredSources.length === 0}
 						<div class="text-center text-base-content/60 p-4">
-							<p>No albums found.</p>
+							<p>No sources found.</p>
 						</div>
 					{:else}
 						<div class="space-y-1">
-							{#each filteredAlbums as album (album.id)}
+							{#each filteredSources as source (source.id)}
 								<div
 									class={classNames(
 										'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedAlbum?.id === album.id,
-											'bg-base-100': selectedAlbum?.id !== album.id
+											'bg-primary/20 ring-2 ring-primary': selectedSource?.id === source.id,
+											'bg-base-100': selectedSource?.id !== source.id
 										}
 									)}
-									onclick={() => selectAlbum(album)}
-									onkeydown={(e) => e.key === 'Enter' && selectAlbum(album)}
+									onclick={() => selectSource(source)}
+									onkeydown={(e) => e.key === 'Enter' && selectSource(source)}
 									role="button"
 									tabindex="0"
 								>
 									<div class="flex items-center gap-2">
-										{#if album.coverImage}
+										{#if source.coverImage}
 											<img
-												src={album.coverImage}
-												alt={album.title}
+												src={source.coverImage}
+												alt={source.title}
 												class="w-8 h-8 rounded object-cover"
 											/>
 										{:else}
@@ -405,9 +400,9 @@
 											</div>
 										{/if}
 										<div class="flex-1 min-w-0">
-											<div class="font-medium text-sm truncate">{album.title}</div>
+											<div class="font-medium text-sm truncate">{source.title}</div>
 											<div class="text-xs text-base-content/60">
-												{albumTypeLabels[album.albumType]}
+												{sourceTypeLabels[source.sourceType]}
 											</div>
 										</div>
 									</div>
@@ -418,7 +413,7 @@
 				</div>
 
 				<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
-					{filteredAlbums.length} album{filteredAlbums.length !== 1 ? 's' : ''}
+					{filteredSources.length} source{filteredSources.length !== 1 ? 's' : ''}
 				</div>
 			</div>
 		</div>
@@ -542,13 +537,13 @@
 					<div class="flex items-center justify-between mb-2">
 						<h2 class="card-title text-lg">
 							Questions
-							{#if selectedAlbum}
+							{#if selectedSource}
 								<span class="text-sm font-normal text-base-content/60">
-									for {selectedAlbum.title}
+									for {selectedSource.title}
 								</span>
 							{/if}
 						</h2>
-						{#if selectedAlbum}
+						{#if selectedSource}
 							<button class="btn btn-primary btn-sm" onclick={openFetchModal}>
 								Fetch Trivia
 							</button>
@@ -556,9 +551,9 @@
 					</div>
 
 					<div class="flex-1 overflow-y-auto">
-						{#if !selectedAlbum}
+						{#if !selectedSource}
 							<div class="text-center text-base-content/60 p-4">
-								<p>Select an album to view its questions.</p>
+								<p>Select a source to view its questions.</p>
 							</div>
 						{:else if isLoadingQuestions}
 							<div class="flex justify-center p-4">
@@ -632,7 +627,7 @@
 						{/if}
 					</div>
 
-					{#if selectedAlbum}
+					{#if selectedSource}
 						<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
 							{questions.length} question{questions.length !== 1 ? 's' : ''}
 						</div>
@@ -653,9 +648,9 @@
 					{/if}
 				</div>
 
-				{#if !selectedAlbum}
+				{#if !selectedSource}
 					<div class="flex-1 flex items-center justify-center text-base-content/60">
-						<p>Select an album to add questions.</p>
+						<p>Select a source to add questions.</p>
 					</div>
 				{:else}
 					<div class="flex-1 overflow-y-auto">
@@ -811,7 +806,7 @@
 {#if showFetchModal}
 	<div class="modal modal-open">
 		<div class="modal-box">
-			<h3 class="font-bold text-lg mb-4">Fetch Trivia for "{selectedAlbum?.title}"</h3>
+			<h3 class="font-bold text-lg mb-4">Fetch Trivia for "{selectedSource?.title}"</h3>
 
 			<!-- Sources -->
 			<div class="form-control mb-4">
@@ -839,39 +834,8 @@
 						<span class="label-text">Wikipedia</span>
 						<span class="badge badge-warning badge-xs">Fact extraction</span>
 					</label>
-					<label class="label cursor-pointer justify-start gap-3">
-						<input
-							type="checkbox"
-							class="checkbox checkbox-primary"
-							checked={fetchSources.includes('modelslab')}
-							onchange={() => toggleSource('modelslab')}
-						/>
-						<span class="label-text">AI Generation (ModelsLab)</span>
-						<span class="badge badge-secondary badge-xs">Requires API key</span>
-					</label>
 				</div>
 			</div>
-
-			<!-- ModelsLab API Key (shown if AI selected) -->
-			{#if fetchSources.includes('modelslab')}
-				<div class="form-control mb-4">
-					<label class="label" for="modelslab-key">
-						<span class="label-text">ModelsLab API Key</span>
-					</label>
-					<input
-						id="modelslab-key"
-						type="password"
-						placeholder="Enter your ModelsLab API key..."
-						class="input input-bordered w-full"
-						bind:value={modelsLabApiKey}
-					/>
-					<label class="label">
-						<span class="label-text-alt text-base-content/60">
-							Get a key at modelslab.com
-						</span>
-					</label>
-				</div>
-			{/if}
 
 			<!-- Difficulty -->
 			<div class="form-control mb-4">

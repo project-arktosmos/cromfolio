@@ -326,6 +326,9 @@ impl AniListApi {
             source: "anilist".to_string(),
             width: None,
             height: None,
+            vote_average: None,
+            likes: None,
+            language: None,
         });
 
         // Add banner if available
@@ -337,6 +340,9 @@ impl AniListApi {
                 source: "anilist".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 

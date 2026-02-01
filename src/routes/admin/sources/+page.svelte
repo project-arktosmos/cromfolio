@@ -1,88 +1,49 @@
 <script lang="ts">
-	import classNames from 'classnames';
 	import MoviesTab from './MoviesTab.svelte';
 	import TVTab from './TVTab.svelte';
 	import VideogamesTab from './VideogamesTab.svelte';
 	import AnimeTab from './AnimeTab.svelte';
 	import SportsTab from './SportsTab.svelte';
 	import AnimalsTab from './AnimalsTab.svelte';
-	import MusicTab from './MusicTab.svelte';
-	import BooksTab from './BooksTab.svelte';
+	import AwardsTab from './AwardsTab.svelte';
 
-	// Top-level tab state
-	let mainTab = $state<'movies' | 'tv' | 'videogames' | 'anime' | 'sports' | 'animals' | 'music' | 'books'>('movies');
+	// Source type options for the select dropdown
+	const sourceTypeOptions = [
+		{ value: 'movies', label: 'Movies' },
+		{ value: 'tv', label: 'TV Series' },
+		{ value: 'videogames', label: 'Videogames' },
+		{ value: 'anime', label: 'Anime' },
+		{ value: 'sports', label: 'Sports' },
+		{ value: 'animals', label: 'Animals' },
+		{ value: 'awards', label: 'Award Lists' }
+	] as const;
+
+	type SourceType = (typeof sourceTypeOptions)[number]['value'];
+
+	// Top-level source type state
+	let sourceType = $state<SourceType>('movies');
+
+	function handleSourceTypeChange(newType: SourceType) {
+		sourceType = newType;
+	}
 </script>
 
 <div class="flex flex-col h-full">
 	<h1 class="text-2xl font-bold mb-4">External Sources</h1>
 
-	<!-- Main category tabs -->
-	<div class="tabs tabs-boxed mb-4">
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'movies' })}
-			onclick={() => (mainTab = 'movies')}
-		>
-			Movies
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'tv' })}
-			onclick={() => (mainTab = 'tv')}
-		>
-			TV
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'videogames' })}
-			onclick={() => (mainTab = 'videogames')}
-		>
-			Videogames
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'anime' })}
-			onclick={() => (mainTab = 'anime')}
-		>
-			Anime
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'sports' })}
-			onclick={() => (mainTab = 'sports')}
-		>
-			Sports
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'animals' })}
-			onclick={() => (mainTab = 'animals')}
-		>
-			Animals
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'music' })}
-			onclick={() => (mainTab = 'music')}
-		>
-			Musicians
-		</button>
-		<button
-			class={classNames('tab tab-lg', { 'tab-active': mainTab === 'books' })}
-			onclick={() => (mainTab = 'books')}
-		>
-			Authors
-		</button>
-	</div>
-
-	{#if mainTab === 'movies'}
-		<MoviesTab />
-	{:else if mainTab === 'tv'}
-		<TVTab />
-	{:else if mainTab === 'videogames'}
-		<VideogamesTab />
-	{:else if mainTab === 'anime'}
-		<AnimeTab />
-	{:else if mainTab === 'sports'}
-		<SportsTab />
-	{:else if mainTab === 'animals'}
-		<AnimalsTab />
-	{:else if mainTab === 'music'}
-		<MusicTab />
-	{:else}
-		<BooksTab />
+	{#if sourceType === 'movies'}
+		<MoviesTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'tv'}
+		<TVTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'videogames'}
+		<VideogamesTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'anime'}
+		<AnimeTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'sports'}
+		<SportsTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'animals'}
+		<AnimalsTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'awards'}
+		<AwardsTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
 	{/if}
 </div>

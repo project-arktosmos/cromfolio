@@ -24,7 +24,8 @@ const config = {
 			$types: 'src/types/*',
 			$data: 'src/data/*',
 			$adapters: 'src/adapters/*',
-			$services: 'src/services/*'
+			$services: 'src/services/*',
+			$api: 'src/api/*'
 		}
 	}
 };

@@ -30,6 +30,8 @@ struct TmdbImage {
     height: u32,
     #[serde(default)]
     vote_average: f64,
+    /// ISO 639-1 language code (e.g., "en", "de", null for no text)
+    iso_639_1: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -167,6 +169,9 @@ impl TmdbApi {
                 source: "tmdb".to_string(),
                 width: Some(img.width),
                 height: Some(img.height),
+                vote_average: if img.vote_average > 0.0 { Some(img.vote_average) } else { None },
+                likes: None,
+                language: img.iso_639_1,
             });
         }
 
@@ -179,6 +184,9 @@ impl TmdbApi {
                 source: "tmdb".to_string(),
                 width: Some(img.width),
                 height: Some(img.height),
+                vote_average: if img.vote_average > 0.0 { Some(img.vote_average) } else { None },
+                likes: None,
+                language: img.iso_639_1,
             });
         }
 
@@ -191,6 +199,9 @@ impl TmdbApi {
                 source: "tmdb".to_string(),
                 width: Some(img.width),
                 height: Some(img.height),
+                vote_average: if img.vote_average > 0.0 { Some(img.vote_average) } else { None },
+                likes: None,
+                language: img.iso_639_1,
             });
         }
 

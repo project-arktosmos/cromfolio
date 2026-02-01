@@ -1,38 +1,51 @@
 /**
- * Source types for tracking external source IDs and preventing duplicates
+ * Source types for collectible card sources (formerly Album)
  */
 
 import type { ID } from '$types/core.type';
 
-export interface Source {
-	id: ID;
-	albumId: ID;
-	sourceType: SourceType;
-	externalId: string;
-	externalIdType: ExternalIdType;
-	createdAt?: string;
-}
-
 export type SourceType =
 	| 'movie'
 	| 'tv'
-	| 'game'
+	| 'videogame'
 	| 'anime'
-	| 'sports_team'
 	| 'sports_league'
 	| 'animal'
-	| 'music'
-	| 'book_author'
-	| 'book_work';
+	| 'award_list';
 
-export type ExternalIdType =
-	| 'imdb'
-	| 'tmdb'
-	| 'igdb'
-	| 'anilist'
-	| 'sportsdb_team'
-	| 'sportsdb_league'
-	| 'wikidata'
-	| 'musicbrainz_artist'
-	| 'openlibrary_author'
-	| 'openlibrary_work';
+export interface Source {
+	id: ID;
+	sourceType: SourceType;
+	title: string;
+	description: string;
+	coverImage?: string;
+	wikiaUrl?: string;
+	// Movie/TV metadata
+	imdbId?: string;
+	tmdbId?: number;
+	// Videogame metadata
+	igdbId?: number;
+	igdbSlug?: string;
+	sgdbId?: number;
+	// Anime metadata
+	anilistId?: number;
+	malId?: number;
+	// Sports metadata
+	sportsType?: 'team' | 'league' | 'player';
+	sportsDbTeamId?: string;
+	sportsDbLeagueId?: string;
+	sportsDbPlayerId?: string;
+	sport?: string;
+	league?: string;
+	country?: string;
+	// Animal metadata
+	wikidataId?: string;
+	scientificName?: string;
+	conservationStatus?: string;
+	taxonomicClass?: string;
+	addedAt?: string;
+}
+
+export interface SourceCollection {
+	sources: Source[];
+}

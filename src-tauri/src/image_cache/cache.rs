@@ -2,15 +2,18 @@ use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use url::Url;
 
-use super::models::{CacheStats, CachedImage, SourceStats};
+use super::models::{BackgroundDownloadProgress, BackgroundDownloadStatus, CacheStats, CachedImage, SourceStats};
 
-/// State for tracking in-flight requests to avoid duplicate fetches
+/// State for tracking in-flight requests and background downloads
 pub struct ImageCacheState {
     pub in_flight: Mutex<HashSet<String>>,
     pub cache_dir: PathBuf,
+    pub background_progress: Arc<Mutex<BackgroundDownloadProgress>>,
+    pub cancel_flag: Arc<AtomicBool>,
 }
 
 impl ImageCacheState {
@@ -18,6 +21,8 @@ impl ImageCacheState {
         Self {
             in_flight: Mutex::new(HashSet::new()),
             cache_dir,
+            background_progress: Arc::new(Mutex::new(BackgroundDownloadProgress::default())),
+            cancel_flag: Arc::new(AtomicBool::new(false)),
         }
     }
 }

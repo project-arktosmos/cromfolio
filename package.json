@@ -30,6 +30,7 @@
 		"@tauri-apps/cli": "^2.5.0",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/svelte": "^5.2.8",
+		"@types/js-yaml": "^4.0.9",
 		"@vitest/coverage-v8": "4.0.6",
 		"@vitest/ui": "^4.0.6",
 		"daisyui": "^5.0.50",
@@ -57,13 +58,19 @@
 	"dependencies": {
 		"@sveltejs/adapter-static": "^3.0.9",
 		"@tauri-apps/api": "^2.5.0",
-		"trystero": "^0.22.0",
+		"@tauri-apps/plugin-dialog": "^2.6.0",
+		"@tauri-apps/plugin-fs": "^2.4.5",
+		"@tauri-apps/plugin-http": "^2.5.6",
 		"@types/three": "^0.182.0",
 		"audiomotion-analyzer": "^4.5.4",
 		"classnames": "^2.5.1",
+		"js-yaml": "^4.1.1",
+		"jszip": "^3.10.1",
+		"lottie-web": "^5.13.0",
 		"meyda": "^5.6.3",
 		"svelte-i18n": "^4.0.1",
 		"three": "^0.182.0",
+		"trystero": "^0.22.0",
 		"web-audio-beat-detector": "^8.2.34"
 	}
 }

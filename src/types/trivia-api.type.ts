@@ -28,26 +28,8 @@ export interface WikipediaSummary {
 	};
 }
 
-// ModelsLab chat completion response
-export interface ModelsLabResponse {
-	status: string;
-	output?: string;
-	message?: string;
-	meta?: {
-		model: string;
-	};
-}
-
-// ModelsLab generated question format
-export interface ModelsLabQuestion {
-	question: string;
-	correct: string;
-	wrong: string[];
-	difficulty: 'easy' | 'medium' | 'hard';
-}
-
 // Source identifiers
-export type TriviaSource = 'thetriviaapi' | 'wikipedia' | 'modelslab';
+export type TriviaSource = 'thetriviaapi' | 'wikipedia';
 
 // Normalized trivia for preview before import
 export interface FetchedTrivia {

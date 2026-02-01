@@ -99,6 +99,9 @@ impl TvMazeApi {
                     source: "tvmaze".to_string(),
                     width: original.width,
                     height: original.height,
+                    vote_average: None,
+                    likes: None,
+                    language: None,
                 });
             }
         }

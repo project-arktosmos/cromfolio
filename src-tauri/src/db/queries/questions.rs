@@ -4,7 +4,7 @@ use crate::models::Question;
 pub fn get_all(conn: &Connection) -> Result<Vec<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, album_id, question_text, answer_a, answer_b, answer_c,
+            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
                     correct_answer, difficulty, created_at, updated_at
              FROM questions
              ORDER BY created_at DESC",
@@ -22,7 +22,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Question>, String> {
 pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, album_id, question_text, answer_a, answer_b, answer_c,
+            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
                     correct_answer, difficulty, created_at, updated_at
              FROM questions
              WHERE id = ?1",
@@ -39,19 +39,19 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Question>, String
     }
 }
 
-pub fn get_by_album_id(conn: &Connection, album_id: &str) -> Result<Vec<Question>, String> {
+pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, album_id, question_text, answer_a, answer_b, answer_c,
+            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
                     correct_answer, difficulty, created_at, updated_at
              FROM questions
-             WHERE album_id = ?1
+             WHERE source_id = ?1
              ORDER BY created_at DESC",
         )
         .map_err(|e| e.to_string())?;
 
     let rows = stmt
-        .query_map(params![album_id], |row| Ok(row_to_question(row)))
+        .query_map(params![source_id], |row| Ok(row_to_question(row)))
         .map_err(|e| e.to_string())?;
 
     rows.collect::<Result<Vec<_>, _>>()
@@ -69,12 +69,12 @@ pub fn create(conn: &Connection, question: &Question) -> Result<Question, String
 
     conn.execute(
         "INSERT INTO questions (
-            id, album_id, question_text, answer_a, answer_b, answer_c,
+            id, source_id, question_text, answer_a, answer_b, answer_c,
             correct_answer, difficulty, created_at, updated_at
          ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         params![
             id,
-            question.album_id,
+            question.source_id,
             question.question_text,
             question.answer_a,
             question.answer_b,
@@ -100,12 +100,12 @@ pub fn update(conn: &Connection, question: &Question) -> Result<Question, String
 
     conn.execute(
         "UPDATE questions SET
-            album_id = ?2, question_text = ?3, answer_a = ?4, answer_b = ?5,
+            source_id = ?2, question_text = ?3, answer_a = ?4, answer_b = ?5,
             answer_c = ?6, correct_answer = ?7, difficulty = ?8, updated_at = ?9
          WHERE id = ?1",
         params![
             question.id,
-            question.album_id,
+            question.source_id,
             question.question_text,
             question.answer_a,
             question.answer_b,
@@ -131,9 +131,9 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
     Ok(rows_affected > 0)
 }
 
-pub fn delete_by_album_id(conn: &Connection, album_id: &str) -> Result<bool, String> {
+pub fn delete_by_source_id(conn: &Connection, source_id: &str) -> Result<bool, String> {
     let rows_affected = conn
-        .execute("DELETE FROM questions WHERE album_id = ?1", params![album_id])
+        .execute("DELETE FROM questions WHERE source_id = ?1", params![source_id])
         .map_err(|e| e.to_string())?;
 
     Ok(rows_affected > 0)
@@ -142,7 +142,7 @@ pub fn delete_by_album_id(conn: &Connection, album_id: &str) -> Result<bool, Str
 fn row_to_question(row: &rusqlite::Row) -> Question {
     Question {
         id: row.get(0).unwrap_or_default(),
-        album_id: row.get(1).unwrap_or_default(),
+        source_id: row.get(1).unwrap_or_default(),
         question_text: row.get(2).unwrap_or_default(),
         answer_a: row.get(3).unwrap_or_default(),
         answer_b: row.get(4).unwrap_or_default(),

@@ -1,6 +1,6 @@
 /**
  * Cards Service
- * Manages a collection of cards within albums via Tauri backend
+ * Manages a collection of cards within sources via Tauri backend
  */
 
 import { invoke } from '@tauri-apps/api/core';
@@ -16,13 +16,13 @@ export async function getCardCollection(): Promise<Card[]> {
 }
 
 /**
- * Get all cards for a specific album
+ * Get all cards for a specific source
  */
-export async function getCardsByAlbum(albumId: ID): Promise<Card[]> {
+export async function getCardsBySource(sourceId: ID): Promise<Card[]> {
 	try {
-		return await invoke<Card[]>('get_cards_by_album', { albumId: String(albumId) });
+		return await invoke<Card[]>('get_cards_by_source', { sourceId: String(sourceId) });
 	} catch (e) {
-		console.error(`[cards.service] getCardsByAlbum(${albumId}):`, e);
+		console.error(`[cards.service] getCardsBySource(${sourceId}):`, e);
 		return [];
 	}
 }
@@ -32,6 +32,18 @@ export async function getCardsByAlbum(albumId: ID): Promise<Card[]> {
  */
 export async function addCard(card: Card): Promise<Card | null> {
 	return await tauriApiService.create<Card>('cards', card);
+}
+
+/**
+ * Add multiple cards in a single transaction (all or nothing)
+ */
+export async function addCardsBatch(cards: Card[]): Promise<Card[]> {
+	try {
+		return await invoke<Card[]>('create_cards_batch', { cards });
+	} catch (e) {
+		console.error('[cards.service] addCardsBatch:', e);
+		throw e;
+	}
 }
 
 /**
@@ -56,13 +68,13 @@ export async function cardExists(id: ID): Promise<Card | null> {
 }
 
 /**
- * Remove all cards for a specific album
+ * Remove all cards for a specific source
  */
-export async function removeCardsByAlbum(albumId: ID): Promise<boolean> {
+export async function removeCardsBySource(sourceId: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_cards_by_album', { albumId: String(albumId) });
+		return await invoke<boolean>('delete_cards_by_source', { sourceId: String(sourceId) });
 	} catch (e) {
-		console.error(`[cards.service] removeCardsByAlbum(${albumId}):`, e);
+		console.error(`[cards.service] removeCardsBySource(${sourceId}):`, e);
 		return false;
 	}
 }

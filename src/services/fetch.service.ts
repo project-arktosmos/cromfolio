@@ -22,6 +22,12 @@ export interface ImageItem {
 	source: string;
 	width?: number;
 	height?: number;
+	/** Vote average / rating from TMDB (0-10 scale) */
+	voteAverage?: number;
+	/** Number of likes */
+	likes?: number;
+	/** Language/region code for the image (e.g., "en", "de") */
+	language?: string;
 }
 
 export interface CharacterItem {
@@ -50,7 +56,7 @@ export interface BatchFetchResult {
 	totalDurationMs: number;
 }
 
-export type ContentType = 'movie' | 'tv' | 'game' | 'anime' | 'sports' | 'animal' | 'music' | 'book';
+export type ContentType = 'movie' | 'tv' | 'game' | 'anime' | 'sports' | 'animal';
 
 // ============================================================================
 // SEARCH RESULT TYPES
@@ -149,56 +155,37 @@ export interface SpeciesResult {
 	thumbUrl?: string;
 }
 
-export interface MusicArtistSearchResult {
-	id: string;
-	name: string;
-	disambiguation?: string;
-	artistType?: string;
-	country?: string;
-	beginYear?: number;
-	endYear?: number;
-	tags: string[];
-}
-
-export interface MusicReleaseResult {
-	id: string;
-	title: string;
-	artistName: string;
-	releaseYear?: number;
-	releaseType?: string;
-	coverUrl?: string;
-	thumbUrl?: string;
-}
-
-export interface BookAuthorSearchResult {
-	key: string;
-	name: string;
-	birthDate?: string;
-	deathDate?: string;
-	topWork?: string;
-	workCount?: number;
-	imageUrl?: string;
-	topSubjects: string[];
-}
-
-export interface BookWorkSearchResult {
-	key: string;
-	title: string;
-	authorName?: string;
-	authorKey?: string;
-	firstPublishYear?: number;
-	editionCount?: number;
-	coverUrl?: string;
-	subjects: string[];
-}
-
 export interface ApiConfig {
 	omdbApiKey?: string;
 	tmdbApiKey?: string;
-	fanartApiKey?: string;
 	twitchClientId?: string;
 	twitchClientSecret?: string;
 	steamgriddbApiKey?: string;
+}
+
+export interface ContentDetails {
+	title: string;
+	year: string;
+	rated?: string;
+	released?: string;
+	runtime?: string;
+	genre?: string;
+	director?: string;
+	writer?: string;
+	actors?: string;
+	plot?: string;
+	language?: string;
+	country?: string;
+	awards?: string;
+	poster?: string;
+	imdbRating?: string;
+	imdbVotes?: string;
+	imdbId: string;
+	mediaType: string;
+	totalSeasons?: string;
+	metascore?: string;
+	boxOffice?: string;
+	production?: string;
 }
 
 // ============================================================================
@@ -247,22 +234,8 @@ export async function searchAnimals(query: string): Promise<AnimalSearchResult[]
 	return invoke<AnimalSearchResult[]>('search_animals', { query });
 }
 
-export async function searchMusicArtists(
-	query: string
-): Promise<MusicArtistSearchResult[]> {
-	return invoke<MusicArtistSearchResult[]>('search_music_artists', { query });
-}
-
-export async function searchBookAuthors(
-	query: string
-): Promise<BookAuthorSearchResult[]> {
-	return invoke<BookAuthorSearchResult[]>('search_book_authors', { query });
-}
-
-export async function searchBookWorks(
-	query: string
-): Promise<BookWorkSearchResult[]> {
-	return invoke<BookWorkSearchResult[]>('search_book_works', { query });
+export async function getContentDetails(imdbId: string): Promise<ContentDetails> {
+	return invoke<ContentDetails>('get_content_details', { imdbId });
 }
 
 // ============================================================================
@@ -317,20 +290,6 @@ export async function getSpeciesInGenus(
 	return invoke<SpeciesResult[]>('get_species_in_genus', { genusWikidataId });
 }
 
-export async function getArtistReleases(
-	artistId: string,
-	includeCovers: boolean = true
-): Promise<MusicReleaseResult[]> {
-	return invoke<MusicReleaseResult[]>('get_artist_releases', { artistId, includeCovers });
-}
-
-export async function getAuthorWorks(
-	authorKey: string,
-	limit?: number
-): Promise<BookWorkSearchResult[]> {
-	return invoke<BookWorkSearchResult[]>('get_author_works', { authorKey, limit });
-}
-
 export async function getTeamsInLeague(
 	leagueName: string
 ): Promise<SportsTeamSearchResult[]> {
@@ -359,9 +318,9 @@ export async function updateApiConfig(config: ApiConfig): Promise<void> {
 export function getSourcesForContentType(contentType: ContentType): string[] {
 	switch (contentType) {
 		case 'movie':
-			return ['tmdb', 'fanart', 'credits'];
+			return ['tmdb', 'credits'];
 		case 'tv':
-			return ['tmdb', 'tvmaze', 'fanart', 'credits'];
+			return ['tmdb', 'tvmaze', 'credits'];
 		case 'game':
 			return ['igdb', 'sgdb'];
 		case 'anime':
@@ -370,10 +329,6 @@ export function getSourcesForContentType(contentType: ContentType): string[] {
 			return ['team', 'league'];
 		case 'animal':
 			return ['wikidata', 'inaturalist'];
-		case 'music':
-			return ['musicbrainz', 'fanart'];
-		case 'book':
-			return ['author_works', 'work_covers'];
 		default:
 			return [];
 	}

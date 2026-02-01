@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-/// Trivia question entity for album-based trivia games
-/// Each question belongs to an album and has ABC answers
+/// Trivia question entity for source-based trivia games
+/// Each question belongs to a source and has ABC answers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Question {
     #[serde(default)]
     pub id: String,
     #[serde(default)]
-    pub album_id: String,
+    pub source_id: String,
     #[serde(default)]
     pub question_text: String,
 

@@ -1,14 +1,9 @@
 {
 	"items": [
 		{
-			"id": "album",
-			"label": "Album",
-			"path": "/admin/album"
-		},
-		{
-			"id": "card",
-			"label": "Card",
-			"path": "/admin/card"
+			"id": "collections",
+			"label": "Collections",
+			"path": "/admin/collections"
 		},
 		{
 			"id": "components",
@@ -16,19 +11,19 @@
 			"path": "/admin/components"
 		},
 		{
-			"id": "furniture",
-			"label": "Furniture",
-			"path": "/admin/furniture"
+			"id": "database",
+			"label": "Database",
+			"path": "/admin/database"
 		},
 		{
-			"id": "internet-archive",
-			"label": "Internet Archive",
-			"path": "/admin/internet-archive"
+			"id": "duplicates",
+			"label": "Duplicates",
+			"path": "/admin/duplicates"
 		},
 		{
-			"id": "models",
-			"label": "Models",
-			"path": "/admin/models"
+			"id": "llama",
+			"label": "Llama",
+			"path": "/admin/llama"
 		},
 		{
 			"id": "rarity",
@@ -36,19 +31,19 @@
 			"path": "/admin/rarity"
 		},
 		{
-			"id": "rooms",
-			"label": "Rooms",
-			"path": "/admin/rooms"
-		},
-		{
-			"id": "settings",
-			"label": "Settings",
-			"path": "/admin/settings"
-		},
-		{
 			"id": "sources",
 			"label": "Sources",
 			"path": "/admin/sources"
+		},
+		{
+			"id": "stamps",
+			"label": "Stamps",
+			"path": "/admin/stamps"
+		},
+		{
+			"id": "telegram-stickers",
+			"label": "Telegram Stickers",
+			"path": "/admin/telegram-stickers"
 		},
 		{
 			"id": "torrent",
@@ -61,15 +56,15 @@
 			"path": "/admin/trivia"
 		},
 		{
+			"id": "whatsapp-stickers",
+			"label": "Whatsapp Stickers",
+			"path": "/admin/whatsapp-stickers"
+		},
+		{
 			"id": "wikidata",
 			"label": "Wikidata",
 			"path": "/admin/wikidata"
-		},
-		{
-			"id": "wordle",
-			"label": "Wordle",
-			"path": "/admin/wordle"
 		}
 	],
-	"generatedAt": "2026-01-26T18:03:16.289Z"
+	"generatedAt": "2026-01-31T17:08:55.537Z"
 }

@@ -1,30 +1,30 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
-	import { getAlbumCollection } from '$services/albums.service';
-	import { getCardsByAlbum } from '$services/cards.service';
-	import type { Album } from '$types/album.type';
-	import type { Card } from '$types/card.type';
+	import { getSourceCollection } from '$services/sources.service';
+	import { getStickersBySource } from '$services/stickers.service';
+	import type { Source } from '$types/source.type';
+	import type { Sticker } from '$types/sticker.type';
 
 	// Game configuration
 	const GAME_DURATION = 30; // seconds
 	const MAX_POINTS = 1000;
 	const MIN_POINTS = 100;
-	const GRID_SIZE = 12; // 6 pairs = 12 cards
-	const MIN_CARDS_REQUIRED = 6; // Need at least 6 unique cards for 6 pairs
+	const GRID_SIZE = 12; // 6 pairs = 12 stickers
+	const MIN_STICKERS_REQUIRED = 6; // Need at least 6 unique stickers for 6 pairs
 
 	// View state
-	type ViewState = 'album-select' | 'playing' | 'result';
-	let viewState = $state<ViewState>('album-select');
+	type ViewState = 'source-select' | 'playing' | 'result';
+	let viewState = $state<ViewState>('source-select');
 
-	// Album selection state
-	let albums: Album[] = $state([]);
-	let albumCardCounts = $state<Map<string, number>>(new Map());
+	// Source selection state
+	let sources: Source[] = $state([]);
+	let sourceStickerCounts = $state<Map<string, number>>(new Map());
 	let isLoading = $state(true);
 
 	// Game state
-	let selectedAlbum = $state<Album | null>(null);
-	let gameCards = $state<{ card: Card; pairId: number; isFlipped: boolean; isMatched: boolean }[]>(
+	let selectedSource = $state<Source | null>(null);
+	let gameStickers = $state<{ sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[]>(
 		[]
 	);
 	let timeRemaining = $state(GAME_DURATION);
@@ -40,15 +40,15 @@
 	let gamesPlayed = $state(0);
 
 	onMount(async () => {
-		albums = await getAlbumCollection();
+		sources = await getSourceCollection();
 
-		// Count cards per album
+		// Count stickers per source
 		const counts = new Map<string, number>();
-		for (const album of albums) {
-			const cards = await getCardsByAlbum(album.id);
-			counts.set(String(album.id), cards.length);
+		for (const source of sources) {
+			const stickers = await getStickersBySource(source.id);
+			counts.set(String(source.id), stickers.length);
 		}
-		albumCardCounts = counts;
+		sourceStickerCounts = counts;
 		isLoading = false;
 	});
 
@@ -58,17 +58,17 @@
 		}
 	});
 
-	function getCardCount(albumId: string | number): number {
-		return albumCardCounts.get(String(albumId)) ?? 0;
+	function getStickerCount(sourceId: string | number): number {
+		return sourceStickerCounts.get(String(sourceId)) ?? 0;
 	}
 
-	function canPlayAlbum(albumId: string | number): boolean {
-		// Need at least 6 unique cards for 6 pairs
-		return getCardCount(albumId) >= MIN_CARDS_REQUIRED;
+	function canPlaySource(sourceId: string | number): boolean {
+		// Need at least 6 unique stickers for 6 pairs
+		return getStickerCount(sourceId) >= MIN_STICKERS_REQUIRED;
 	}
 
-	async function startGame(album: Album) {
-		selectedAlbum = album;
+	async function startGame(source: Source) {
+		selectedSource = source;
 		viewState = 'playing';
 		gameResult = null;
 		firstSelection = null;
@@ -77,24 +77,24 @@
 		matchesFound = 0;
 		earnedPoints = 0;
 
-		// Get cards for this album
-		const albumCards = await getCardsByAlbum(album.id);
+		// Get stickers for this source
+		const sourceStickers = await getStickersBySource(source.id);
 
-		// Shuffle and pick 6 cards
-		const shuffledCards = [...albumCards].sort(() => Math.random() - 0.5);
-		const selectedCards = shuffledCards.slice(0, 6);
-		totalPairs = selectedCards.length;
+		// Shuffle and pick 6 stickers
+		const shuffledStickers = [...sourceStickers].sort(() => Math.random() - 0.5);
+		const selectedStickers = shuffledStickers.slice(0, 6);
+		totalPairs = selectedStickers.length;
 
-		// Create pairs (duplicate each card)
-		const pairs: { card: Card; pairId: number; isFlipped: boolean; isMatched: boolean }[] = [];
-		selectedCards.forEach((card, index) => {
-			// Add two copies of each card with the same pairId
-			pairs.push({ card, pairId: index, isFlipped: false, isMatched: false });
-			pairs.push({ card, pairId: index, isFlipped: false, isMatched: false });
+		// Create pairs (duplicate each sticker)
+		const pairs: { sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[] = [];
+		selectedStickers.forEach((sticker, index) => {
+			// Add two copies of each sticker with the same pairId
+			pairs.push({ sticker, pairId: index, isFlipped: false, isMatched: false });
+			pairs.push({ sticker, pairId: index, isFlipped: false, isMatched: false });
 		});
 
 		// Shuffle the pairs
-		gameCards = pairs.sort(() => Math.random() - 0.5);
+		gameStickers = pairs.sort(() => Math.random() - 0.5);
 
 		// Start timer
 		timeRemaining = GAME_DURATION;
@@ -106,36 +106,36 @@
 		}, 1000);
 	}
 
-	function selectCard(index: number) {
-		// Ignore if processing, card is already matched, card is already flipped, or game is over
+	function selectSticker(index: number) {
+		// Ignore if processing, sticker is already matched, sticker is already flipped, or game is over
 		if (
 			isProcessing ||
-			gameCards[index].isMatched ||
-			gameCards[index].isFlipped ||
+			gameStickers[index].isMatched ||
+			gameStickers[index].isFlipped ||
 			gameResult !== null
 		) {
 			return;
 		}
 
-		// Flip the card
-		gameCards[index].isFlipped = true;
+		// Flip the sticker
+		gameStickers[index].isFlipped = true;
 
 		if (firstSelection === null) {
-			// First card of the pair
+			// First sticker of the pair
 			firstSelection = index;
 		} else {
-			// Second card of the pair
+			// Second sticker of the pair
 			secondSelection = index;
 			isProcessing = true;
 
 			// Check for match
-			const firstCard = gameCards[firstSelection];
-			const secondCard = gameCards[index];
+			const firstSticker = gameStickers[firstSelection];
+			const secondSticker = gameStickers[index];
 
-			if (firstCard.pairId === secondCard.pairId) {
+			if (firstSticker.pairId === secondSticker.pairId) {
 				// Match found!
-				gameCards[firstSelection].isMatched = true;
-				gameCards[index].isMatched = true;
+				gameStickers[firstSelection].isMatched = true;
+				gameStickers[index].isMatched = true;
 				matchesFound++;
 
 				// Reset selections
@@ -151,8 +151,8 @@
 				// No match - flip back after delay
 				setTimeout(() => {
 					if (firstSelection !== null && secondSelection !== null) {
-						gameCards[firstSelection].isFlipped = false;
-						gameCards[secondSelection].isFlipped = false;
+						gameStickers[firstSelection].isFlipped = false;
+						gameStickers[secondSelection].isFlipped = false;
 					}
 					firstSelection = null;
 					secondSelection = null;
@@ -184,15 +184,15 @@
 	}
 
 	function playAgain() {
-		if (selectedAlbum) {
-			startGame(selectedAlbum);
+		if (selectedSource) {
+			startGame(selectedSource);
 		}
 	}
 
-	function backToAlbums() {
-		viewState = 'album-select';
-		selectedAlbum = null;
-		gameCards = [];
+	function backToSources() {
+		viewState = 'source-select';
+		selectedSource = null;
+		gameStickers = [];
 		gameResult = null;
 		firstSelection = null;
 		secondSelection = null;
@@ -209,8 +209,8 @@
 		<div>
 			<h1 class="text-3xl font-bold">Matching Pairs</h1>
 			<p class="text-base-content/70 mt-1">
-				{#if viewState === 'album-select'}
-					Pick an album to start the game
+				{#if viewState === 'source-select'}
+					Pick a source to start the game
 				{:else if viewState === 'playing'}
 					Find all matching pairs before time runs out!
 				{:else}
@@ -231,30 +231,30 @@
 		<div class="flex justify-center p-8">
 			<span class="loading loading-spinner loading-lg"></span>
 		</div>
-	{:else if viewState === 'album-select'}
-		<!-- Album Selection View -->
-		{#if albums.length === 0}
+	{:else if viewState === 'source-select'}
+		<!-- Source Selection View -->
+		{#if sources.length === 0}
 			<div class="alert alert-info">
-				<span>No albums available. Create albums with cards in the admin panel first.</span>
+				<span>No sources available. Create sources with stickers in the admin panel first.</span>
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-				{#each albums as album (album.id)}
-					{@const cardCount = getCardCount(album.id)}
-					{@const canPlay = canPlayAlbum(album.id)}
+				{#each sources as source (source.id)}
+					{@const stickerCount = getStickerCount(source.id)}
+					{@const canPlay = canPlaySource(source.id)}
 					<div
 						class={classNames('card bg-base-200 transition-all', {
 							'cursor-pointer hover:shadow-lg hover:scale-[1.02]': canPlay,
 							'opacity-50 cursor-not-allowed': !canPlay
 						})}
-						onclick={() => canPlay && startGame(album)}
-						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(album)}
+						onclick={() => canPlay && startGame(source)}
+						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(source)}
 						role="button"
 						tabindex={canPlay ? 0 : -1}
 					>
-						{#if album.coverImage}
+						{#if source.coverImage}
 							<figure class="relative">
-								<img src={album.coverImage} alt={album.title} class="w-full h-48 object-cover" />
+								<img src={source.coverImage} alt={source.title} class="w-full h-48 object-cover" />
 							</figure>
 						{:else}
 							<figure class="relative bg-base-300 h-48 flex items-center justify-center">
@@ -275,13 +275,13 @@
 							</figure>
 						{/if}
 						<div class="card-body p-4">
-							<h2 class="card-title text-lg">{album.title}</h2>
+							<h2 class="card-title text-lg">{source.title}</h2>
 							<p class="text-sm text-base-content/60">
-								{cardCount} cards
+								{stickerCount} stickers
 							</p>
 							{#if !canPlay}
 								<p class="text-xs text-error">
-									Need at least {MIN_CARDS_REQUIRED} cards
+									Need at least {MIN_STICKERS_REQUIRED} stickers
 								</p>
 							{/if}
 							<div class="card-actions justify-end mt-2">
@@ -303,9 +303,9 @@
 	{:else if viewState === 'playing' || viewState === 'result'}
 		<!-- Game View -->
 		<div class="flex flex-col items-center gap-6">
-			<!-- Album info and back button -->
+			<!-- Source info and back button -->
 			<div class="flex items-center justify-between w-full max-w-4xl">
-				<button class="btn btn-ghost btn-sm gap-2" onclick={backToAlbums}>
+				<button class="btn btn-ghost btn-sm gap-2" onclick={backToSources}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-4 w-4"
@@ -320,10 +320,10 @@
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					Back to Albums
+					Back to Sources
 				</button>
-				{#if selectedAlbum}
-					<span class="badge badge-lg badge-outline">{selectedAlbum.title}</span>
+				{#if selectedSource}
+					<span class="badge badge-lg badge-outline">{selectedSource.title}</span>
 				{/if}
 			</div>
 
@@ -387,14 +387,14 @@
 				</div>
 			</div>
 
-			<!-- Cards Grid -->
+			<!-- Stickers Grid -->
 			<div class="grid grid-cols-4 gap-3 w-full max-w-2xl">
-				{#each gameCards as gameCard, index (index)}
+				{#each gameStickers as gameSticker, index (index)}
 					{@const isClickable =
 						viewState === 'playing' &&
 						!isProcessing &&
-						!gameCard.isFlipped &&
-						!gameCard.isMatched}
+						!gameSticker.isFlipped &&
+						!gameSticker.isMatched}
 					<div
 						class={classNames(
 							'aspect-[3/4] relative cursor-pointer perspective-1000',
@@ -402,21 +402,21 @@
 								'pointer-events-none': !isClickable
 							}
 						)}
-						onclick={() => selectCard(index)}
-						onkeydown={(e) => e.key === 'Enter' && selectCard(index)}
+						onclick={() => selectSticker(index)}
+						onkeydown={(e) => e.key === 'Enter' && selectSticker(index)}
 						role="button"
 						tabindex={isClickable ? 0 : -1}
 					>
-						<!-- Card container with flip animation -->
+						<!-- Sticker container with flip animation -->
 						<div
 							class={classNames(
 								'w-full h-full transition-transform duration-300 transform-style-3d relative',
 								{
-									'rotate-y-180': gameCard.isFlipped || gameCard.isMatched
+									'rotate-y-180': gameSticker.isFlipped || gameSticker.isMatched
 								}
 							)}
 						>
-							<!-- Card Back (face down) -->
+							<!-- Sticker Back (face down) -->
 							<div
 								class={classNames(
 									'absolute inset-0 backface-hidden rounded-lg flex items-center justify-center',
@@ -442,27 +442,27 @@
 								</svg>
 							</div>
 
-							<!-- Card Front (face up) -->
+							<!-- Sticker Front (face up) -->
 							<div
 								class={classNames(
 									'absolute inset-0 backface-hidden rotate-y-180 rounded-lg overflow-hidden',
 									'bg-base-200',
 									{
-										'ring-4 ring-success': gameCard.isMatched,
-										'opacity-70': gameCard.isMatched && viewState === 'result'
+										'ring-4 ring-success': gameSticker.isMatched,
+										'opacity-70': gameSticker.isMatched && viewState === 'result'
 									}
 								)}
 							>
 								<img
-									src={gameCard.card.image}
-									alt={gameCard.card.name}
+									src={gameSticker.sticker.image}
+									alt={gameSticker.sticker.name}
 									class="w-full h-full object-cover"
 									onerror={(e) => {
 										(e.target as HTMLImageElement).src =
 											'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect fill="%23374151" width="128" height="128"/><text x="64" y="68" text-anchor="middle" fill="%239CA3AF" font-size="16">?</text></svg>';
 									}}
 								/>
-								{#if gameCard.isMatched}
+								{#if gameSticker.isMatched}
 									<div class="absolute top-1 right-1 badge badge-success badge-sm">
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
@@ -513,7 +513,7 @@
 						{/if}
 						<div class="card-actions mt-4 gap-2">
 							<button class="btn btn-primary" onclick={playAgain}> Play Again </button>
-							<button class="btn btn-outline" onclick={backToAlbums}> Choose Album </button>
+							<button class="btn btn-outline" onclick={backToSources}> Choose Source </button>
 						</div>
 					</div>
 				</div>

@@ -189,6 +189,9 @@ impl SgdbApi {
                 source: "sgdb".to_string(),
                 width: img.width,
                 height: img.height,
+                vote_average: None,
+                likes: None,
+                language: None,
             }
         }).collect();
 

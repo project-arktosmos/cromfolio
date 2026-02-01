@@ -12,6 +12,15 @@ pub struct ImageItem {
     pub width: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<u32>,
+    /// Vote average / rating from TMDB (0-10 scale)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vote_average: Option<f64>,
+    /// Number of likes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub likes: Option<i32>,
+    /// Language/region code for the image (e.g., "en", "de")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
 }
 
 /// Represents a character/cast member
@@ -84,8 +93,6 @@ pub enum ContentType {
     Anime,
     Sports,
     Animal,
-    Music,
-    Book,
 }
 
 impl ContentType {
@@ -97,8 +104,6 @@ impl ContentType {
             "anime" => Some(Self::Anime),
             "sports" => Some(Self::Sports),
             "animal" => Some(Self::Animal),
-            "music" => Some(Self::Music),
-            "book" => Some(Self::Book),
             _ => None,
         }
     }
@@ -261,84 +266,42 @@ pub struct SpeciesResult {
     pub thumb_url: Option<String>,
 }
 
-/// Music artist search result from MusicBrainz
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MusicArtistSearchResult {
-    pub id: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub disambiguation: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub artist_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub begin_year: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_year: Option<i32>,
-    pub tags: Vec<String>,
-}
-
-/// Music release result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MusicReleaseResult {
-    pub id: String,
-    pub title: String,
-    pub artist_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub release_year: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub release_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cover_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub thumb_url: Option<String>,
-}
-
-/// Book author search result from Open Library
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BookAuthorSearchResult {
-    pub key: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub birth_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub death_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_work: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub work_count: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image_url: Option<String>,
-    pub top_subjects: Vec<String>,
-}
-
-/// Book work search result from Open Library
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BookWorkSearchResult {
-    pub key: String,
-    pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub author_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub author_key: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub first_publish_year: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub edition_count: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cover_url: Option<String>,
-    pub subjects: Vec<String>,
-}
-
 /// Result containing TMDB ID lookup
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TmdbIdResult {
     pub tmdb_id: i64,
     pub media_type: String,
+}
+
+/// Detailed content information from OMDB
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentDetails {
+    pub title: String,
+    pub year: String,
+    pub rated: Option<String>,
+    pub released: Option<String>,
+    pub runtime: Option<String>,
+    pub genre: Option<String>,
+    pub director: Option<String>,
+    pub writer: Option<String>,
+    pub actors: Option<String>,
+    pub plot: Option<String>,
+    pub language: Option<String>,
+    pub country: Option<String>,
+    pub awards: Option<String>,
+    pub poster: Option<String>,
+    pub imdb_rating: Option<String>,
+    pub imdb_votes: Option<String>,
+    pub imdb_id: String,
+    pub media_type: String,
+    /// Only for TV series
+    pub total_seasons: Option<String>,
+    /// Metascore rating
+    pub metascore: Option<String>,
+    /// Box office earnings (for movies)
+    pub box_office: Option<String>,
+    /// Production company
+    pub production: Option<String>,
 }

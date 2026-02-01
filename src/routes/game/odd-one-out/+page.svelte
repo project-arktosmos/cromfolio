@@ -1,10 +1,10 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
-	import { getAlbumCollection } from '$services/albums.service';
-	import { getCardsByAlbum, getCardCollection } from '$services/cards.service';
-	import type { Album } from '$types/album.type';
-	import type { Card } from '$types/card.type';
+	import { getSourceCollection } from '$services/sources.service';
+	import { getStickersBySource, getStickerCollection } from '$services/stickers.service';
+	import type { Source } from '$types/source.type';
+	import type { Sticker } from '$types/sticker.type';
 
 	// Game configuration
 	const GAME_DURATION = 30; // seconds
@@ -13,40 +13,40 @@
 	const MAX_BLUR = 20; // pixels
 
 	// View state
-	type ViewState = 'album-select' | 'playing' | 'result';
-	let viewState = $state<ViewState>('album-select');
+	type ViewState = 'source-select' | 'playing' | 'result';
+	let viewState = $state<ViewState>('source-select');
 
-	// Album selection state
-	let albums: Album[] = $state([]);
-	let albumCardCounts = $state<Map<string, number>>(new Map());
+	// Source selection state
+	let sources: Source[] = $state([]);
+	let sourceStickerCounts = $state<Map<string, number>>(new Map());
 	let isLoading = $state(true);
 
 	// Game state
-	let selectedAlbum = $state<Album | null>(null);
-	let gameCards = $state<Card[]>([]);
-	let oddCardIndex = $state<number>(-1);
+	let selectedSource = $state<Source | null>(null);
+	let gameStickers = $state<Sticker[]>([]);
+	let oddStickerIndex = $state<number>(-1);
 	let timeRemaining = $state(GAME_DURATION);
 	let timerInterval = $state<ReturnType<typeof setInterval> | null>(null);
-	let selectedCardIndex = $state<number | null>(null);
+	let selectedStickerIndex = $state<number | null>(null);
 	let gameResult = $state<'correct' | 'wrong' | null>(null);
 	let earnedPoints = $state(0);
 	let totalScore = $state(0);
 	let gamesPlayed = $state(0);
 
-	// All cards cache for picking random cards from other albums
-	let allCards: Card[] = [];
+	// All stickers cache for picking random stickers from other sources
+	let allStickers: Sticker[] = [];
 
 	onMount(async () => {
-		albums = await getAlbumCollection();
-		allCards = await getCardCollection();
+		sources = await getSourceCollection();
+		allStickers = await getStickerCollection();
 
-		// Count cards per album
+		// Count stickers per source
 		const counts = new Map<string, number>();
-		for (const album of albums) {
-			const cards = await getCardsByAlbum(album.id);
-			counts.set(String(album.id), cards.length);
+		for (const source of sources) {
+			const stickers = await getStickersBySource(source.id);
+			counts.set(String(source.id), stickers.length);
 		}
-		albumCardCounts = counts;
+		sourceStickerCounts = counts;
 		isLoading = false;
 	});
 
@@ -56,48 +56,48 @@
 		}
 	});
 
-	function getCardCount(albumId: string | number): number {
-		return albumCardCounts.get(String(albumId)) ?? 0;
+	function getStickerCount(sourceId: string | number): number {
+		return sourceStickerCounts.get(String(sourceId)) ?? 0;
 	}
 
-	function canPlayAlbum(albumId: string | number): boolean {
-		// Need at least 2 cards in the album
-		const count = getCardCount(albumId);
-		// Also need at least 1 card from other albums
-		const otherAlbumCards = allCards.filter((c) => String(c.albumId) !== String(albumId));
-		return count >= 2 && otherAlbumCards.length >= 1;
+	function canPlaySource(sourceId: string | number): boolean {
+		// Need at least 2 stickers in the source
+		const count = getStickerCount(sourceId);
+		// Also need at least 1 sticker from other sources
+		const otherSourceStickers = allStickers.filter((b) => String(b.sourceId) !== String(sourceId));
+		return count >= 2 && otherSourceStickers.length >= 1;
 	}
 
-	async function startGame(album: Album) {
-		selectedAlbum = album;
+	async function startGame(source: Source) {
+		selectedSource = source;
 		viewState = 'playing';
 		gameResult = null;
-		selectedCardIndex = null;
+		selectedStickerIndex = null;
 		earnedPoints = 0;
 
-		// Get cards for this album
-		const albumCards = await getCardsByAlbum(album.id);
+		// Get stickers for this source
+		const sourceStickers = await getStickersBySource(source.id);
 
-		// Get cards from other albums
-		const otherAlbumCards = allCards.filter((c) => String(c.albumId) !== String(album.id));
+		// Get stickers from other sources
+		const otherSourceStickers = allStickers.filter((b) => String(b.sourceId) !== String(source.id));
 
-		// Shuffle and pick 2 cards from this album
-		const shuffledAlbumCards = [...albumCards].sort(() => Math.random() - 0.5);
-		const twoFromAlbum = shuffledAlbumCards.slice(0, 2);
+		// Shuffle and pick 2 stickers from this source
+		const shuffledSourceStickers = [...sourceStickers].sort(() => Math.random() - 0.5);
+		const twoFromSource = shuffledSourceStickers.slice(0, 2);
 
-		// Pick 1 random card from other albums
-		const shuffledOther = [...otherAlbumCards].sort(() => Math.random() - 0.5);
+		// Pick 1 random sticker from other sources
+		const shuffledOther = [...otherSourceStickers].sort(() => Math.random() - 0.5);
 		const oneFromOther = shuffledOther[0];
 
-		// Create the game cards array and shuffle positions
-		const combined = [...twoFromAlbum, oneFromOther];
+		// Create the game stickers array and shuffle positions
+		const combined = [...twoFromSource, oneFromOther];
 		const shuffledCombined = combined
-			.map((card, originalIndex) => ({ card, originalIndex, sort: Math.random() }))
+			.map((sticker, originalIndex) => ({ sticker, originalIndex, sort: Math.random() }))
 			.sort((a, b) => a.sort - b.sort);
 
-		gameCards = shuffledCombined.map((item) => item.card);
-		// Find where the "odd" card (originally at index 2) ended up
-		oddCardIndex = shuffledCombined.findIndex((item) => item.originalIndex === 2);
+		gameStickers = shuffledCombined.map((item) => item.sticker);
+		// Find where the "odd" sticker (originally at index 2) ended up
+		oddStickerIndex = shuffledCombined.findIndex((item) => item.originalIndex === 2);
 
 		// Start timer
 		timeRemaining = GAME_DURATION;
@@ -109,8 +109,8 @@
 		}, 1000);
 	}
 
-	function selectCard(index: number) {
-		if (selectedCardIndex !== null || gameResult !== null) return;
+	function selectSticker(index: number) {
+		if (selectedStickerIndex !== null || gameResult !== null) return;
 		endGame(index);
 	}
 
@@ -120,13 +120,13 @@
 			timerInterval = null;
 		}
 
-		selectedCardIndex = chosenIndex;
+		selectedStickerIndex = chosenIndex;
 
 		if (chosenIndex === null) {
 			// Time ran out
 			gameResult = 'wrong';
 			earnedPoints = 0;
-		} else if (chosenIndex === oddCardIndex) {
+		} else if (chosenIndex === oddStickerIndex) {
 			gameResult = 'correct';
 			// Calculate points based on time remaining
 			// More time remaining = more points
@@ -143,17 +143,17 @@
 	}
 
 	function playAgain() {
-		if (selectedAlbum) {
-			startGame(selectedAlbum);
+		if (selectedSource) {
+			startGame(selectedSource);
 		}
 	}
 
-	function backToAlbums() {
-		viewState = 'album-select';
-		selectedAlbum = null;
-		gameCards = [];
+	function backToSources() {
+		viewState = 'source-select';
+		selectedSource = null;
+		gameStickers = [];
 		gameResult = null;
-		selectedCardIndex = null;
+		selectedStickerIndex = null;
 	}
 
 	function getCurrentBlur(): number {
@@ -173,10 +173,10 @@
 		<div>
 			<h1 class="text-3xl font-bold">Odd One Out</h1>
 			<p class="text-base-content/70 mt-1">
-				{#if viewState === 'album-select'}
-					Pick an album to start the game
+				{#if viewState === 'source-select'}
+					Pick a source to start the game
 				{:else if viewState === 'playing'}
-					Find the card that doesn't belong!
+					Find the one that doesn't belong!
 				{:else}
 					{gameResult === 'correct' ? 'Well done!' : 'Better luck next time!'}
 				{/if}
@@ -195,17 +195,17 @@
 		<div class="flex justify-center p-8">
 			<span class="loading loading-spinner loading-lg"></span>
 		</div>
-	{:else if viewState === 'album-select'}
-		<!-- Album Selection View -->
-		{#if albums.length === 0}
+	{:else if viewState === 'source-select'}
+		<!-- Source Selection View -->
+		{#if sources.length === 0}
 			<div class="alert alert-info">
-				<span>No albums available. Create albums with cards in the admin panel first.</span>
+				<span>No sources available. Create sources with stickers in the admin panel first.</span>
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-				{#each albums as album (album.id)}
-					{@const cardCount = getCardCount(album.id)}
-					{@const canPlay = canPlayAlbum(album.id)}
+				{#each sources as source (source.id)}
+					{@const stickerCount = getStickerCount(source.id)}
+					{@const canPlay = canPlaySource(source.id)}
 					<div
 						class={classNames(
 							'card bg-base-200 transition-all',
@@ -214,16 +214,16 @@
 								'opacity-50 cursor-not-allowed': !canPlay
 							}
 						)}
-						onclick={() => canPlay && startGame(album)}
-						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(album)}
+						onclick={() => canPlay && startGame(source)}
+						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(source)}
 						role="button"
 						tabindex={canPlay ? 0 : -1}
 					>
-						{#if album.coverImage}
+						{#if source.coverImage}
 							<figure class="relative">
 								<img
-									src={album.coverImage}
-									alt={album.title}
+									src={source.coverImage}
+									alt={source.title}
 									class="w-full h-48 object-cover"
 								/>
 							</figure>
@@ -235,16 +235,16 @@
 							</figure>
 						{/if}
 						<div class="card-body p-4">
-							<h2 class="card-title text-lg">{album.title}</h2>
+							<h2 class="card-title text-lg">{source.title}</h2>
 							<p class="text-sm text-base-content/60">
-								{cardCount} cards
+								{stickerCount} stickers
 							</p>
 							{#if !canPlay}
 								<p class="text-xs text-error">
-									{#if cardCount < 2}
-										Need at least 2 cards
+									{#if stickerCount < 2}
+										Need at least 2 stickers
 									{:else}
-										No other albums with cards
+										No other sources with stickers
 									{/if}
 								</p>
 							{/if}
@@ -269,14 +269,14 @@
 		<div class="flex flex-col items-center gap-6">
 			<!-- Album info and back button -->
 			<div class="flex items-center justify-between w-full max-w-3xl">
-				<button class="btn btn-ghost btn-sm gap-2" onclick={backToAlbums}>
+				<button class="btn btn-ghost btn-sm gap-2" onclick={backToSources}>
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 					</svg>
-					Back to Albums
+					Back to Sources
 				</button>
-				{#if selectedAlbum}
-					<span class="badge badge-lg badge-outline">{selectedAlbum.title}</span>
+				{#if selectedSource}
+					<span class="badge badge-lg badge-outline">{selectedSource.title}</span>
 				{/if}
 			</div>
 
@@ -338,11 +338,11 @@
 				</p>
 			</div>
 
-			<!-- Cards Display -->
+			<!-- Stickers Display -->
 			<div class="grid grid-cols-3 gap-6 w-full max-w-3xl">
-				{#each gameCards as card, index (card.id)}
-					{@const isOdd = index === oddCardIndex}
-					{@const isSelected = index === selectedCardIndex}
+				{#each gameStickers as sticker, index (sticker.id)}
+					{@const isOdd = index === oddStickerIndex}
+					{@const isSelected = index === selectedStickerIndex}
 					{@const showResult = viewState === 'result'}
 					<div
 						class={classNames(
@@ -355,15 +355,15 @@
 								'opacity-50': showResult && !isOdd && !isSelected
 							}
 						)}
-						onclick={() => viewState === 'playing' && selectCard(index)}
-						onkeydown={(e) => e.key === 'Enter' && viewState === 'playing' && selectCard(index)}
+						onclick={() => viewState === 'playing' && selectSticker(index)}
+						onkeydown={(e) => e.key === 'Enter' && viewState === 'playing' && selectSticker(index)}
 						role="button"
 						tabindex={viewState === 'playing' ? 0 : -1}
 					>
 						<figure class="relative h-full">
 							<img
-								src={card.image}
-								alt={viewState === 'result' ? card.name : 'Mystery card'}
+								src={sticker.image}
+								alt={viewState === 'result' ? sticker.name : 'Mystery'}
 								class="w-full h-full object-cover transition-all duration-100"
 								style={viewState === 'playing' ? `filter: blur(${getCurrentBlur()}px)` : ''}
 								onerror={(e) => {
@@ -373,8 +373,8 @@
 							/>
 							{#if showResult}
 								<div class="absolute bottom-0 left-0 right-0 bg-black/70 p-2">
-									<p class="text-white text-center text-sm font-medium truncate" title={card.name}>
-										{card.name}
+									<p class="text-white text-center text-sm font-medium truncate" title={sticker.name}>
+										{sticker.name}
 									</p>
 									{#if isOdd}
 										<p class="text-success text-center text-xs">The odd one!</p>
@@ -417,13 +417,13 @@
 						{:else}
 							<div class="text-6xl mb-2">😔</div>
 							<h2 class="card-title text-error">
-								{selectedCardIndex === null ? 'Time\'s Up!' : 'Wrong!'}
+								{selectedStickerIndex === null ? 'Time\'s Up!' : 'Wrong!'}
 							</h2>
 							<p class="text-base-content/70">
-								{#if selectedCardIndex === null}
+								{#if selectedStickerIndex === null}
 									You ran out of time.
 								{:else}
-									That card was from the same album.
+									That one was from the same source.
 								{/if}
 							</p>
 							<div class="stat">
@@ -435,8 +435,8 @@
 							<button class="btn btn-primary" onclick={playAgain}>
 								Play Again
 							</button>
-							<button class="btn btn-outline" onclick={backToAlbums}>
-								Choose Album
+							<button class="btn btn-outline" onclick={backToSources}>
+								Choose Source
 							</button>
 						</div>
 					</div>

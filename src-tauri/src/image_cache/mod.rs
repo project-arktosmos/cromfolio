@@ -4,3 +4,4 @@ pub mod models;
 
 pub use cache::ImageCacheState;
 pub use commands::*;
+pub use models::BackgroundDownloadProgress;

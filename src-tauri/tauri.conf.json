@@ -22,7 +22,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**", "$APPDATA"]
+      }
     }
   },
   "bundle": {
@@ -35,7 +39,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../app.db"],
+    "resources": ["../app.db", "../ref/IMDb-Awards/events/*.yml", "../ref/IMDb-Awards/*.yml"],
     "windows": {
       "wix": {
         "language": "en-US"

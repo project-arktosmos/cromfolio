@@ -8,14 +8,12 @@
 
 ### API Coverage
 
-| Theme | Album API | Card API | 
+| Theme | Album API | Card API |
 |:--:|:--:|:--:|:--:|:--:
-| Movies | OMDB | TMDB / Fanart.tv / TVMaze | 
-| TV Shows| OMDB | TMDB / Fanart.tv / TVMaze | 
-| Music | MusicBrainz | Fanart.tv
+| Movies | OMDB | TMDB / TVMaze |
+| TV Shows| OMDB | TMDB / TVMaze |
 | Anime | AniList | Jikan
 | Videogames | IGDB | StreamGridDB
-| Books | OpenLibrary | OpenLibrary Covers
 | Animals | WikiData | Wikimedia, iNaturalist
 | Sports | TheSportsDB | TheSportsDB
 
@@ -85,3 +83,24 @@ Album
 Album
 - Individual TV Shows
 - movies from a decade
+
+
+## Albert @ Ilustrum call
+4k collections when they closed
+
+private collections
+- history, flags, politics
+
+- new colletions are important
+- they release sunday night, multiples, via moderation
+- 
+
+## Collection Types
+
+### Tv Show (standard)
+- season posters
+- main cast shots
+- 
+
+### Movie List
+- 

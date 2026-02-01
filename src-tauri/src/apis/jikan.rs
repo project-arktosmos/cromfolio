@@ -103,6 +103,9 @@ impl JikanApi {
                     source: "jikan".to_string(),
                     width: None,
                     height: None,
+                    vote_average: None,
+                    likes: None,
+                    language: None,
                 })
             })
             .collect();

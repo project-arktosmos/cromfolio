@@ -3,11 +3,11 @@
 	import { onMount, onDestroy } from 'svelte';
 	import * as THREE from 'three';
 	import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-	import type { Album } from '$types/album.type';
+	import type { Source } from '$types/source.type';
 
 	// Props
 	interface Props {
-		album: Album;
+		source: Source;
 		cardCount?: number;
 		wrapperColor?: string;
 		width?: number;
@@ -19,7 +19,7 @@
 	}
 
 	let {
-		album,
+		source,
 		cardCount = 10,
 		wrapperColor = '#c0c0c0',
 		width = 300,
@@ -105,7 +105,7 @@
 		return texture;
 	}
 
-	function formatAlbumType(albumType: string): string {
+	function formatSourceType(sourceType: string): string {
 		const typeLabels: Record<string, string> = {
 			movie: 'MOVIE',
 			tv: 'TV SHOW',
@@ -116,10 +116,10 @@
 			musician: 'MUSIC',
 			author: 'BOOKS'
 		};
-		return typeLabels[albumType] || albumType.toUpperCase();
+		return typeLabels[sourceType] || sourceType.toUpperCase();
 	}
 
-	function createTypeTexture(albumType: string): THREE.CanvasTexture {
+	function createTypeTexture(sourceType: string): THREE.CanvasTexture {
 		const canvas = document.createElement('canvas');
 		canvas.width = 512;
 		canvas.height = 96;
@@ -133,7 +133,7 @@
 		ctx.font = 'bold 32px Arial';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.fillText(formatAlbumType(albumType), 256, 48);
+		ctx.fillText(formatSourceType(sourceType), 256, 48);
 
 		const texture = new THREE.CanvasTexture(canvas);
 		texture.colorSpace = THREE.SRGBColorSpace;
@@ -309,9 +309,9 @@
 
 		// Load cover image texture
 		let imageTexture: THREE.Texture | null = null;
-		if (album.coverImage) {
+		if (source.coverImage) {
 			try {
-				const image = await loadImage(album.coverImage);
+				const image = await loadImage(source.coverImage);
 				imageTexture = createImageTexture(image);
 			} catch {
 				// Will use fallback
@@ -319,10 +319,10 @@
 		}
 
 		// Create title texture
-		const titleTexture = createTitleTexture(album.title);
+		const titleTexture = createTitleTexture(source.title);
 
-		// Create album type texture
-		const typeTexture = createTypeTexture(album.albumType);
+		// Create source type texture
+		const typeTexture = createTypeTexture(source.sourceType);
 
 		// Load GLTF model
 		const loader = new GLTFLoader();
@@ -337,7 +337,7 @@
 					// Traverse the model to find meshes and apply textures
 					model.traverse((child) => {
 						if (child instanceof THREE.Mesh) {
-							// Object_6 is the flat card surface (Plane) - apply album cover
+							// Object_6 is the flat card surface (Plane) - apply source cover
 							// Object_4 is the wrapper (Cube) - keep metallic
 							if (child.name === 'Object_6') {
 								// This is the card/artwork surface
@@ -351,7 +351,7 @@
 								} else {
 									// Fallback: use a simple colored material
 									child.material = new THREE.MeshStandardMaterial({
-										map: createFallbackTexture(album.title),
+										map: createFallbackTexture(source.title),
 										metalness: 0.1,
 										roughness: 0.4,
 										side: THREE.DoubleSide
@@ -374,7 +374,7 @@
 
 					packGroup.add(model);
 
-					// Add album type label as a plane above the image area
+					// Add source type label as a plane above the image area
 					const typeGeometry = new THREE.PlaneGeometry(3.2, 0.6);
 					const typeMaterial = new THREE.MeshBasicMaterial({
 						map: typeTexture,

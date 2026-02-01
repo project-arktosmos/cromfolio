@@ -230,6 +230,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -241,6 +244,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -252,6 +258,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -263,6 +272,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -274,6 +286,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -290,6 +305,9 @@ impl SportsDbApi {
                     source: "thesportsdb".to_string(),
                     width: None,
                     height: None,
+                    vote_average: None,
+                    likes: None,
+                    language: None,
                 });
             }
         }
@@ -332,6 +350,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -343,6 +364,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -354,6 +378,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -365,6 +392,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -376,6 +406,9 @@ impl SportsDbApi {
                 source: "thesportsdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -392,6 +425,9 @@ impl SportsDbApi {
                     source: "thesportsdb".to_string(),
                     width: None,
                     height: None,
+                    vote_average: None,
+                    likes: None,
+                    language: None,
                 });
             }
         }

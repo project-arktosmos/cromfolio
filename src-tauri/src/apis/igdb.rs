@@ -224,6 +224,9 @@ impl IgdbApi {
                 source: "igdb".to_string(),
                 width: None,
                 height: None,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -236,6 +239,9 @@ impl IgdbApi {
                 source: "igdb".to_string(),
                 width: screenshot.width,
                 height: screenshot.height,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 
@@ -248,6 +254,9 @@ impl IgdbApi {
                 source: "igdb".to_string(),
                 width: artwork.width,
                 height: artwork.height,
+                vote_average: None,
+                likes: None,
+                language: None,
             });
         }
 

@@ -12,8 +12,8 @@ export interface ImageItem {
 	type: string;
 	width?: number;
 	height?: number;
-	source: 'tmdb' | 'fanart' | 'tvmaze' | 'igdb' | 'sgdb' | 'tmdb-cast';
-	selected?: boolean; // For card selection
+	source: 'tmdb' | 'tvmaze' | 'igdb' | 'sgdb' | 'tmdb-cast';
+	selected?: boolean; // For template selection
 }
 
 // Character/Cast types for Movies & TV
@@ -24,9 +24,9 @@ export interface CharacterItem {
 	profileUrl: string;
 	profileThumbUrl: string;
 	order: number;
-	source: 'tmdb-cast' | 'tvmaze-character' | 'fanart-characterart';
+	source: 'tmdb-cast' | 'tvmaze-character';
 	isActorHeadshot: boolean; // true for actor photos, false for actual character images
-	selected?: boolean; // For card selection
+	selected?: boolean; // For template selection
 }
 
 // IGDB Game types
@@ -377,76 +377,73 @@ export interface AnimalImageItem {
 	source: 'wikipedia' | 'wikimedia';
 }
 
-// Music types (MusicBrainz / Last.fm / Discogs)
-export interface MusicArtistSearchResult {
-	id: string;
-	name: string;
-	disambiguation?: string;
-	type?: string;
-	country?: string;
-	area?: string;
-	beginYear?: number;
-	endYear?: number;
-	tags?: string[];
-	imageUrl?: string;
+// ============================================================================
+// SHARED SOURCE TAB CONFIGURATION TYPES
+// ============================================================================
+
+import type { ContentType, ImageItem as FetchImageItem, CharacterItem as FetchCharacterItem, FetchProgressEvent, FetchStatus } from '$services/fetch.service';
+import type { Source } from '$types/source.type';
+import type { ExternalIdType, ProviderType } from '$types/provider.type';
+
+/** Local ImageItem with selected state for the UI */
+export interface SelectableImageItem extends FetchImageItem {
+	selected: boolean;
 }
 
-export interface MusicReleaseSearchResult {
-	id: string;
-	title: string;
-	artistId?: string;
-	artistName: string;
-	releaseDate?: string;
-	releaseYear?: number;
-	type?: string;
-	format?: string;
-	trackCount?: number;
-	country?: string;
-	label?: string;
-	tags?: string[];
-	imageUrl?: string;
+/** Local CharacterItem with selected state for the UI */
+export interface SelectableCharacterItem extends FetchCharacterItem {
+	selected: boolean;
+	character: string;
 }
 
-export interface MusicImageItem {
+/** Configuration for an image source tab */
+export interface ImageSourceTab {
+	key: string;
+	label: string;
+}
+
+/** External link configuration */
+export interface ExternalLink {
+	label: string;
 	url: string;
-	thumbUrl: string;
-	type: string;
-	source: 'musicbrainz' | 'lastfm' | 'discogs' | 'fanart';
 }
 
-export type MusicSearchType = 'artists' | 'releases';
+/** Configuration for a source tab - generic over the search result type */
+export interface SourceTabConfig<TResult> {
+	// Search configuration
+	searchPlaceholder: string;
+	showYearFilter: boolean;
+	searchFunction: (query: string, year?: string) => Promise<TResult[]>;
 
-// Books types (Open Library)
-export interface BookAuthorSearchResult {
-	key: string; // Open Library author key (e.g., "OL23919A")
-	name: string;
-	alternateNames?: string[];
-	birthDate?: string;
-	deathDate?: string;
-	topWork?: string;
-	workCount?: number;
-	topSubjects?: string[];
-	imageUrl?: string;
+	// Result accessors - how to extract data from search results
+	getId: (result: TResult) => string;
+	getTitle: (result: TResult) => string;
+	getYear: (result: TResult) => string;
+	getPoster: (result: TResult) => string | undefined;
+	getUniqueKey: (result: TResult) => string;
+
+	// Image fetching configuration
+	contentType: ContentType;
+	externalIdType: ExternalIdType;
+	imageSources: string[];
+	imageSourceTabs: ImageSourceTab[];
+	showCharacters: boolean;
+	progressSources: string[];
+
+	// Source creation configuration
+	sourceType: string;
+	sourceBadgeText: string;
+	sourceBadgeClass: string;
+	providerType: ProviderType;
+	buildSource: (result: TResult, coverImage: string | undefined) => Omit<Source, 'id' | 'addedAt'>;
+	getExternalLinks: (result: TResult) => ExternalLink[];
+
+	// Optional: Extra details to show in the source panel
+	getExtraDetails?: (result: TResult) => { label: string; value: string }[];
 }
 
-export interface BookWorkSearchResult {
-	key: string; // Open Library work key (e.g., "/works/OL45883W")
-	title: string;
-	authorKey?: string;
-	authorName?: string;
-	firstPublishYear?: number;
-	editionCount?: number;
-	subjects?: string[];
-	coverIds?: number[];
-	imageUrl?: string;
-	description?: string;
-}
+/** Re-export provider types for convenience */
+export type { ExternalIdType, ProviderType };
 
-export interface BookImageItem {
-	url: string;
-	thumbUrl: string;
-	type: string;
-	source: 'openlibrary';
-}
-
-export type BookSearchType = 'authors' | 'works';
+/** Re-export fetch types for convenience */
+export type { FetchProgressEvent, FetchStatus };

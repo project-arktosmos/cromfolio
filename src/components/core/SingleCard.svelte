@@ -2,29 +2,43 @@
 	import classNames from 'classnames';
 	import type { Card } from '$types/card.type';
 	import type { Rarity } from '$types/rarity.type';
+	import type { CardTypeEntity } from '$types/card-type-entity.type';
 
 	// Props
 	interface Props {
 		card: Card;
 		rarity?: Rarity | null;
+		cardType?: CardTypeEntity | null;
 		owned?: boolean;
 		copyCount?: number;
 		interactive?: boolean;
+		showCheckbox?: boolean;
+		checked?: boolean;
 		classes?: string;
 		onclick?: () => void;
 		onkeydown?: (e: KeyboardEvent) => void;
+		onCheckboxChange?: (checked: boolean) => void;
 	}
 
 	let {
 		card,
 		rarity = null,
+		cardType = null,
 		owned = false,
 		copyCount = 0,
 		interactive = true,
+		showCheckbox = false,
+		checked = false,
 		classes = '',
 		onclick,
-		onkeydown
+		onkeydown,
+		onCheckboxChange
 	}: Props = $props();
+
+	function handleCheckboxClick(e: Event) {
+		e.stopPropagation();
+		onCheckboxChange?.(!checked);
+	}
 
 	// Default gradient colors when no rarity is provided
 	const defaultColorFrom = '#6B7280';
@@ -48,8 +62,8 @@
 			'w-full overflow-hidden transition-all',
 			{
 				'cursor-pointer hover:shadow-lg hover:scale-[1.02]': interactive,
-				'ring-2 ring-primary': owned,
-				'opacity-50 grayscale': !owned && interactive
+				'ring-2 ring-primary': showCheckbox ? checked : owned,
+				'opacity-50 grayscale': showCheckbox ? !checked : (!owned && interactive)
 			},
 			classes
 		)
@@ -72,6 +86,16 @@
 				class="w-full block"
 				onerror={handleImageError}
 			/>
+			{#if showCheckbox}
+				<div class="absolute top-3 left-3 z-10">
+					<input
+						type="checkbox"
+						class="checkbox checkbox-primary checkbox-sm bg-base-100"
+						checked={checked}
+						onclick={handleCheckboxClick}
+					/>
+				</div>
+			{/if}
 			{#if owned && copyCount > 0}
 				<div class="absolute top-3 right-3 badge badge-primary badge-sm z-10">
 					x{copyCount}
@@ -79,6 +103,11 @@
 			{/if}
 		</div>
 		<div class="p-2">
+			{#if cardType}
+				<div class="flex justify-center mb-1">
+					<span class={classNames('badge badge-xs', cardType.badgeColor)}>{cardType.name}</span>
+				</div>
+			{/if}
 			<h3 class="text-xs font-medium text-white drop-shadow-md text-center leading-tight">{card.name}</h3>
 		</div>
 	</div>

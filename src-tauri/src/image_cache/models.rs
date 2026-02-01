@@ -84,3 +84,50 @@ impl Default for CacheStats {
         }
     }
 }
+
+/// Status of a background download job
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum BackgroundDownloadStatus {
+    Idle,
+    Running,
+    Completed,
+    Cancelled,
+    Failed,
+}
+
+/// Progress of a background download job
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackgroundDownloadProgress {
+    pub status: BackgroundDownloadStatus,
+    pub collection_id: Option<String>,
+    pub collection_title: Option<String>,
+    pub total: usize,
+    pub completed: usize,
+    pub cached: usize,
+    pub skipped: usize,
+    pub failed: usize,
+    pub current_url: Option<String>,
+    pub errors: Vec<String>,
+    pub started_at: Option<i64>,
+    pub finished_at: Option<i64>,
+}
+
+impl Default for BackgroundDownloadProgress {
+    fn default() -> Self {
+        Self {
+            status: BackgroundDownloadStatus::Idle,
+            collection_id: None,
+            collection_title: None,
+            total: 0,
+            completed: 0,
+            cached: 0,
+            skipped: 0,
+            failed: 0,
+            current_url: None,
+            errors: Vec::new(),
+            started_at: None,
+            finished_at: None,
+        }
+    }
+}

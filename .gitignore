@@ -34,3 +34,6 @@ coverage/
 
 # Claude Code
 .claude/
+
+# LLM Models (large files)
+/models/

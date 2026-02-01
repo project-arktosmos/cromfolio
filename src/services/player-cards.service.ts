@@ -9,7 +9,7 @@ import type { ID } from '$types/core.type';
 export interface OwnedCard {
 	id: ID;
 	cardId: ID;
-	albumId: ID;
+	sourceId: ID;
 	acquiredAt: string;
 }
 
@@ -25,11 +25,11 @@ export function ownsCard(cardId: ID): boolean {
 /**
  * Add a card to the player's collection (duplicates allowed)
  */
-export function acquireCard(cardId: ID, albumId: ID): OwnedCard {
+export function acquireCard(cardId: ID, sourceId: ID): OwnedCard {
 	const ownedCard: OwnedCard = {
 		id: crypto.randomUUID(),
 		cardId,
-		albumId,
+		sourceId,
 		acquiredAt: new Date().toISOString()
 	};
 
@@ -63,24 +63,24 @@ export function getOwnedCardIds(): ID[] {
 }
 
 /**
- * Get all owned cards for a specific album
+ * Get all owned cards for a specific source
  */
-export function getOwnedCardsByAlbum(albumId: ID): OwnedCard[] {
-	return playerCardsService.filter((o) => o.albumId === albumId);
+export function getOwnedCardsBySource(sourceId: ID): OwnedCard[] {
+	return playerCardsService.filter((o) => o.sourceId === sourceId);
 }
 
 /**
- * Get count of total card copies for a specific album
+ * Get count of total card copies for a specific source
  */
-export function getOwnedCardCountByAlbum(albumId: ID): number {
-	return getOwnedCardsByAlbum(albumId).length;
+export function getOwnedCardCountBySource(sourceId: ID): number {
+	return getOwnedCardsBySource(sourceId).length;
 }
 
 /**
- * Get count of unique cards owned for a specific album
+ * Get count of unique cards owned for a specific source
  */
-export function getUniqueOwnedCardCountByAlbum(albumId: ID): number {
-	const ownedCards = getOwnedCardsByAlbum(albumId);
+export function getUniqueOwnedCardCountBySource(sourceId: ID): number {
+	const ownedCards = getOwnedCardsBySource(sourceId);
 	const uniqueCardIds = new Set(ownedCards.map((o) => o.cardId));
 	return uniqueCardIds.size;
 }

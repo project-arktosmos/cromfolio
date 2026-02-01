@@ -1,5 +1,5 @@
 /**
- * Trivia question types for album-based trivia games
+ * Trivia question types for source-based trivia games
  */
 
 import type { ID } from '$types/core.type';
@@ -10,7 +10,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface Question {
 	id: ID;
-	albumId: ID;
+	sourceId: ID;
 	questionText: string;
 
 	// ABC answer options

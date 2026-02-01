@@ -9,7 +9,6 @@ use crate::apis::{
     types::*,
     omdb::OmdbApi,
     tmdb::TmdbApi,
-    fanart::FanartApi,
     tvmaze::TvMazeApi,
     igdb::IgdbApi,
     sgdb::SgdbApi,
@@ -18,9 +17,27 @@ use crate::apis::{
     sports::SportsDbApi,
     wikidata::WikidataApi,
     inaturalist::InaturalistApi,
-    musicbrainz::MusicBrainzApi,
-    openlibrary::OpenLibraryApi,
 };
+
+// ============================================================================
+// DETAIL FETCH COMMANDS
+// ============================================================================
+
+#[command]
+#[allow(non_snake_case)]
+pub async fn get_content_details(
+    imdbId: String,
+    client_state: State<'_, ApiClientState>,
+    config_state: State<'_, ApiConfigState>,
+) -> Result<ContentDetails, String> {
+    let config = config_state.get_config().await;
+    let api_key = config.omdb_api_key
+        .ok_or_else(|| "OMDB API key not configured".to_string())?;
+
+    OmdbApi::get_by_imdb_id(&client_state.client, &api_key, &imdbId)
+        .await
+        .map_err(|e| e.to_string())
+}
 
 // ============================================================================
 // SEARCH COMMANDS
@@ -136,36 +153,6 @@ pub async fn search_animals(
         .map_err(|e| e.to_string())
 }
 
-#[command]
-pub async fn search_music_artists(
-    query: String,
-    client_state: State<'_, ApiClientState>,
-) -> Result<Vec<MusicArtistSearchResult>, String> {
-    MusicBrainzApi::search_artists(&client_state.client, &query)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[command]
-pub async fn search_book_authors(
-    query: String,
-    client_state: State<'_, ApiClientState>,
-) -> Result<Vec<BookAuthorSearchResult>, String> {
-    OpenLibraryApi::search_authors(&client_state.client, &query)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[command]
-pub async fn search_book_works(
-    query: String,
-    client_state: State<'_, ApiClientState>,
-) -> Result<Vec<BookWorkSearchResult>, String> {
-    OpenLibraryApi::search_works(&client_state.client, &query)
-        .await
-        .map_err(|e| e.to_string())
-}
-
 // ============================================================================
 // BATCH FETCH COMMAND
 // ============================================================================
@@ -250,19 +237,6 @@ pub async fn fetch_source_images(
                             images.map(|imgs| (imgs, Vec::new()))
                         } else {
                             Err(crate::apis::client::ApiError::MissingApiKey("TMDB".to_string()))
-                        }
-                    }
-                    "fanart" => {
-                        if let (Some(tmdb), Some(api_key)) = (&tmdb_result, &config.fanart_api_key) {
-                            let images = if is_movie {
-                                FanartApi::get_movie_images(&client_state.client, api_key, tmdb.tmdb_id).await
-                            } else {
-                                // For TV, Fanart uses TVDB ID, but we can try with TMDB
-                                FanartApi::get_tv_images(&client_state.client, api_key, tmdb.tmdb_id).await
-                            };
-                            images.map(|imgs| (imgs, Vec::new()))
-                        } else {
-                            Err(crate::apis::client::ApiError::MissingApiKey("Fanart".to_string()))
                         }
                     }
                     "tvmaze" => {
@@ -547,6 +521,9 @@ pub async fn fetch_source_images(
                                             source: "wikidata".to_string(),
                                             width: None,
                                             height: None,
+                                            vote_average: None,
+                                            likes: None,
+                                            language: None,
                                         })
                                     })
                                     .collect();
@@ -556,146 +533,6 @@ pub async fn fetch_source_images(
                     "inaturalist" => {
                         // externalId should be scientific name for iNaturalist
                         InaturalistApi::get_species_photos(&client_state.client, &externalId, 12)
-                            .await
-                            .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
-                    }
-                    _ => Err(crate::apis::client::ApiError::InvalidResponse(format!("Unknown source: {}", source))),
-                };
-
-                match result {
-                    Ok((images, _)) => {
-                        all_images.extend(images);
-                        completed_sources.push(source.clone());
-                        let _ = app.emit("fetch_progress", FetchProgressEvent {
-                            operation_id: operation_id.clone(),
-                            source: source.clone(),
-                            status: FetchStatus::Success,
-                            progress: 1.0,
-                            message: None,
-                        });
-                    }
-                    Err(e) => {
-                        failed_sources.push(SourceError {
-                            source: source.clone(),
-                            error: e.to_string(),
-                            retryable: e.is_retryable(),
-                        });
-                        let _ = app.emit("fetch_progress", FetchProgressEvent {
-                            operation_id: operation_id.clone(),
-                            source: source.clone(),
-                            status: FetchStatus::Failed,
-                            progress: 1.0,
-                            message: Some(e.to_string()),
-                        });
-                    }
-                }
-            }
-        }
-
-        ContentType::Music => {
-            for source in &sources {
-                let _ = app.emit("fetch_progress", FetchProgressEvent {
-                    operation_id: operation_id.clone(),
-                    source: source.clone(),
-                    status: FetchStatus::Fetching,
-                    progress: 0.5,
-                    message: None,
-                });
-
-                let result = match source.as_str() {
-                    "musicbrainz" => {
-                        MusicBrainzApi::get_artist_releases(&client_state.client, &externalId, true)
-                            .await
-                            .map(|releases| {
-                                let images: Vec<ImageItem> = releases.iter()
-                                    .filter_map(|r| {
-                                        r.cover_url.as_ref().map(|url| ImageItem {
-                                            url: url.clone(),
-                                            thumb_url: r.thumb_url.clone().unwrap_or_else(|| url.clone()),
-                                            image_type: r.release_type.clone().unwrap_or_else(|| "album".to_string()),
-                                            source: "musicbrainz".to_string(),
-                                            width: None,
-                                            height: None,
-                                        })
-                                    })
-                                    .collect();
-                                (images, Vec::new())
-                            })
-                    }
-                    "fanart" => {
-                        if let Some(api_key) = &config.fanart_api_key {
-                            FanartApi::get_music_images(&client_state.client, api_key, &externalId)
-                                .await
-                                .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
-                        } else {
-                            Err(crate::apis::client::ApiError::MissingApiKey("Fanart".to_string()))
-                        }
-                    }
-                    _ => Err(crate::apis::client::ApiError::InvalidResponse(format!("Unknown source: {}", source))),
-                };
-
-                match result {
-                    Ok((images, _)) => {
-                        all_images.extend(images);
-                        completed_sources.push(source.clone());
-                        let _ = app.emit("fetch_progress", FetchProgressEvent {
-                            operation_id: operation_id.clone(),
-                            source: source.clone(),
-                            status: FetchStatus::Success,
-                            progress: 1.0,
-                            message: None,
-                        });
-                    }
-                    Err(e) => {
-                        failed_sources.push(SourceError {
-                            source: source.clone(),
-                            error: e.to_string(),
-                            retryable: e.is_retryable(),
-                        });
-                        let _ = app.emit("fetch_progress", FetchProgressEvent {
-                            operation_id: operation_id.clone(),
-                            source: source.clone(),
-                            status: FetchStatus::Failed,
-                            progress: 1.0,
-                            message: Some(e.to_string()),
-                        });
-                    }
-                }
-            }
-        }
-
-        ContentType::Book => {
-            for source in &sources {
-                let _ = app.emit("fetch_progress", FetchProgressEvent {
-                    operation_id: operation_id.clone(),
-                    source: source.clone(),
-                    status: FetchStatus::Fetching,
-                    progress: 0.5,
-                    message: None,
-                });
-
-                let result = match (source.as_str(), externalIdType.as_str()) {
-                    ("author_works", _) | (_, "author") => {
-                        OpenLibraryApi::get_author_works(&client_state.client, &externalId, 50)
-                            .await
-                            .map(|works| {
-                                let images: Vec<ImageItem> = works.iter()
-                                    .filter_map(|w| {
-                                        w.cover_url.as_ref().map(|url| ImageItem {
-                                            url: url.clone(),
-                                            thumb_url: url.replace("-L.jpg", "-M.jpg"),
-                                            image_type: "cover".to_string(),
-                                            source: "openlibrary".to_string(),
-                                            width: None,
-                                            height: None,
-                                        })
-                                    })
-                                    .collect();
-                                (images, Vec::new())
-                            })
-                    }
-                    ("work_covers", _) | (_, "work") => {
-                        OpenLibraryApi::get_work_covers(&client_state.client, &externalId)
                             .await
                             .map(|imgs| (imgs, Vec::<CharacterItem>::new()))
                     }
@@ -762,30 +599,6 @@ pub async fn get_species_in_genus(
 
 #[command]
 #[allow(non_snake_case)]
-pub async fn get_artist_releases(
-    artistId: String,
-    includeCovers: bool,
-    client_state: State<'_, ApiClientState>,
-) -> Result<Vec<MusicReleaseResult>, String> {
-    MusicBrainzApi::get_artist_releases(&client_state.client, &artistId, includeCovers)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[command]
-#[allow(non_snake_case)]
-pub async fn get_author_works(
-    authorKey: String,
-    limit: Option<i32>,
-    client_state: State<'_, ApiClientState>,
-) -> Result<Vec<BookWorkSearchResult>, String> {
-    OpenLibraryApi::get_author_works(&client_state.client, &authorKey, limit.unwrap_or(50))
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[command]
-#[allow(non_snake_case)]
 pub async fn get_teams_in_league(
     leagueName: String,
     client_state: State<'_, ApiClientState>,
@@ -813,4 +626,77 @@ pub async fn update_api_config(
 ) -> Result<(), String> {
     config_state.update_config(config).await;
     Ok(())
+}
+
+// ============================================================================
+// LLM COMMANDS
+// ============================================================================
+
+use crate::apis::llm::{LlmApi, LlmModel, ChatMessagePayload, LlmChatOptions};
+
+#[command]
+#[allow(non_snake_case)]
+pub async fn check_llm_server(
+    baseUrl: String,
+    provider: String,
+    client_state: State<'_, ApiClientState>,
+) -> Result<bool, String> {
+    LlmApi::check_health(&client_state.client, &baseUrl, &provider)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[command]
+#[allow(non_snake_case)]
+pub async fn get_llm_models(
+    baseUrl: String,
+    provider: String,
+    client_state: State<'_, ApiClientState>,
+) -> Result<Vec<LlmModel>, String> {
+    LlmApi::get_models(&client_state.client, &baseUrl, &provider)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[command]
+#[allow(non_snake_case)]
+pub async fn chat_llm(
+    baseUrl: String,
+    provider: String,
+    model: String,
+    messages: Vec<ChatMessagePayload>,
+    options: Option<LlmChatOptions>,
+    client_state: State<'_, ApiClientState>,
+) -> Result<String, String> {
+    LlmApi::chat(
+        &client_state.client,
+        &baseUrl,
+        &provider,
+        &model,
+        &messages,
+        &options.unwrap_or_default(),
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Default LLM server URLs from environment configuration
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LlmDefaults {
+    pub ollama_base_url: String,
+    pub lmstudio_base_url: String,
+}
+
+#[command]
+pub async fn get_llm_defaults(
+    config_state: State<'_, ApiConfigState>,
+) -> Result<LlmDefaults, String> {
+    let config = config_state.get_config().await;
+    Ok(LlmDefaults {
+        ollama_base_url: config.ollama_base_url
+            .unwrap_or_else(|| "http://192.168.1.69:11434".to_string()),
+        lmstudio_base_url: config.lmstudio_base_url
+            .unwrap_or_else(|| "http://localhost:1234".to_string()),
+    })
 }

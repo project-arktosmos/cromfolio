@@ -1,10 +1,8 @@
 mod apis;
 mod commands;
 mod db;
-mod evm;
 mod image_cache;
 mod models;
-mod torrent;
 
 use apis::{
     client::ApiClientState,
@@ -13,15 +11,15 @@ use apis::{
 };
 use db::Database;
 use image_cache::{
-    cache_image, cache_images_batch, clear_image_cache, get_cache_path, get_cache_stats,
-    get_cached_image, ImageCacheState,
+    cache_image, cache_images_batch, cancel_background_download, clear_image_cache,
+    get_background_download_progress, get_cache_path, get_cache_stats, get_cached_image,
+    reset_background_download, start_background_download, ImageCacheState,
 };
-use torrent::TorrentManagerState;
 #[cfg(desktop)]
 use tauri::menu::{Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 #[cfg(desktop)]
 use tauri::LogicalSize;
-use tauri::Manager;
+use tauri::{Manager, State};
 
 #[cfg(desktop)]
 fn is_production() -> bool {
@@ -39,6 +37,8 @@ pub fn run() {
     builder = builder.plugin(tauri_plugin_fs::init());
     builder = builder.plugin(tauri_plugin_store::Builder::default().build());
     builder = builder.plugin(tauri_plugin_os::init());
+    builder = builder.plugin(tauri_plugin_dialog::init());
+    builder = builder.plugin(tauri_plugin_http::init());
 
     // Single instance plugin (desktop only)
     #[cfg(desktop)]
@@ -78,17 +78,6 @@ pub fn run() {
 
         // Initialize IGDB API (needs to maintain OAuth token state)
         app.manage(IgdbApi::new());
-
-        // Initialize torrent manager with downloads in app data directory
-        let torrent_download_dir = app
-            .path()
-            .app_data_dir()
-            .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())) as Box<dyn std::error::Error>)?
-            .join("downloads");
-        std::fs::create_dir_all(&torrent_download_dir)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-        log::info!("Torrent download directory: {:?}", torrent_download_dir);
-        app.manage(TorrentManagerState::new(torrent_download_dir));
 
         // Build custom menu (desktop only)
         #[cfg(desktop)]
@@ -210,60 +199,78 @@ pub fn run() {
             // Settings
             commands::get_settings,
             commands::update_settings,
-            // Items (example CRUD resource)
-            commands::get_all_items,
-            commands::get_item,
-            commands::create_item,
-            commands::update_item,
-            commands::delete_item,
-            // Albums
-            commands::get_all_albums,
-            commands::get_album,
-            commands::create_album,
-            commands::update_album,
-            commands::delete_album,
-            // Cards
-            commands::get_all_cards,
-            commands::get_cards_by_album,
-            commands::get_card,
-            commands::create_card,
-            commands::update_card,
-            commands::delete_card,
-            commands::delete_cards_by_album,
-            // Sources
+            // Sources (formerly Albums)
             commands::get_all_sources,
-            commands::get_sources_by_album,
-            commands::source_exists,
-            commands::get_source_by_external_id,
+            commands::get_source,
             commands::create_source,
+            commands::update_source,
             commands::delete_source,
+            // Stickers (formerly Blueprints/Templates)
+            commands::get_all_stickers,
+            commands::get_stickers_by_source,
+            commands::get_sticker,
+            commands::create_sticker,
+            commands::create_stickers_batch,
+            commands::update_sticker,
+            commands::delete_sticker,
+            commands::delete_stickers_by_source,
+            // Providers (formerly Sources - external API tracking)
+            commands::get_all_providers,
+            commands::get_providers_by_source,
+            commands::provider_exists,
+            commands::get_provider_by_external_id,
+            commands::create_provider,
+            commands::delete_provider,
             // Rarities
             commands::get_all_rarities,
             commands::get_rarity,
             commands::create_rarity,
             commands::update_rarity,
             commands::delete_rarity,
+            // Sticker Types (formerly Blueprint Types/Template Types)
+            commands::get_all_sticker_types,
+            commands::get_sticker_type,
+            commands::get_sticker_types_by_category,
+            commands::get_sticker_types_by_source_type,
+            commands::create_sticker_type,
+            commands::update_sticker_type,
+            commands::delete_sticker_type,
+            // Tags
+            commands::get_all_tags,
+            commands::get_tag,
+            commands::get_tags_by_key,
+            commands::create_tag,
+            commands::update_tag,
+            commands::delete_tag,
+            // Sticker Tags (formerly Blueprint Tags/Template Tags)
+            commands::get_tags_by_sticker,
+            commands::add_tag_to_sticker,
+            commands::remove_tag_from_sticker,
+            commands::get_sticker_ids_by_tag,
+            // Collections
+            commands::get_all_collections,
+            commands::get_collection,
+            commands::get_collections_by_type,
+            commands::create_collection,
+            commands::update_collection,
+            commands::delete_collection,
+            commands::add_sticker_to_collection,
+            commands::remove_sticker_from_collection,
+            commands::get_stickers_for_collection,
+            // Collection Types
+            commands::get_all_collection_types,
+            commands::get_collection_type,
+            commands::create_collection_type,
+            commands::update_collection_type,
+            commands::delete_collection_type,
             // Questions (trivia)
             commands::get_all_questions,
-            commands::get_questions_by_album,
+            commands::get_questions_by_source,
             commands::get_question,
             commands::create_question,
             commands::update_question,
             commands::delete_question,
-            commands::delete_questions_by_album,
-            // Furniture
-            commands::get_all_furniture,
-            commands::get_furniture,
-            commands::get_furniture_by_type,
-            commands::create_furniture,
-            commands::update_furniture,
-            commands::delete_furniture,
-            // Rooms
-            commands::get_all_rooms,
-            commands::get_room,
-            commands::create_room,
-            commands::update_room,
-            commands::delete_room,
+            commands::delete_questions_by_source,
             // Image cache
             get_cached_image,
             cache_image,
@@ -271,6 +278,10 @@ pub fn run() {
             get_cache_stats,
             clear_image_cache,
             get_cache_path,
+            start_background_download,
+            get_background_download_progress,
+            cancel_background_download,
+            reset_background_download,
             // API Fetch commands - Search
             commands::search_movies,
             commands::search_tv,
@@ -279,44 +290,90 @@ pub fn run() {
             commands::search_sports_teams,
             commands::search_sports_leagues,
             commands::search_animals,
-            commands::search_music_artists,
-            commands::search_book_authors,
-            commands::search_book_works,
             // API Fetch commands - Batch fetch
             commands::fetch_source_images,
             // API Fetch commands - Helpers
             commands::get_species_in_genus,
-            commands::get_artist_releases,
-            commands::get_author_works,
             commands::get_teams_in_league,
+            // API Fetch commands - Details
+            commands::get_content_details,
             // API Config
             commands::get_api_config,
             commands::update_api_config,
-            // Torrent
-            torrent::add_torrent,
-            torrent::list_torrents,
-            torrent::pause_torrent,
-            torrent::resume_torrent,
-            torrent::remove_torrent,
-            torrent::get_torrent_download_dir,
-            // EVM
-            commands::evm_get_balance,
-            commands::evm_get_nonce,
-            commands::evm_send_transaction,
-            commands::evm_call,
-            commands::evm_deploy_contract,
-            commands::evm_get_code,
-            commands::evm_set_balance,
-            commands::evm_create_wallet,
-            commands::evm_list_wallets,
-            commands::evm_get_wallet_private_key,
-            commands::evm_get_chain_state,
-            commands::evm_get_block,
-            commands::evm_get_blocks,
-            commands::evm_get_transaction,
-            commands::evm_get_transactions,
-            commands::evm_get_receipt,
-            commands::evm_get_block_transactions,
+            // Database introspection
+            commands::get_database_tables,
+            commands::get_table_columns,
+            commands::get_table_data,
+            // User Stickers (game data - _user_stickers table)
+            commands::get_all_user_stickers,
+            commands::get_user_stickers_by_source,
+            commands::get_user_sticker,
+            commands::user_owns_sticker,
+            commands::get_user_sticker_copy_count,
+            commands::get_user_unique_sticker_count_by_source,
+            commands::get_user_owned_sticker_ids,
+            commands::acquire_user_sticker,
+            commands::release_user_sticker,
+            commands::delete_user_sticker,
+            commands::delete_user_stickers_by_source,
+            commands::delete_all_user_stickers,
+            // User Collections (game data - _user_collections table)
+            commands::get_all_user_collections,
+            commands::get_user_collection,
+            commands::get_user_collection_by_collection_id,
+            commands::get_completed_user_collections,
+            commands::get_in_progress_user_collections,
+            commands::create_user_collection,
+            commands::update_user_collection,
+            commands::mark_user_collection_completed,
+            commands::delete_user_collection,
+            commands::delete_user_collection_by_collection_id,
+            commands::delete_all_user_collections,
+            // User Sources (game data - _user_sources table)
+            commands::get_all_user_sources,
+            commands::get_user_source,
+            commands::user_owns_source,
+            commands::get_user_owned_source_ids,
+            commands::acquire_user_source,
+            commands::release_user_source,
+            commands::delete_user_source,
+            commands::delete_all_user_sources,
+            // LLM Configs
+            commands::get_all_llm_configs,
+            commands::get_llm_config,
+            commands::get_default_llm_config,
+            commands::create_llm_config,
+            commands::update_llm_config,
+            commands::delete_llm_config,
+            commands::set_default_llm_config,
+            // LLM API
+            commands::check_llm_server,
+            commands::get_llm_models,
+            commands::chat_llm,
+            commands::get_llm_defaults,
+            // Stamp Packs (imported stickers - WhatsApp, Telegram, etc.)
+            commands::get_all_stamp_packs,
+            commands::get_stamp_packs_by_source,
+            commands::get_stamp_pack,
+            commands::create_stamp_pack,
+            commands::update_stamp_pack,
+            commands::delete_stamp_pack,
+            // Stamps (individual stickers within a pack)
+            commands::get_all_stamps,
+            commands::get_stamps_by_pack,
+            commands::get_stamp,
+            commands::create_stamp,
+            commands::create_stamps_batch,
+            commands::delete_stamp,
+            commands::delete_stamps_by_pack,
+            // Stamp Import (file operations)
+            commands::get_stamps_data_dir,
+            commands::copy_file_to_stamps_dir,
+            commands::write_stamp_file,
+            commands::delete_stamp_pack_files,
+            // Utility
+            commands::get_cwd,
+            commands::read_award_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
