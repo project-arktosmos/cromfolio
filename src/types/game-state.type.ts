@@ -19,7 +19,8 @@ export type TriviaViewState =
 	| 'difficulty-select'
 	| 'playing'
 	| 'question-result'
-	| 'game-over';
+	| 'game-over'
+	| 'booster-reveal';
 
 /**
  * Difficulty levels for the trivia game

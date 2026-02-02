@@ -1332,6 +1332,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "cromfolio-app"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-rlp",
+ "alloy-sol-types",
+ "chrono",
+ "dotenvy",
+ "futures",
+ "hex 0.4.3",
+ "k256",
+ "librqbit",
+ "log",
+ "rand 0.8.5",
+ "reqwest",
+ "revm",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-http",
+ "tauri-plugin-log",
+ "tauri-plugin-os",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "thiserror 2.0.18",
+ "tokio",
+ "url",
+ "urlencoding",
+ "uuid",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6188,44 +6226,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.114",
-]
-
-[[package]]
-name = "synaxis-app"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "alloy-rlp",
- "alloy-sol-types",
- "chrono",
- "dotenvy",
- "futures",
- "hex 0.4.3",
- "k256",
- "librqbit",
- "log",
- "rand 0.8.5",
- "reqwest",
- "revm",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-http",
- "tauri-plugin-log",
- "tauri-plugin-os",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "thiserror 2.0.18",
- "tokio",
- "url",
- "urlencoding",
- "uuid",
 ]
 
 [[package]]

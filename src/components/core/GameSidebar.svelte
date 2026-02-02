@@ -1,7 +1,15 @@
 <script lang="ts">
 	import classNames from 'classnames';
-	import type { GameMenuItem } from '$types/game.type';
 	import { page } from '$app/stores';
+	import { locale } from 'svelte-i18n';
+
+	// Menu item type (inline since game.type.ts was removed)
+	interface GameMenuItem {
+		id: string;
+		label: string;
+		path: string;
+		group?: string;
+	}
 
 	interface Props {
 		items?: GameMenuItem[];
@@ -106,4 +114,16 @@
 			{/each}
 		</ul>
 	</nav>
+
+	<div class="border-t border-base-300 p-4">
+		<select
+			class="select select-bordered select-sm w-full"
+			value={$locale}
+			onchange={(e) => locale.set(e.currentTarget.value)}
+			disabled
+		>
+			<option value="en">English</option>
+			<option value="qq">QQ</option>
+		</select>
+	</div>
 </aside>

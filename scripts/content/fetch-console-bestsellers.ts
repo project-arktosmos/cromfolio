@@ -22,7 +22,7 @@
  */
 
 const WIKIPEDIA_API = 'https://en.wikipedia.org/w/api.php';
-const USER_AGENT = 'SynaxisGameFetcher/1.0';
+const USER_AGENT = 'CromfolioGameFetcher/1.0';
 const RATE_LIMIT_MS = 1000;
 
 /**

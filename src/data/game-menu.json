@@ -1,9 +1,14 @@
 {
 	"items": [
 		{
-			"id": "albums",
-			"label": "Albums",
-			"path": "/game/albums"
+			"id": "booster-pack",
+			"label": "Booster Pack",
+			"path": "/game/booster-pack"
+		},
+		{
+			"id": "collections",
+			"label": "Collections",
+			"path": "/game/collections"
 		},
 		{
 			"id": "player",
@@ -31,5 +36,5 @@
 			"path": "/game/stickers"
 		}
 	],
-	"generatedAt": "2026-02-02T13:21:55.378Z"
+	"generatedAt": "2026-02-02T19:01:24.458Z"
 }

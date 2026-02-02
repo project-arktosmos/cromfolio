@@ -9,6 +9,7 @@ export interface Collection {
 	collectionTypeId?: ID;
 	title: string;
 	description: string;
+	region?: string;
 	coverImage?: string;
 	createdAt?: string;
 	updatedAt?: string;

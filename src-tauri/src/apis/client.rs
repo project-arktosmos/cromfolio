@@ -104,7 +104,7 @@ impl ApiClient {
     pub fn new() -> Result<Self, ApiError> {
         let client = Client::builder()
             .timeout(Duration::from_secs(30))
-            .user_agent("Synaxis/1.0 (https://github.com/arktosmos/synaxis)")
+            .user_agent("Cromfolio/1.0 (https://github.com/arktosmos/cromfolio)")
             .build()?;
 
         Ok(Self {

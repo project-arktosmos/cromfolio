@@ -22,7 +22,7 @@
  */
 
 const WIKIDATA_SPARQL_ENDPOINT = 'https://query.wikidata.org/sparql';
-const USER_AGENT = 'SynaxisGrammyFetcher/1.0 (https://github.com/your-repo; your@email.com)';
+const USER_AGENT = 'CromfolioGrammyFetcher/1.0 (https://github.com/your-repo; your@email.com)';
 
 // Rate limiting - Wikidata recommends max 1 request per second
 const RATE_LIMIT_MS = 1500;

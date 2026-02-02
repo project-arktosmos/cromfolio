@@ -1,9 +1,25 @@
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-import type {
-	TauriCacheImageResult,
-	TauriBatchCacheProgress,
-	TauriCacheStats
-} from '$types/cache.type';
+
+// Cache types (inline since cache.type.ts was removed)
+interface TauriCacheImageResult {
+	success: boolean;
+	local_path?: string;
+	error?: string;
+}
+
+interface TauriBatchCacheProgress {
+	total: number;
+	completed: number;
+	cached: number;
+	skipped: number;
+	errors: string[];
+}
+
+interface TauriCacheStats {
+	total_images: number;
+	total_size_bytes: number;
+	by_source: Record<string, { images: number; size_bytes: number }>;
+}
 
 /**
  * Convert a filesystem path to an asset URL using Tauri's convertFileSrc.

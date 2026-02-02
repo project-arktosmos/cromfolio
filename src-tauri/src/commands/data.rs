@@ -105,46 +105,6 @@ pub fn create_stickers_batch(stickers: Vec<Sticker>, db: State<'_, Database>) ->
 }
 
 // ============================================================================
-// PROVIDERS (formerly SOURCES - external API tracking)
-// ============================================================================
-
-#[command]
-pub fn get_all_providers(db: State<'_, Database>) -> Result<Vec<Provider>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::get_all(&conn)
-}
-
-#[command]
-pub fn get_providers_by_source(source_id: String, db: State<'_, Database>) -> Result<Vec<Provider>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::get_by_source_id(&conn, &source_id)
-}
-
-#[command]
-pub fn provider_exists(external_id_type: String, external_id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::exists(&conn, &external_id_type, &external_id)
-}
-
-#[command]
-pub fn get_provider_by_external_id(external_id_type: String, external_id: String, db: State<'_, Database>) -> Result<Option<Provider>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::get_by_external_id(&conn, &external_id_type, &external_id)
-}
-
-#[command]
-pub fn create_provider(provider: Provider, db: State<'_, Database>) -> Result<Provider, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::create(&conn, &provider)
-}
-
-#[command]
-pub fn delete_provider(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::providers::delete(&conn, &id)
-}
-
-// ============================================================================
 // RARITIES
 // ============================================================================
 
@@ -426,183 +386,6 @@ pub fn update_collection_type(collection_type: CollectionType, db: State<'_, Dat
 pub fn delete_collection_type(id: String, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::collection_types::delete(&conn, &id)
-}
-
-// ============================================================================
-// DATABASE INTROSPECTION
-// ============================================================================
-
-use serde_json::Value as JsonValue;
-
-/// Get all table names from the database schema
-#[command]
-pub fn get_database_tables(db: State<'_, Database>) -> Result<Vec<String>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-
-    let mut stmt = conn.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-    ).map_err(|e| e.to_string())?;
-
-    let rows = stmt.query_map([], |row| {
-        row.get::<_, String>(0)
-    }).map_err(|e| e.to_string())?;
-
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
-}
-
-/// Table info for a column
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TableColumn {
-    pub cid: i32,
-    pub name: String,
-    pub column_type: String,
-    pub notnull: bool,
-    pub pk: bool,
-}
-
-/// Get column info for a table
-#[command]
-pub fn get_table_columns(table_name: String, db: State<'_, Database>) -> Result<Vec<TableColumn>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-
-    // Validate table name to prevent SQL injection
-    let valid_tables: Vec<String> = {
-        let mut stmt = conn.prepare(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        ).map_err(|e| e.to_string())?;
-
-        let rows = stmt.query_map([], |row| row.get::<_, String>(0))
-            .map_err(|e| e.to_string())?;
-        rows.collect::<Result<Vec<_>, _>>()
-            .map_err(|e| e.to_string())?
-    };
-
-    if !valid_tables.contains(&table_name) {
-        return Err(format!("Invalid table name: {}", table_name));
-    }
-
-    let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))
-        .map_err(|e| e.to_string())?;
-
-    let rows = stmt.query_map([], |row| {
-        Ok(TableColumn {
-            cid: row.get(0)?,
-            name: row.get(1)?,
-            column_type: row.get::<_, String>(2).unwrap_or_default(),
-            notnull: row.get::<_, i32>(3).unwrap_or(0) == 1,
-            pk: row.get::<_, i32>(5).unwrap_or(0) == 1,
-        })
-    }).map_err(|e| e.to_string())?;
-
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
-}
-
-/// Table data result with column info
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TableData {
-    pub columns: Vec<TableColumn>,
-    pub rows: Vec<Vec<JsonValue>>,
-    pub total_count: i64,
-}
-
-/// Get data from a specific table with pagination
-#[command]
-pub fn get_table_data(
-    table_name: String,
-    limit: Option<i64>,
-    offset: Option<i64>,
-    db: State<'_, Database>
-) -> Result<TableData, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-
-    // Validate table name to prevent SQL injection
-    let valid_tables: Vec<String> = {
-        let mut stmt = conn.prepare(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        ).map_err(|e| e.to_string())?;
-
-        let rows = stmt.query_map([], |row| row.get::<_, String>(0))
-            .map_err(|e| e.to_string())?;
-        rows.collect::<Result<Vec<_>, _>>()
-            .map_err(|e| e.to_string())?
-    };
-
-    if !valid_tables.contains(&table_name) {
-        return Err(format!("Invalid table name: {}", table_name));
-    }
-
-    // Get columns
-    let columns: Vec<TableColumn> = {
-        let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table_name))
-            .map_err(|e| e.to_string())?;
-
-        let rows = stmt.query_map([], |row| {
-            Ok(TableColumn {
-                cid: row.get(0)?,
-                name: row.get(1)?,
-                column_type: row.get::<_, String>(2).unwrap_or_default(),
-                notnull: row.get::<_, i32>(3).unwrap_or(0) == 1,
-                pk: row.get::<_, i32>(5).unwrap_or(0) == 1,
-            })
-        }).map_err(|e| e.to_string())?;
-        rows.collect::<Result<Vec<_>, _>>()
-            .map_err(|e| e.to_string())?
-    };
-
-    // Get total count
-    let total_count: i64 = conn.query_row(
-        &format!("SELECT COUNT(*) FROM {}", table_name),
-        [],
-        |row| row.get(0)
-    ).map_err(|e| e.to_string())?;
-
-    // Get data with pagination
-    let limit_val = limit.unwrap_or(100);
-    let offset_val = offset.unwrap_or(0);
-
-    let query = format!(
-        "SELECT * FROM {} LIMIT {} OFFSET {}",
-        table_name, limit_val, offset_val
-    );
-
-    let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
-    let column_count = columns.len();
-
-    let rows_iter = stmt.query_map([], |row| {
-        let mut row_data: Vec<JsonValue> = Vec::with_capacity(column_count);
-        for i in 0..column_count {
-            let value: JsonValue = match row.get_ref(i) {
-                Ok(rusqlite::types::ValueRef::Null) => JsonValue::Null,
-                Ok(rusqlite::types::ValueRef::Integer(i)) => JsonValue::Number(i.into()),
-                Ok(rusqlite::types::ValueRef::Real(f)) => {
-                    serde_json::Number::from_f64(f)
-                        .map(JsonValue::Number)
-                        .unwrap_or(JsonValue::Null)
-                }
-                Ok(rusqlite::types::ValueRef::Text(s)) => {
-                    JsonValue::String(String::from_utf8_lossy(s).to_string())
-                }
-                Ok(rusqlite::types::ValueRef::Blob(b)) => {
-                    JsonValue::String(format!("[BLOB: {} bytes]", b.len()))
-                }
-                Err(_) => JsonValue::Null,
-            };
-            row_data.push(value);
-        }
-        Ok(row_data)
-    }).map_err(|e| e.to_string())?;
-
-    let rows: Vec<Vec<JsonValue>> = rows_iter
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())?;
-
-    Ok(TableData {
-        columns,
-        rows,
-        total_count,
-    })
 }
 
 // ============================================================================
@@ -965,52 +748,6 @@ pub fn get_all_sticker_placement_counts(db: State<'_, Database>) -> Result<Vec<(
 }
 
 // ============================================================================
-// LLM CONFIGS
-// ============================================================================
-
-#[command]
-pub fn get_all_llm_configs(db: State<'_, Database>) -> Result<Vec<LlmConfig>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::get_all(&conn)
-}
-
-#[command]
-pub fn get_llm_config(id: String, db: State<'_, Database>) -> Result<Option<LlmConfig>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::get_by_id(&conn, &id)
-}
-
-#[command]
-pub fn get_default_llm_config(db: State<'_, Database>) -> Result<Option<LlmConfig>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::get_default(&conn)
-}
-
-#[command]
-pub fn create_llm_config(llm_config: LlmConfig, db: State<'_, Database>) -> Result<LlmConfig, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::create(&conn, &llm_config)
-}
-
-#[command]
-pub fn update_llm_config(llm_config: LlmConfig, db: State<'_, Database>) -> Result<LlmConfig, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::update(&conn, &llm_config)
-}
-
-#[command]
-pub fn delete_llm_config(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::delete(&conn, &id)
-}
-
-#[command]
-pub fn set_default_llm_config(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::llm_configs::set_default(&conn, &id)
-}
-
-// ============================================================================
 // STAMP PACKS (imported sticker packs - WhatsApp, Telegram, etc.)
 // ============================================================================
 
@@ -1324,6 +1061,7 @@ pub struct ClearUserDataResult {
     pub sticker_placements_deleted: i64,
     pub placed_icons_deleted: i64,
     pub game_stats_deleted: i64,
+    pub booster_packs_deleted: i64,
     pub player_reset: bool,
 }
 
@@ -1340,6 +1078,7 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
     let user_collections_deleted = queries::user_collections::delete_all(&conn)?;
     let user_sources_deleted = queries::user_sources::delete_all(&conn)?;
     let game_stats_deleted = queries::user_game_stats::delete_all(&conn)?;
+    let booster_packs_deleted = queries::user_booster_packs::delete_all(&conn)?;
     let player_reset = queries::user_player::reset(&conn).is_ok();
 
     Ok(ClearUserDataResult {
@@ -1350,8 +1089,118 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
         sticker_placements_deleted,
         placed_icons_deleted,
         game_stats_deleted,
+        booster_packs_deleted,
         player_reset,
     })
+}
+
+// ============================================================================
+// USER BOOSTER PACKS (booster packs earned from games, stored in _user_booster_packs)
+// ============================================================================
+
+#[command]
+pub fn get_all_user_booster_packs(db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::get_all(&conn)
+}
+
+#[command]
+pub fn get_unopened_user_booster_packs(db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::get_unopened(&conn)
+}
+
+#[command]
+pub fn get_unopened_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::get_unopened_by_collection(&conn, &collection_id)
+}
+
+#[command]
+pub fn get_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::get_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn get_user_booster_pack(id: String, db: State<'_, Database>) -> Result<Option<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn count_unopened_user_booster_packs(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::count_unopened(&conn)
+}
+
+#[command]
+pub fn count_unopened_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::count_unopened_by_collection(&conn, &collection_id)
+}
+
+#[command]
+pub fn award_user_booster_pack(booster_pack: UserBoosterPack, db: State<'_, Database>) -> Result<UserBoosterPack, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::create(&conn, &booster_pack)
+}
+
+#[command]
+pub fn award_user_booster_packs_batch(count: i64, collection_id: String, earned_from: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::create_batch(&conn, count, &collection_id, &earned_from)
+}
+
+#[command]
+pub fn open_user_booster_pack(id: String, db: State<'_, Database>) -> Result<UserBoosterPack, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::mark_opened(&conn, &id)
+}
+
+#[command]
+pub fn open_user_booster_packs_batch(collection_id: String, count: i64, db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::mark_opened_batch(&conn, &collection_id, count)
+}
+
+#[command]
+pub fn delete_user_booster_pack(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::delete(&conn, &id)
+}
+
+#[command]
+pub fn delete_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::delete_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn delete_all_user_booster_packs(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_booster_packs::delete_all(&conn)
+}
+
+/// Result for unopened booster packs summary
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoosterPackSummary {
+    pub collection_id: String,
+    pub count: i64,
+}
+
+#[command]
+pub fn get_unopened_user_booster_packs_summary(db: State<'_, Database>) -> Result<Vec<BoosterPackSummary>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    let results = queries::user_booster_packs::get_unopened_summary(&conn)?;
+    Ok(results
+        .into_iter()
+        .map(|(collection_id, count)| BoosterPackSummary {
+            collection_id,
+            count,
+        })
+        .collect())
 }
 
 // ============================================================================
@@ -1364,279 +1213,6 @@ pub fn get_cwd() -> Result<String, String> {
     std::env::current_dir()
         .map(|p| p.to_string_lossy().to_string())
         .map_err(|e| format!("Failed to get cwd: {}", e))
-}
-
-// ============================================================================
-// COLLECTION EXPORT
-// ============================================================================
-
-use crate::image_cache::cache::{build_cache_path, fetch_and_save_async, ImageCacheState};
-
-/// Result of preparing a collection export
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PrepareExportResult {
-    pub export_dir: String,
-    pub collection_json_path: String,
-    pub stickers_copied: usize,
-    pub stickers_fetched: usize,
-    pub stickers_missing: usize,
-}
-
-/// Prepare a collection export by copying cached images and writing collection.json
-#[command]
-pub async fn prepare_collection_export(
-    collection_id: String,
-    app: AppHandle,
-    db: State<'_, Database>,
-    cache_state: State<'_, ImageCacheState>,
-) -> Result<PrepareExportResult, String> {
-    // Get all data from DB first, then release the lock before async operations
-    let (collection, stickers, sticker_tags) = {
-        let conn = db.conn.lock().map_err(|e| e.to_string())?;
-
-        // Get collection
-        let collection = queries::collections::get_by_id(&conn, &collection_id)?
-            .ok_or_else(|| format!("Collection not found: {}", collection_id))?;
-
-        // Get stickers for collection
-        let stickers = queries::collections::get_stickers_for_collection(&conn, &collection_id)?;
-
-        // Fetch tags for all stickers
-        let sticker_ids: Vec<String> = stickers.iter().map(|s| s.id.clone()).collect();
-        let sticker_tags = queries::tags::get_tags_for_stickers(&conn, &sticker_ids)?;
-
-        (collection, stickers, sticker_tags)
-    }; // Lock is released here
-
-    // Create export directory
-    let data_dir = app.path().app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    // Sanitize collection title for directory name
-    let dir_name = collection.title
-        .to_lowercase()
-        .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
-        .collect::<String>();
-    let dir_name = dir_name.trim_matches('-');
-
-    let export_dir = data_dir.join("exports").join(format!("{}-{}", dir_name, &collection_id[..8.min(collection_id.len())]));
-    let stickers_dir = export_dir.join("stickers");
-
-    // Create directories
-    std::fs::create_dir_all(&stickers_dir)
-        .map_err(|e| format!("Failed to create export directory: {}", e))?;
-
-    let mut stickers_copied = 0;
-    let mut stickers_fetched = 0;
-    let mut stickers_missing = 0;
-
-    // Track local filenames for each sticker
-    let mut sticker_local_images: std::collections::HashMap<String, String> = std::collections::HashMap::new();
-
-    // Copy each sticker's cached image (fetch if not cached)
-    for sticker in &stickers {
-        if !sticker.image.is_empty() {
-            let mut cache_path = build_cache_path(&cache_state.cache_dir, &sticker.image);
-            let mut was_fetched = false;
-
-            // If not cached, try to fetch and cache it asynchronously
-            if !cache_path.exists() {
-                match fetch_and_save_async(&sticker.image, &cache_state.cache_dir).await {
-                    Ok(cached) => {
-                        cache_path = std::path::PathBuf::from(&cached.local_path);
-                        was_fetched = true;
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to fetch image for sticker {}: {}", sticker.id, e);
-                        stickers_missing += 1;
-                        continue;
-                    }
-                }
-            }
-
-            if cache_path.exists() {
-                // Get extension from cached file
-                let ext = cache_path.extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or("jpg");
-
-                // Use sticker id as filename
-                let dest_filename = format!("{}.{}", sticker.id, ext);
-                let dest_path = stickers_dir.join(&dest_filename);
-
-                if std::fs::copy(&cache_path, &dest_path).is_ok() {
-                    if was_fetched {
-                        stickers_fetched += 1;
-                    } else {
-                        stickers_copied += 1;
-                    }
-                    // Store the local filename (relative path within export)
-                    sticker_local_images.insert(sticker.id.clone(), format!("stickers/{}", dest_filename));
-                } else {
-                    stickers_missing += 1;
-                }
-            } else {
-                stickers_missing += 1;
-            }
-        } else {
-            stickers_missing += 1;
-        }
-    }
-
-    // Build a map of sticker_id -> tags
-    let mut sticker_tags_map: std::collections::HashMap<String, Vec<Tag>> = std::collections::HashMap::new();
-    for (sticker_id, tag) in sticker_tags {
-        sticker_tags_map.entry(sticker_id).or_default().push(tag);
-    }
-
-    // Build export data structure with local image paths
-    #[derive(serde::Serialize)]
-    #[serde(rename_all = "camelCase")]
-    struct StickerExport {
-        #[serde(flatten)]
-        sticker: Sticker,
-        /// Local image path relative to export directory (e.g., "stickers/{id}.jpg")
-        #[serde(skip_serializing_if = "Option::is_none")]
-        local_image: Option<String>,
-        tags: Vec<Tag>,
-    }
-
-    #[derive(serde::Serialize)]
-    #[serde(rename_all = "camelCase")]
-    struct ExportData {
-        collection: Collection,
-        stickers: Vec<StickerExport>,
-    }
-
-    let stickers_export: Vec<StickerExport> = stickers
-        .into_iter()
-        .map(|sticker| {
-            let tags = sticker_tags_map.remove(&sticker.id).unwrap_or_default();
-            let local_image = sticker_local_images.remove(&sticker.id);
-            StickerExport { sticker, local_image, tags }
-        })
-        .collect();
-
-    let export_data = ExportData {
-        collection: collection.clone(),
-        stickers: stickers_export,
-    };
-
-    // Write collection.json
-    let json_path = export_dir.join("collection.json");
-    let json_content = serde_json::to_string_pretty(&export_data)
-        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
-    std::fs::write(&json_path, &json_content)
-        .map_err(|e| format!("Failed to write collection.json: {}", e))?;
-
-    Ok(PrepareExportResult {
-        export_dir: export_dir.to_string_lossy().to_string(),
-        collection_json_path: json_path.to_string_lossy().to_string(),
-        stickers_copied,
-        stickers_fetched,
-        stickers_missing,
-    })
-}
-
-/// Result of creating a torrent file
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateTorrentResult {
-    pub torrent_path: String,
-    pub info_hash: String,
-}
-
-/// Create a torrent file for an export directory
-#[command]
-pub async fn create_torrent_for_export(
-    export_dir: String,
-    torrent_name: Option<String>,
-) -> Result<CreateTorrentResult, String> {
-    use librqbit::{create_torrent, CreateTorrentOptions};
-    use std::path::Path;
-
-    let path = Path::new(&export_dir);
-    if !path.exists() {
-        return Err(format!("Export directory does not exist: {}", export_dir));
-    }
-
-    let options = CreateTorrentOptions {
-        name: torrent_name.as_deref(),
-        piece_length: None,
-    };
-
-    let result = create_torrent(path, options)
-        .await
-        .map_err(|e| format!("Failed to create torrent: {}", e))?;
-
-    let torrent_bytes = result.as_bytes()
-        .map_err(|e| format!("Failed to serialize torrent: {}", e))?;
-
-    let info_hash = result.info_hash().as_string();
-
-    // Write torrent file next to the export directory
-    let torrent_path = path.with_extension("torrent");
-    std::fs::write(&torrent_path, &torrent_bytes)
-        .map_err(|e| format!("Failed to write torrent file: {}", e))?;
-
-    Ok(CreateTorrentResult {
-        torrent_path: torrent_path.to_string_lossy().to_string(),
-        info_hash,
-    })
-}
-
-// ============================================================================
-// POKEMON TRIVIA TEMPLATES
-// ============================================================================
-
-#[command]
-pub fn get_all_pokemon_trivia_templates(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::get_all(&conn)
-}
-
-#[command]
-pub fn get_pokemon_trivia_template(id: String, db: State<'_, Database>) -> Result<Option<PokemonTriviaTemplate>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::get_by_id(&conn, &id)
-}
-
-#[command]
-pub fn get_pokemon_trivia_templates_by_tag_key(tag_key: String, db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::get_by_tag_key(&conn, &tag_key)
-}
-
-#[command]
-pub fn get_active_pokemon_trivia_templates(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::get_active(&conn)
-}
-
-#[command]
-pub fn get_pokemon_trivia_template_tag_keys(db: State<'_, Database>) -> Result<Vec<String>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::get_unique_tag_keys(&conn)
-}
-
-#[command]
-pub fn create_pokemon_trivia_template(template: PokemonTriviaTemplate, db: State<'_, Database>) -> Result<PokemonTriviaTemplate, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::create(&conn, &template)
-}
-
-#[command]
-pub fn update_pokemon_trivia_template(template: PokemonTriviaTemplate, db: State<'_, Database>) -> Result<PokemonTriviaTemplate, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::update(&conn, &template)
-}
-
-#[command]
-pub fn delete_pokemon_trivia_template(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates::delete(&conn, &id)
 }
 
 // ============================================================================
@@ -1689,55 +1265,5 @@ pub fn get_pokemon_trivia_template_v2_types(db: State<'_, Database>) -> Result<V
 pub fn get_pokemon_trivia_template_v2_attributes(db: State<'_, Database>) -> Result<Vec<String>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::pokemon_trivia_templates_v2::get_unique_primary_attributes(&conn)
-}
-
-#[command]
-pub fn create_pokemon_trivia_template_v2(template: PokemonTriviaTemplateV2, db: State<'_, Database>) -> Result<PokemonTriviaTemplateV2, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates_v2::create(&conn, &template)
-}
-
-#[command]
-pub fn update_pokemon_trivia_template_v2(template: PokemonTriviaTemplateV2, db: State<'_, Database>) -> Result<PokemonTriviaTemplateV2, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates_v2::update(&conn, &template)
-}
-
-#[command]
-pub fn delete_pokemon_trivia_template_v2(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates_v2::delete(&conn, &id)
-}
-
-/// Open a directory in the system file explorer
-#[command]
-pub fn open_directory(path: String) -> Result<(), String> {
-    use std::process::Command;
-
-    #[cfg(target_os = "macos")]
-    {
-        Command::new("open")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        Command::new("explorer")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        Command::new("xdg-open")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open directory: {}", e))?;
-    }
-
-    Ok(())
 }
 

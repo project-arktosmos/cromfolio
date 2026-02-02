@@ -7,7 +7,6 @@ mod models;
 use apis::{
     client::ApiClientState,
     config::{ApiConfig, ApiConfigState},
-    igdb::IgdbApi,
 };
 use db::Database;
 use image_cache::{
@@ -20,13 +19,6 @@ use tauri::menu::{Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 #[cfg(desktop)]
 use tauri::LogicalSize;
 use tauri::{Manager, State};
-
-#[cfg(desktop)]
-fn is_production() -> bool {
-    std::env::var("ENVIRONMENT")
-        .map(|v| v == "production")
-        .unwrap_or(false)
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -68,7 +60,7 @@ pub fn run() {
         log::info!("Image cache directory: {:?}", cache_dir);
         app.manage(ImageCacheState::new(cache_dir));
 
-        // Initialize API client and config
+        // Initialize API client and config (kept for image cache)
         let api_client = ApiClientState::new()
             .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())) as Box<dyn std::error::Error>)?;
         app.manage(api_client);
@@ -76,31 +68,16 @@ pub fn run() {
         let api_config = ApiConfigState::new(ApiConfig::from_env());
         app.manage(api_config);
 
-        // Initialize IGDB API (needs to maintain OAuth token state)
-        app.manage(IgdbApi::new());
-
         // Build custom menu (desktop only)
         #[cfg(desktop)]
         {
-            let admin_item = MenuItemBuilder::with_id("nav_admin", "Admin")
-                .accelerator("CmdOrCtrl+Shift+A")
-                .build(app)?;
             let game_item = MenuItemBuilder::with_id("nav_game", "Game")
                 .accelerator("CmdOrCtrl+Shift+G")
                 .build(app)?;
 
-            let select_menu = if is_production() {
-                // Production: only Game menu item
-                SubmenuBuilder::new(app, "Select")
-                    .item(&game_item)
-                    .build()?
-            } else {
-                // Development: Admin and Game menu items
-                SubmenuBuilder::new(app, "Select")
-                    .item(&admin_item)
-                    .item(&game_item)
-                    .build()?
-            };
+            let select_menu = SubmenuBuilder::new(app, "Select")
+                .item(&game_item)
+                .build()?;
 
             // Display menu - window sizes and fullscreen
             let size_mobile = MenuItemBuilder::with_id("size_mobile", "Mobile")
@@ -156,9 +133,6 @@ pub fn run() {
             let window = app.get_webview_window("main").unwrap();
             match event.id().as_ref() {
                 // Navigation
-                "nav_admin" => {
-                    let _ = window.eval("window.location.href = '/admin'");
-                }
                 "nav_game" => {
                     let _ = window.eval("window.location.href = '/game'");
                 }
@@ -199,74 +173,38 @@ pub fn run() {
             // Settings
             commands::get_settings,
             commands::update_settings,
-            // Sources (formerly Albums)
+            // Sources (read-only for game)
             commands::get_all_sources,
             commands::get_source,
-            commands::create_source,
-            commands::update_source,
-            commands::delete_source,
-            // Stickers (formerly Blueprints/Templates)
+            // Stickers (read-only for game)
             commands::get_all_stickers,
             commands::get_stickers_by_source,
             commands::get_sticker,
-            commands::create_sticker,
-            commands::create_stickers_batch,
-            commands::update_sticker,
-            commands::delete_sticker,
-            commands::delete_stickers_by_source,
-            // Providers (formerly Sources - external API tracking)
-            commands::get_all_providers,
-            commands::get_providers_by_source,
-            commands::provider_exists,
-            commands::get_provider_by_external_id,
-            commands::create_provider,
-            commands::delete_provider,
-            // Rarities
+            // Rarities (read-only for game)
             commands::get_all_rarities,
             commands::get_rarity,
-            commands::create_rarity,
-            commands::update_rarity,
-            commands::delete_rarity,
-            // Sticker Types (formerly Blueprint Types/Template Types)
+            // Sticker Types (read-only for game)
             commands::get_all_sticker_types,
             commands::get_sticker_type,
             commands::get_sticker_types_by_category,
             commands::get_sticker_types_by_source_type,
-            commands::create_sticker_type,
-            commands::update_sticker_type,
-            commands::delete_sticker_type,
-            // Tags
+            // Tags (read-only for game, plus pokemon helpers)
             commands::get_all_tags,
             commands::get_tag,
             commands::get_tags_by_key,
-            commands::create_tag,
-            commands::update_tag,
-            commands::delete_tag,
-            // Sticker Tags (formerly Blueprint Tags/Template Tags)
             commands::get_tags_by_sticker,
-            commands::add_tag_to_sticker,
-            commands::remove_tag_from_sticker,
             commands::get_sticker_ids_by_tag,
-            commands::get_sticker_names_by_imdb_ids,
             commands::get_pokemon_common_tag_keys,
             commands::get_random_pokemon_with_tags,
             commands::get_random_pokemon_by_generation,
-            // Collections
+            // Collections (read-only for game)
             commands::get_all_collections,
             commands::get_collection,
             commands::get_collections_by_type,
-            commands::create_collection,
-            commands::update_collection,
-            commands::delete_collection,
-            commands::add_sticker_to_collection,
-            commands::remove_sticker_from_collection,
             commands::get_stickers_for_collection,
-            // Collection Types
+            // Collection Types (read-only for game)
             commands::get_all_collection_types,
             commands::get_collection_type,
-            commands::create_collection_type,
-            commands::update_collection_type,
-            commands::delete_collection_type,
             // Image cache
             get_cached_image,
             cache_image,
@@ -278,33 +216,6 @@ pub fn run() {
             get_background_download_progress,
             cancel_background_download,
             reset_background_download,
-            // API Fetch commands - Search
-            commands::search_movies,
-            commands::search_tv,
-            commands::search_games,
-            commands::search_anime,
-            commands::search_sports_teams,
-            commands::search_sports_leagues,
-            commands::search_animals,
-            // MusicBrainz search
-            commands::search_musicbrainz_artists,
-            commands::search_musicbrainz_releases,
-            commands::search_musicbrainz_recordings,
-            commands::get_musicbrainz_cover_art,
-            // API Fetch commands - Batch fetch
-            commands::fetch_source_images,
-            // API Fetch commands - Helpers
-            commands::get_species_in_genus,
-            commands::get_teams_in_league,
-            // API Fetch commands - Details
-            commands::get_content_details,
-            // API Config
-            commands::get_api_config,
-            commands::update_api_config,
-            // Database introspection
-            commands::get_database_tables,
-            commands::get_table_columns,
-            commands::get_table_data,
             // User Stickers (game data - _user_stickers table)
             commands::get_all_user_stickers,
             commands::get_user_stickers_by_source,
@@ -379,6 +290,22 @@ pub fn run() {
             commands::record_user_game,
             commands::delete_user_game_stats,
             commands::delete_all_user_game_stats,
+            // User Booster Packs (booster packs earned from games)
+            commands::get_all_user_booster_packs,
+            commands::get_unopened_user_booster_packs,
+            commands::get_unopened_user_booster_packs_by_collection,
+            commands::get_user_booster_packs_by_collection,
+            commands::get_user_booster_pack,
+            commands::count_unopened_user_booster_packs,
+            commands::count_unopened_user_booster_packs_by_collection,
+            commands::award_user_booster_pack,
+            commands::award_user_booster_packs_batch,
+            commands::open_user_booster_pack,
+            commands::open_user_booster_packs_batch,
+            commands::delete_user_booster_pack,
+            commands::delete_user_booster_packs_by_collection,
+            commands::delete_all_user_booster_packs,
+            commands::get_unopened_user_booster_packs_summary,
             // User Placed Icons (icons placed on album pages)
             commands::get_placed_icons_by_collection,
             commands::get_placed_icons_by_page,
@@ -388,19 +315,6 @@ pub fn run() {
             commands::remove_placed_icon,
             commands::clear_collection_icons,
             commands::clear_all_placed_icons,
-            // LLM Configs
-            commands::get_all_llm_configs,
-            commands::get_llm_config,
-            commands::get_default_llm_config,
-            commands::create_llm_config,
-            commands::update_llm_config,
-            commands::delete_llm_config,
-            commands::set_default_llm_config,
-            // LLM API
-            commands::check_llm_server,
-            commands::get_llm_models,
-            commands::chat_llm,
-            commands::get_llm_defaults,
             // Stamp Packs (imported stickers - WhatsApp, Telegram, etc.)
             commands::get_all_stamp_packs,
             commands::get_stamp_packs_by_source,
@@ -421,20 +335,7 @@ pub fn run() {
             commands::copy_file_to_stamps_dir,
             commands::write_stamp_file,
             commands::delete_stamp_pack_files,
-            // Collection Export
-            commands::prepare_collection_export,
-            commands::create_torrent_for_export,
-            commands::open_directory,
-            // Pokemon Trivia Templates (v1)
-            commands::get_all_pokemon_trivia_templates,
-            commands::get_pokemon_trivia_template,
-            commands::get_pokemon_trivia_templates_by_tag_key,
-            commands::get_active_pokemon_trivia_templates,
-            commands::get_pokemon_trivia_template_tag_keys,
-            commands::create_pokemon_trivia_template,
-            commands::update_pokemon_trivia_template,
-            commands::delete_pokemon_trivia_template,
-            // Pokemon Trivia Templates V2 (enhanced with 9 template types)
+            // Pokemon Trivia Templates V2 (read-only for game)
             commands::get_all_pokemon_trivia_templates_v2,
             commands::get_pokemon_trivia_template_v2,
             commands::get_pokemon_trivia_templates_v2_by_type,
@@ -443,9 +344,6 @@ pub fn run() {
             commands::get_pokemon_trivia_templates_v2_by_difficulty,
             commands::get_pokemon_trivia_template_v2_types,
             commands::get_pokemon_trivia_template_v2_attributes,
-            commands::create_pokemon_trivia_template_v2,
-            commands::update_pokemon_trivia_template_v2,
-            commands::delete_pokemon_trivia_template_v2,
             // Utility
             commands::get_cwd,
             // Generic Query Executor (TypeScript query builder support)

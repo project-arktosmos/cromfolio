@@ -347,6 +347,49 @@ impl Database {
         Ok(())
     }
 
+    /// Populate region field for Pokemon collections based on generation in title
+    fn populate_pokemon_regions(conn: &Connection) -> Result<(), String> {
+        // Map Pokemon generations to their regions
+        let generation_regions = [
+            ("Generation 1", "Kanto"),
+            ("Generation 2", "Johto"),
+            ("Generation 3", "Hoenn"),
+            ("Generation 4", "Sinnoh"),
+            ("Generation 5", "Unova"),
+            ("Generation 6", "Kalos"),
+            ("Generation 7", "Alola"),
+            ("Generation 8", "Galar"),
+            ("Generation 9", "Paldea"),
+            ("Gen 1", "Kanto"),
+            ("Gen 2", "Johto"),
+            ("Gen 3", "Hoenn"),
+            ("Gen 4", "Sinnoh"),
+            ("Gen 5", "Unova"),
+            ("Gen 6", "Kalos"),
+            ("Gen 7", "Alola"),
+            ("Gen 8", "Galar"),
+            ("Gen 9", "Paldea"),
+        ];
+
+        for (gen_pattern, region) in generation_regions {
+            conn.execute(
+                "UPDATE collections SET region = ?1 WHERE title LIKE ?2 AND region IS NULL",
+                rusqlite::params![region, format!("%{}%", gen_pattern)],
+            )
+            .map_err(|e| format!("Failed to populate region for {}: {}", gen_pattern, e))?;
+        }
+
+        // Special case: "All Pokemon" gets "Master"
+        conn.execute(
+            "UPDATE collections SET region = 'Master' WHERE title LIKE '%All Pokemon%' AND (region IS NULL OR region = 'Master Collection')",
+            [],
+        )
+        .map_err(|e| format!("Failed to set Master region: {}", e))?;
+
+        log::info!("Pokemon regions migration completed");
+        Ok(())
+    }
+
     /// Migrate existing sources to infer source_type from their metadata
     fn migrate_source_types(conn: &Connection) -> Result<(), String> {
         // Update sources that have anime IDs to 'anime'
@@ -674,6 +717,12 @@ impl Database {
         // Migration: Add collection_type_id column if it doesn't exist
         Self::add_column_if_not_exists(conn, "collections", "collection_type_id", "TEXT REFERENCES collection_types(id) ON DELETE SET NULL")?;
 
+        // Migration: Add region column if it doesn't exist
+        Self::add_column_if_not_exists(conn, "collections", "region", "TEXT")?;
+
+        // Migration: Populate region based on Pokemon generation in title
+        Self::populate_pokemon_regions(conn)?;
+
         // Index for efficient lookups by collection_type_id
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_collections_collection_type_id ON collections(collection_type_id)",
@@ -920,7 +969,34 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create _user_game_stats game_type index: {}", e))?;
 
-        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements, _user_placed_icons, _user_player, _user_game_stats) created successfully");
+        // _user_booster_packs table - stores earned booster packs
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_booster_packs (
+                id TEXT PRIMARY KEY,
+                collection_id TEXT NOT NULL,
+                earned_from TEXT NOT NULL,
+                earned_at TEXT NOT NULL,
+                opened_at TEXT,
+                FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_booster_packs table: {}", e))?;
+
+        // Indexes for _user_booster_packs
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_booster_packs_collection_id ON _user_booster_packs(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_booster_packs collection_id index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_booster_packs_opened_at ON _user_booster_packs(opened_at)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_booster_packs opened_at index: {}", e))?;
+
+        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements, _user_placed_icons, _user_player, _user_game_stats, _user_booster_packs) created successfully");
         Ok(())
     }
 
@@ -1171,6 +1247,9 @@ impl Database {
         // Seed default templates if table is empty
         Self::seed_pokemon_trivia_templates_v2(conn)?;
 
+        // Migration: Remove "Not Water Type" negation template (confusing type-based negation questions)
+        Self::migrate_remove_not_water_type_template(conn)?;
+
         log::info!("Pokemon trivia templates v2 table created successfully");
         Ok(())
     }
@@ -1286,7 +1365,6 @@ impl Database {
             ("Fast Pokemon", "Find fast Pokemon", "range", "Which Pokemon has a speed stat above 100?", "{name}", "speed", r#"[{"attribute":"speed","operator":"gt","value":"100"}]"#, "and", "{}", None, Some("medium"), 100),
 
             // Negation templates
-            ("Not Water Type", "Find Pokemon that is not Water type", "negation", "Which of these Pokemon is NOT a Water type?", "{name}", "type", r#"[{"attribute":"type","operator":"neq","value":"water"}]"#, "and", "{}", None, Some("easy"), 100),
             ("Not Legendary", "Find non-legendary Pokemon", "negation", "Which of these Pokemon is NOT legendary?", "{name}", "legendary", r#"[{"attribute":"legendary","operator":"eq","value":"false"}]"#, "and", "{}", None, Some("easy"), 100),
 
             // Statistical templates
@@ -1318,6 +1396,23 @@ impl Database {
         }
 
         log::info!("Seeded {} default Pokemon trivia templates v2", templates_count);
+        Ok(())
+    }
+
+    /// Migration: Remove the "Not Water Type" negation template
+    /// This template caused confusion because the answer selection logic dynamically
+    /// picks the most common type (e.g., Psychic) while the question text says "Water"
+    fn migrate_remove_not_water_type_template(conn: &Connection) -> Result<(), String> {
+        let deleted = conn.execute(
+            "DELETE FROM pokemon_trivia_templates_v2 WHERE name = 'Not Water Type'",
+            [],
+        )
+        .map_err(|e| format!("Failed to delete Not Water Type template: {}", e))?;
+
+        if deleted > 0 {
+            log::info!("Removed 'Not Water Type' negation template from pokemon_trivia_templates_v2");
+        }
+
         Ok(())
     }
 }

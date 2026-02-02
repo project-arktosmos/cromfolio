@@ -1,35 +1,4 @@
 {
-	"items": [
-		{
-			"id": "collections",
-			"label": "Collections",
-			"path": "/admin/collections"
-		},
-		{
-			"id": "components",
-			"label": "Components",
-			"path": "/admin/components"
-		},
-		{
-			"id": "database",
-			"label": "Database",
-			"path": "/admin/database"
-		},
-		{
-			"id": "icons",
-			"label": "Icons",
-			"path": "/admin/icons"
-		},
-		{
-			"id": "pokemon-trivia",
-			"label": "Pokemon Trivia",
-			"path": "/admin/pokemon-trivia"
-		},
-		{
-			"id": "rarity",
-			"label": "Rarity",
-			"path": "/admin/rarity"
-		}
-	],
-	"generatedAt": "2026-02-02T13:21:55.343Z"
+	"items": [],
+	"generatedAt": "2026-02-02T19:01:24.424Z"
 }

@@ -21,7 +21,7 @@
  */
 
 const WIKIDATA_SPARQL_ENDPOINT = 'https://query.wikidata.org/sparql';
-const USER_AGENT = 'SynaxisGameFetcher/1.0 (game sales data collector)';
+const USER_AGENT = 'CromfolioGameFetcher/1.0 (game sales data collector)';
 const RATE_LIMIT_MS = 2000;
 
 /**

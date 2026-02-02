@@ -105,7 +105,7 @@ pub fn fetch_and_save(url: &str, cache_dir: &Path) -> Result<CachedImage, String
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?
         .get(url)
-        .header("User-Agent", "Synaxis/1.0")
+        .header("User-Agent", "Cromfolio/1.0")
         .send()
         .map_err(|e| format!("Failed to fetch image: {}", e))?;
 
@@ -153,7 +153,7 @@ pub async fn fetch_and_save_async(url: &str, cache_dir: &Path) -> Result<CachedI
 
     let response = client
         .get(url)
-        .header("User-Agent", "Synaxis/1.0")
+        .header("User-Agent", "Cromfolio/1.0")
         .send()
         .await
         .map_err(|e| format!("Failed to fetch image: {}", e))?;

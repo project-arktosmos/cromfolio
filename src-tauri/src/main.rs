@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  synaxis_app_lib::run();
+  cromfolio_app_lib::run();
 }

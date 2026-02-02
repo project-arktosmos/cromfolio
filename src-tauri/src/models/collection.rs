@@ -13,6 +13,8 @@ pub struct Collection {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
+    pub region: Option<String>,
+    #[serde(default)]
     pub cover_image: Option<String>,
 
     // Timestamps

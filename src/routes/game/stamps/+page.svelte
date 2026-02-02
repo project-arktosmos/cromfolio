@@ -31,25 +31,18 @@
 
 	interface DisplayPack extends StampPack {
 		stickers?: DisplayStamp[];
+		coverUrl?: string;
 	}
-
-	// Filter state
-	type SourceFilter = 'all' | 'telegram' | 'whatsapp';
-	let sourceFilter = $state<SourceFilter>('all');
 
 	// State - Saved packs from database
 	let allPacks: DisplayPack[] = $state([]);
-	let filteredPacks: DisplayPack[] = $state([]);
 	let selectedPack = $state<DisplayPack | null>(null);
 	let packStamps: DisplayStamp[] = $state([]);
-	let selectedSticker = $state<DisplayStamp | null>(null);
 	let isLoading = $state(true);
 	let isLoadingStamps = $state(false);
 	let stampsDataDir = $state('');
 
-	// Lottie animation references
-	let lottiePreviewContainer: HTMLDivElement | null = $state(null);
-	let lottiePreviewAnim: AnimationItem | null = null;
+	// Lottie animation references for thumbnails
 	let lottieThumbAnims: Map<string, AnimationItem> = new Map();
 
 	// Telegram import state
@@ -62,9 +55,15 @@
 
 	// Telegram search state
 	let searchQuery = $state('');
-	let searchResults = $state<{ name: string; title: string; stickerCount?: number }[]>([]);
+	let searchResults = $state<
+		{ name: string; title: string; stickerCount?: number; thumbUrl?: string }[]
+	>([]);
 	let isSearching = $state(false);
 	let searchError = $state<string | null>(null);
+	let searchVariations = $state<string[]>([]);
+	let searchOffset = $state(0);
+	let searchSeenNames = $state<Set<string>>(new Set());
+	let hasMoreSearchResults = $derived(searchOffset < searchVariations.length);
 
 	// WhatsApp import state
 	let isWhatsappImporting = $state(false);
@@ -73,24 +72,51 @@
 	// Bot token from environment
 	const botToken = PUBLIC_TELEGRAM_BOT_TOKEN;
 
-	// Derived counts
-	let telegramCount = $derived(allPacks.filter((p) => p.source === 'telegram').length);
-	let whatsappCount = $derived(allPacks.filter((p) => p.source === 'whatsapp').length);
-
-	// Filter packs when filter or allPacks changes
-	$effect(() => {
-		if (sourceFilter === 'all') {
-			filteredPacks = allPacks;
-		} else {
-			filteredPacks = allPacks.filter((p) => p.source === sourceFilter);
+	/**
+	 * Get cover URL for a pack (trayImage or first stamp)
+	 */
+	async function getPackCoverUrl(pack: StampPack, dataDir: string): Promise<string | undefined> {
+		// Use tray image if available
+		if (pack.trayImage) {
+			return convertFileSrc(`${dataDir}/${pack.trayImage}`);
 		}
-	});
+		// Otherwise get first stamp
+		try {
+			const stamps = await getStampsByPack(pack.id);
+			if (stamps.length > 0) {
+				const firstStamp = stamps[0];
+				const format = getFormatFromFilename(firstStamp.imagePath);
+				// Only use static images for covers (not animated/video)
+				if (format === 'static' || format === 'video') {
+					return convertFileSrc(`${dataDir}/${firstStamp.imagePath}`);
+				}
+				// For animated, try to find a static one or just use the first
+				const staticStamp = stamps.find((s) => getFormatFromFilename(s.imagePath) === 'static');
+				if (staticStamp) {
+					return convertFileSrc(`${dataDir}/${staticStamp.imagePath}`);
+				}
+				// Fallback to first stamp even if animated
+				return convertFileSrc(`${dataDir}/${firstStamp.imagePath}`);
+			}
+		} catch (e) {
+			console.error('Failed to get cover for pack:', pack.id, e);
+		}
+		return undefined;
+	}
 
 	// Load saved packs on mount
 	onMount(async () => {
 		try {
 			stampsDataDir = await getStampsDataDir();
-			allPacks = await getAllStampPacks();
+			const packs = await getAllStampPacks();
+			// Load cover URLs for all packs
+			const packsWithCovers: DisplayPack[] = await Promise.all(
+				packs.map(async (pack) => ({
+					...pack,
+					coverUrl: await getPackCoverUrl(pack, stampsDataDir)
+				}))
+			);
+			allPacks = packsWithCovers;
 		} catch (e) {
 			console.error('Failed to load packs:', e);
 		} finally {
@@ -100,7 +126,6 @@
 
 	// Cleanup Lottie animations on destroy
 	onDestroy(() => {
-		lottiePreviewAnim?.destroy();
 		lottieThumbAnims.forEach((anim) => anim.destroy());
 	});
 
@@ -156,35 +181,8 @@
 			return;
 		}
 		selectedPack = pack;
-		selectedSticker = null;
 		await loadPackStamps(pack);
-		// Select first sticker if available
-		if (packStamps.length > 0) {
-			selectedSticker = packStamps[0];
-		}
 	}
-
-	// Effect to render Lottie preview when selected sticker changes
-	$effect(() => {
-		if (lottiePreviewAnim) {
-			lottiePreviewAnim.destroy();
-			lottiePreviewAnim = null;
-		}
-
-		if (
-			selectedSticker?.format === 'animated' &&
-			selectedSticker.lottieData &&
-			lottiePreviewContainer
-		) {
-			lottiePreviewAnim = lottie.loadAnimation({
-				container: lottiePreviewContainer,
-				renderer: 'svg',
-				loop: true,
-				autoplay: true,
-				animationData: selectedSticker.lottieData
-			});
-		}
-	});
 
 	/**
 	 * Svelte action for initializing Lottie thumbnail animation
@@ -366,9 +364,13 @@
 				await createStampsBatch(stampsToCreate);
 			}
 
-			allPacks = [...allPacks, createdPack];
-			selectedPack = createdPack;
-			await loadPackStamps(createdPack);
+			const packWithCover: DisplayPack = {
+				...createdPack,
+				coverUrl: await getPackCoverUrl(createdPack, stampsDataDir)
+			};
+			allPacks = [...allPacks, packWithCover];
+			selectedPack = packWithCover;
+			await loadPackStamps(packWithCover);
 			telegramUrl = '';
 		} catch (err) {
 			console.error('Fetch error:', err);
@@ -486,9 +488,13 @@
 				await createStampsBatch(stampsToCreate);
 			}
 
-			allPacks = [...allPacks, createdPack];
-			selectedPack = createdPack;
-			await loadPackStamps(createdPack);
+			const packWithCover: DisplayPack = {
+				...createdPack,
+				coverUrl: await getPackCoverUrl(createdPack, stampsDataDir)
+			};
+			allPacks = [...allPacks, packWithCover];
+			selectedPack = packWithCover;
+			await loadPackStamps(packWithCover);
 		} catch (err) {
 			console.error('Import error:', err);
 			telegramError = `Failed to import stickers: ${err instanceof Error ? err.message : 'Unknown error'}`;
@@ -521,7 +527,7 @@
 	 */
 	async function tryGetPackFromTelegram(
 		packName: string
-	): Promise<{ name: string; title: string; stickerCount: number } | null> {
+	): Promise<{ name: string; title: string; stickerCount: number; thumbUrl?: string } | null> {
 		if (!botToken) return null;
 
 		try {
@@ -531,10 +537,29 @@
 			const data = await response.json();
 
 			if (data.ok && data.result) {
+				let thumbUrl: string | undefined;
+
+				// Try to get thumbnail from first sticker
+				const firstSticker = data.result.stickers?.[0];
+				if (firstSticker?.thumbnail?.file_id) {
+					try {
+						const fileResponse = await tauriFetch(
+							`https://api.telegram.org/bot${botToken}/getFile?file_id=${firstSticker.thumbnail.file_id}`
+						);
+						const fileData = await fileResponse.json();
+						if (fileData.ok && fileData.result?.file_path) {
+							thumbUrl = `https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`;
+						}
+					} catch {
+						// Ignore thumbnail fetch errors
+					}
+				}
+
 				return {
 					name: data.result.name,
 					title: data.result.title,
-					stickerCount: data.result.stickers?.length || 0
+					stickerCount: data.result.stickers?.length || 0,
+					thumbUrl
 				};
 			}
 		} catch {
@@ -586,11 +611,14 @@
 		isSearching = true;
 		searchError = null;
 		searchResults = [];
+		searchSeenNames = new Set();
+		searchOffset = 0;
 
 		const query = searchQuery.trim();
 
 		try {
-			const results: { name: string; title: string; stickerCount?: number }[] = [];
+			const results: { name: string; title: string; stickerCount?: number; thumbUrl?: string }[] =
+				[];
 
 			// If query looks like an exact pack name, try it first
 			if (/^[a-zA-Z0-9_]+$/.test(query)) {
@@ -599,37 +627,29 @@
 					results.push({
 						name: directPack.name,
 						title: directPack.title,
-						stickerCount: directPack.stickerCount
+						stickerCount: directPack.stickerCount,
+						thumbUrl: directPack.thumbUrl
 					});
+					searchSeenNames.add(directPack.name.toLowerCase());
 				}
 			}
 
-			// Generate and try variations
-			const variations = generatePackNameVariations(query);
-			const seenNames = new Set(results.map((r) => r.name.toLowerCase()));
+			// Generate and store variations for pagination
+			searchVariations = generatePackNameVariations(query);
 
-			// Try variations in parallel (batch of 5 at a time to avoid rate limits)
-			for (let i = 0; i < variations.length && results.length < 10; i += 5) {
-				const batch = variations.slice(i, i + 5);
-				const batchResults = await Promise.all(
-					batch.map(async (variation) => {
-						if (seenNames.has(variation.toLowerCase())) return null;
-						return tryGetPackFromTelegram(variation);
-					})
-				);
+			// Load first batch
+			const { newResults, newOffset } = await loadSearchBatch(
+				searchVariations,
+				0,
+				searchSeenNames,
+				5
+			);
 
-				for (const pack of batchResults) {
-					if (pack && !seenNames.has(pack.name.toLowerCase())) {
-						seenNames.add(pack.name.toLowerCase());
-						results.push({
-							name: pack.name,
-							title: pack.title,
-							stickerCount: pack.stickerCount
-						});
-					}
-				}
+			for (const pack of newResults) {
+				results.push(pack);
+				searchSeenNames.add(pack.name.toLowerCase());
 			}
-
+			searchOffset = newOffset;
 			searchResults = results;
 
 			if (results.length === 0) {
@@ -639,6 +659,83 @@
 		} catch (err) {
 			console.error('Search error:', err);
 			searchError = `Search failed: ${err instanceof Error ? err.message : 'Unknown error'}`;
+		} finally {
+			isSearching = false;
+		}
+	}
+
+	/**
+	 * Load a batch of search results from variations
+	 */
+	async function loadSearchBatch(
+		variations: string[],
+		startOffset: number,
+		seenNames: Set<string>,
+		maxResults: number
+	): Promise<{
+		newResults: { name: string; title: string; stickerCount?: number; thumbUrl?: string }[];
+		newOffset: number;
+	}> {
+		const newResults: { name: string; title: string; stickerCount?: number; thumbUrl?: string }[] =
+			[];
+		let offset = startOffset;
+
+		// Try variations in parallel (batch of 5 at a time to avoid rate limits)
+		while (offset < variations.length && newResults.length < maxResults) {
+			const batch = variations.slice(offset, offset + 5);
+			const batchResults = await Promise.all(
+				batch.map(async (variation) => {
+					if (seenNames.has(variation.toLowerCase())) return null;
+					return tryGetPackFromTelegram(variation);
+				})
+			);
+
+			for (const pack of batchResults) {
+				if (pack && !seenNames.has(pack.name.toLowerCase())) {
+					newResults.push({
+						name: pack.name,
+						title: pack.title,
+						stickerCount: pack.stickerCount,
+						thumbUrl: pack.thumbUrl
+					});
+				}
+			}
+
+			offset += 5;
+		}
+
+		return { newResults, newOffset: offset };
+	}
+
+	/**
+	 * Load more search results
+	 */
+	async function loadMoreSearchResults() {
+		if (!hasMoreSearchResults || isSearching) return;
+
+		isSearching = true;
+		searchError = null;
+
+		try {
+			const { newResults, newOffset } = await loadSearchBatch(
+				searchVariations,
+				searchOffset,
+				searchSeenNames,
+				5
+			);
+
+			for (const pack of newResults) {
+				searchSeenNames.add(pack.name.toLowerCase());
+			}
+			searchOffset = newOffset;
+			searchResults = [...searchResults, ...newResults];
+
+			if (newResults.length === 0 && !hasMoreSearchResults) {
+				searchError = 'No more packs found.';
+			}
+		} catch (err) {
+			console.error('Load more error:', err);
+			searchError = `Failed to load more: ${err instanceof Error ? err.message : 'Unknown error'}`;
 		} finally {
 			isSearching = false;
 		}
@@ -781,11 +878,15 @@
 			await createStampsBatch(stampsToCreate);
 		}
 
-		allPacks = [...allPacks, createdPack];
+		const packWithCover: DisplayPack = {
+			...createdPack,
+			coverUrl: await getPackCoverUrl(createdPack, stampsDataDir)
+		};
+		allPacks = [...allPacks, packWithCover];
 
 		if (!selectedPack) {
-			selectedPack = createdPack;
-			await loadPackStamps(createdPack);
+			selectedPack = packWithCover;
+			await loadPackStamps(packWithCover);
 		}
 	}
 
@@ -810,12 +911,11 @@
 			allPacks = allPacks.filter((p) => p.id !== pack.id);
 
 			if (selectedPack?.id === pack.id) {
-				selectedPack = filteredPacks.length > 0 ? filteredPacks[0] : null;
+				selectedPack = allPacks.length > 0 ? allPacks[0] : null;
 				if (selectedPack) {
 					await loadPackStamps(selectedPack);
 				} else {
 					packStamps = [];
-					selectedSticker = null;
 				}
 			}
 		} catch (e) {
@@ -828,47 +928,21 @@
 	<h1 class="mb-4 flex-shrink-0 text-2xl font-bold">Stamp Collections</h1>
 
 	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4 overflow-hidden">
-		<!-- Column 1: Packs List with Import Panels -->
+		<!-- Column 1: Import Panels -->
 		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
 			<div class="card-body flex min-h-0 flex-col gap-3 p-4">
-				<h2 class="card-title text-lg">Stamp Packs</h2>
+				<h2 class="card-title text-lg">Import Stickers</h2>
 
-				<!-- Filter tabs -->
-				<div class="tabs tabs-boxed tabs-sm w-full flex-shrink-0">
-					<button
-						class={classNames('tab flex-1', { 'tab-active': sourceFilter === 'all' })}
-						onclick={() => (sourceFilter = 'all')}
-					>
-						All ({allPacks.length})
-					</button>
-					<button
-						class={classNames('tab flex-1', { 'tab-active': sourceFilter === 'telegram' })}
-						onclick={() => (sourceFilter = 'telegram')}
-					>
-						TG ({telegramCount})
-					</button>
-					<button
-						class={classNames('tab flex-1', { 'tab-active': sourceFilter === 'whatsapp' })}
-						onclick={() => (sourceFilter = 'whatsapp')}
-					>
-						WA ({whatsappCount})
-					</button>
-				</div>
-
-				<!-- Import Panels -->
-				<div class="flex-shrink-0 space-y-1">
+				<div class="min-h-0 flex-1 space-y-2 overflow-y-auto">
 					<!-- Search Telegram Panel -->
-					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
-						<input type="radio" name="import-panel" />
-						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
-							<div class="flex items-center gap-2">
-								<span>Search Telegram</span>
-								{#if isSearching}
-									<span class="loading loading-spinner loading-xs"></span>
-								{/if}
-							</div>
+					<div class="bg-base-300 rounded-lg p-3">
+						<div class="mb-2 flex items-center gap-2 text-sm font-medium">
+							<span>Search Telegram</span>
+							{#if isSearching}
+								<span class="loading loading-spinner loading-xs"></span>
+							{/if}
 						</div>
-						<div class="collapse-content space-y-2 px-2 pb-2">
+						<div class="space-y-2">
 							<!-- Search Input -->
 							<div class="join w-full">
 								<input
@@ -897,15 +971,31 @@
 
 							<!-- Search Results -->
 							{#if searchResults.length > 0}
-								<div class="max-h-40 space-y-1 overflow-y-auto">
+								<div class="max-h-64 space-y-1 overflow-y-auto">
 									{#each searchResults as result (result.name)}
 										<div
 											class={classNames(
-												'bg-base-100 flex items-center justify-between rounded p-2 text-xs',
+												'bg-base-100 flex items-center gap-2 rounded p-2 text-xs',
 												{ 'opacity-50': isPackImported(result.name) }
 											)}
 										>
-											<div class="mr-2 min-w-0 flex-1">
+											<!-- Thumbnail -->
+											<div
+												class="bg-base-300 flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded"
+											>
+												{#if result.thumbUrl}
+													<img
+														src={result.thumbUrl}
+														alt={result.title}
+														class="h-full w-full object-contain"
+														loading="lazy"
+													/>
+												{:else}
+													<span class="text-base-content/30 text-sm">?</span>
+												{/if}
+											</div>
+											<!-- Pack Info -->
+											<div class="min-w-0 flex-1">
 												<div class="truncate font-medium" title={result.title}>
 													{result.title}
 												</div>
@@ -918,6 +1008,7 @@
 													{/if}
 												</div>
 											</div>
+											<!-- Import Button -->
 											<button
 												class="btn btn-primary btn-xs flex-shrink-0"
 												onclick={() => importFromSearch(result.name)}
@@ -931,6 +1022,24 @@
 											</button>
 										</div>
 									{/each}
+									<!-- Load More Button -->
+									{#if hasMoreSearchResults}
+										<button
+											class="btn btn-ghost btn-xs w-full"
+											onclick={loadMoreSearchResults}
+											disabled={isSearching}
+										>
+											{#if isSearching}
+												<span class="loading loading-spinner loading-xs"></span>
+											{:else}
+												Load more...
+											{/if}
+										</button>
+									{/if}
+								</div>
+								<!-- Results count -->
+								<div class="text-base-content/60 text-center text-xs">
+									{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
 								</div>
 							{:else if !isSearching && !searchError}
 								<div class="text-base-content/60 py-2 text-center text-xs">
@@ -941,17 +1050,14 @@
 					</div>
 
 					<!-- Telegram Import Panel -->
-					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
-						<input type="radio" name="import-panel" />
-						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
-							<div class="flex items-center gap-2">
-								<span>Import from Telegram</span>
-								{#if isTelegramImporting}
-									<span class="loading loading-spinner loading-xs"></span>
-								{/if}
-							</div>
+					<div class="bg-base-300 rounded-lg p-3">
+						<div class="mb-2 flex items-center gap-2 text-sm font-medium">
+							<span>Import from Telegram</span>
+							{#if isTelegramImporting}
+								<span class="loading loading-spinner loading-xs"></span>
+							{/if}
 						</div>
-						<div class="collapse-content space-y-2 px-2 pb-2">
+						<div class="space-y-2">
 							<!-- URL Input -->
 							<input
 								type="text"
@@ -1009,17 +1115,14 @@
 					</div>
 
 					<!-- WhatsApp Import Panel -->
-					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
-						<input type="radio" name="import-panel" />
-						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
-							<div class="flex items-center gap-2">
-								<span>Import from WhatsApp</span>
-								{#if isWhatsappImporting}
-									<span class="loading loading-spinner loading-xs"></span>
-								{/if}
-							</div>
+					<div class="bg-base-300 rounded-lg p-3">
+						<div class="mb-2 flex items-center gap-2 text-sm font-medium">
+							<span>Import from WhatsApp</span>
+							{#if isWhatsappImporting}
+								<span class="loading loading-spinner loading-xs"></span>
+							{/if}
 						</div>
-						<div class="collapse-content px-2 pb-2">
+						<div>
 							<button
 								class="btn btn-success btn-xs w-full"
 								onclick={handleWhatsappSelectFile}
@@ -1037,6 +1140,13 @@
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
+
+		<!-- Column 2: Packs List -->
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col gap-3 p-4">
+				<h2 class="card-title text-lg">Stamp Packs</h2>
 
 				<!-- Packs List -->
 				<div class="min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -1044,16 +1154,16 @@
 						<div class="flex justify-center p-4">
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
-					{:else if filteredPacks.length === 0}
+					{:else if allPacks.length === 0}
 						<div class="text-base-content/60 p-4 text-center">
 							<p class="text-sm">No packs found.</p>
-							<p class="mt-2 text-xs">Use the import panels above to add sticker packs.</p>
+							<p class="mt-2 text-xs">Use the import panel to add sticker packs.</p>
 						</div>
 					{:else}
-						{#each filteredPacks as pack (pack.id)}
+						{#each allPacks as pack (pack.id)}
 							<div
 								class={classNames(
-									'hover:bg-base-300 cursor-pointer rounded-lg p-3 transition-colors',
+									'hover:bg-base-300 cursor-pointer rounded-lg p-2 transition-colors',
 									{
 										'bg-primary/20 ring-primary ring-2': selectedPack?.id === pack.id,
 										'bg-base-100': selectedPack?.id !== pack.id
@@ -1064,7 +1174,23 @@
 								role="button"
 								tabindex="0"
 							>
-								<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<!-- Cover Image -->
+									<div
+										class="bg-base-300 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded"
+									>
+										{#if pack.coverUrl}
+											<img
+												src={pack.coverUrl}
+												alt={pack.name}
+												class="h-full w-full object-contain"
+												loading="lazy"
+											/>
+										{:else}
+											<span class="text-base-content/30 text-lg">?</span>
+										{/if}
+									</div>
+									<!-- Pack Info -->
 									<div class="min-w-0 flex-1">
 										<div class="flex items-center gap-2">
 											<span class="truncate text-sm font-medium">{pack.name}</span>
@@ -1072,14 +1198,15 @@
 												{pack.source}
 											</span>
 										</div>
-										<div class="text-base-content/60 mt-1 text-xs">
+										<div class="text-base-content/60 text-xs">
 											{pack.stickerCount} sticker{pack.stickerCount !== 1 ? 's' : ''}
 											{#if pack.author}
 												<span class="mx-1">·</span>
-												{pack.author}
+												<span class="truncate">{pack.author}</span>
 											{/if}
 										</div>
 									</div>
+									<!-- Delete Button -->
 									<button
 										class="btn btn-ghost btn-xs text-error opacity-50 hover:opacity-100"
 										onclick={(e) => handleDeletePack(pack, e)}
@@ -1094,20 +1221,17 @@
 				</div>
 
 				<div class="text-base-content/60 border-base-300 flex-shrink-0 border-t pt-2 text-xs">
-					{filteredPacks.length} pack{filteredPacks.length !== 1 ? 's' : ''}
-					{#if sourceFilter !== 'all'}
-						({sourceFilter})
-					{/if}
+					{allPacks.length} pack{allPacks.length !== 1 ? 's' : ''}
 				</div>
 			</div>
 		</div>
 
-		<!-- Column 2: Stickers Grid -->
+		<!-- Column 3: Stickers Grid -->
 		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
 			<div class="card-body flex min-h-0 flex-col p-4">
 				<h2 class="card-title mb-2 text-lg">
 					{#if selectedPack}
-						Stickers ({selectedPack.stickerCount})
+						{selectedPack.name} ({selectedPack.stickerCount})
 					{:else}
 						Stickers
 					{/if}
@@ -1127,19 +1251,10 @@
 					</div>
 				{:else}
 					<div class="flex-1 overflow-y-auto">
-						<div class="grid grid-cols-4 gap-2">
+						<div class="grid grid-cols-5 gap-2">
 							{#each packStamps as sticker (sticker.id)}
 								<div
-									class={classNames(
-										'bg-base-300 group relative aspect-square cursor-pointer overflow-hidden rounded-lg',
-										{
-											'ring-primary ring-2': selectedSticker?.id === sticker.id
-										}
-									)}
-									onclick={() => (selectedSticker = sticker)}
-									onkeydown={(e) => e.key === 'Enter' && (selectedSticker = sticker)}
-									role="button"
-									tabindex="0"
+									class="bg-base-300 group relative aspect-square overflow-hidden rounded-lg"
 								>
 									{#if sticker.format === 'static' && sticker.dataUrl}
 										<img
@@ -1179,120 +1294,6 @@
 								</div>
 							{/each}
 						</div>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Column 3: Pack Details & Sticker Preview -->
-		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
-			<div class="card-body flex min-h-0 flex-col p-4">
-				<h2 class="card-title mb-2 text-lg">Details</h2>
-
-				{#if !selectedPack}
-					<div class="text-base-content/60 flex flex-1 items-center justify-center">
-						<p>Select a pack to view details</p>
-					</div>
-				{:else}
-					<div class="flex-1 space-y-4 overflow-y-auto">
-						<!-- Pack Details -->
-						<div class="space-y-2 text-sm">
-							<h3 class="text-lg font-bold">{selectedPack.name}</h3>
-							{#if selectedPack.author}
-								<p class="text-base-content/60">{selectedPack.author}</p>
-							{/if}
-							<div class="divider my-2"></div>
-							<div class="flex justify-between">
-								<span class="text-base-content/60">Source:</span>
-								<span
-									class={classNames('badge badge-sm', getSourceBadgeClass(selectedPack.source))}
-								>
-									{selectedPack.source}
-								</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-base-content/60">Stickers:</span>
-								<span>{selectedPack.stickerCount}</span>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-base-content/60">Imported:</span>
-								<span class="text-xs">
-									{new Date(selectedPack.createdAt).toLocaleDateString()}
-								</span>
-							</div>
-						</div>
-
-						{#if selectedSticker}
-							<div class="divider my-2"></div>
-
-							<!-- Sticker Preview Area -->
-							<div class="bg-base-300 flex min-h-48 items-center justify-center rounded-lg p-4">
-								{#if selectedSticker.format === 'static' && selectedSticker.dataUrl}
-									<img
-										src={selectedSticker.dataUrl}
-										alt={selectedSticker.imagePath}
-										class="max-h-64 max-w-full object-contain"
-									/>
-								{:else if selectedSticker.format === 'video' && selectedSticker.dataUrl}
-									<video
-										src={selectedSticker.dataUrl}
-										class="max-h-64 max-w-full object-contain"
-										autoplay
-										loop
-										muted
-										playsinline
-										controls
-									></video>
-								{:else if selectedSticker.format === 'animated' && selectedSticker.lottieData}
-									<div bind:this={lottiePreviewContainer} class="h-64 w-64"></div>
-								{/if}
-							</div>
-
-							<!-- Sticker Details -->
-							<div class="space-y-2 text-sm">
-								<div class="flex justify-between">
-									<span class="text-base-content/60">File:</span>
-									<span
-										class="max-w-48 truncate font-mono text-xs"
-										title={selectedSticker.imagePath}
-									>
-										{selectedSticker.imagePath.split('/').pop()}
-									</span>
-								</div>
-								<div class="flex justify-between">
-									<span class="text-base-content/60">Format:</span>
-									<span
-										class={classNames(
-											'badge badge-sm',
-											getFormatBadgeClass(selectedSticker.format)
-										)}
-									>
-										{selectedSticker.format}
-									</span>
-								</div>
-								{#if selectedSticker.emojis}
-									<div class="flex justify-between">
-										<span class="text-base-content/60">Emoji:</span>
-										<span class="text-2xl">{selectedSticker.emojis}</span>
-									</div>
-								{/if}
-							</div>
-
-							<!-- Lottie JSON Preview for TGS -->
-							{#if selectedSticker.format === 'animated' && selectedSticker.lottieData}
-								<div class="collapse-arrow bg-base-300 collapse">
-									<input type="checkbox" />
-									<div class="collapse-title text-sm font-medium">Lottie JSON Data</div>
-									<div class="collapse-content">
-										<pre class="max-h-48 overflow-x-auto overflow-y-auto text-xs">{JSON.stringify(
-												selectedSticker.lottieData,
-												null,
-												2
-											)}</pre>
-									</div>
-								</div>
-							{/if}
-						{/if}
 					</div>
 				{/if}
 			</div>

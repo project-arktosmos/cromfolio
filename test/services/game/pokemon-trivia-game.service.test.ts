@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
-	triviaStatsService,
+	getTriviaStats,
 	getDifficultyConfig,
 	getAllDifficultyConfigs,
 	generateQuestion,
@@ -14,48 +14,55 @@ import {
 import type { PokemonWithTags } from '$services/pokemon-trivia-game.service';
 import type { PokemonTriviaTemplateV2, TemplateType } from '$types/pokemon-trivia-template.type';
 
-// Mock localStorage
-const localStorageMock = (() => {
-	let store: Record<string, string> = {};
-	return {
-		getItem: vi.fn((key: string) => store[key] || null),
-		setItem: vi.fn((key: string, value: string) => {
-			store[key] = value;
-		}),
-		removeItem: vi.fn((key: string) => {
-			delete store[key];
-		}),
-		clear: vi.fn(() => {
-			store = {};
-		})
-	};
-})();
+// Mock Tauri invoke
+vi.mock('@tauri-apps/api/core', () => ({
+	invoke: vi.fn()
+}));
 
-Object.defineProperty(global, 'localStorage', { value: localStorageMock });
+import { invoke } from '@tauri-apps/api/core';
+const mockedInvoke = vi.mocked(invoke);
 
 describe('pokemon-trivia-game.service', () => {
 	beforeEach(() => {
-		localStorageMock.clear();
 		vi.clearAllMocks();
-		// Reset stats to default values for each test
-		triviaStatsService.update({
-			id: 'pokemon-trivia-stats',
-			totalGamesPlayed: 0,
-			totalCorrect: 0,
-			totalWrong: 0,
-			bestStreak: 0,
-			longestGame: 0
-		});
+		// Reset mock for get_user_game_stats to return null (no stats)
+		mockedInvoke.mockResolvedValue(null);
 	});
 
-	describe('triviaStatsService', () => {
-		it('should return default stats initially', () => {
-			const stats = triviaStatsService.get();
+	describe('getTriviaStats', () => {
+		it('should return default stats when no stats exist', async () => {
+			mockedInvoke.mockResolvedValue(null);
+
+			const stats = await getTriviaStats();
 
 			expect(stats.id).toBe('pokemon-trivia-stats');
 			expect(stats.totalGamesPlayed).toBe(0);
 			expect(stats.totalCorrect).toBe(0);
 			expect(stats.totalWrong).toBe(0);
+		});
+
+		it('should return existing stats from database', async () => {
+			mockedInvoke.mockResolvedValue({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 5,
+				totalScore: 100,
+				bestScore: 50,
+				totalCorrect: 40,
+				totalWrong: 10,
+				bestStreak: 8,
+				longestGame: 15,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-01',
+				updatedAt: '2024-01-15'
+			});
+
+			const stats = await getTriviaStats();
+
+			expect(stats.totalGamesPlayed).toBe(5);
+			expect(stats.totalCorrect).toBe(40);
+			expect(stats.totalWrong).toBe(10);
+			expect(stats.bestStreak).toBe(8);
 		});
 	});
 
@@ -63,18 +70,18 @@ describe('pokemon-trivia-game.service', () => {
 		it('should return easy difficulty config', () => {
 			const config = getDifficultyConfig('easy');
 
-			expect(config.questions).toBe(10);
-			expect(config.timePerQuestion).toBe(15);
-			expect(config.answerCount).toBe(4);
+			expect(config.maxLives).toBe(3);
+			expect(config.timePerQuestion).toBe(10);
+			expect(config.answerCount).toBe(3);
 			expect(config.label).toBe('Easy');
 		});
 
 		it('should return hard difficulty config', () => {
 			const config = getDifficultyConfig('hard');
 
-			expect(config.questions).toBe(20);
-			expect(config.timePerQuestion).toBe(10);
-			expect(config.answerCount).toBe(6);
+			expect(config.maxLives).toBe(1);
+			expect(config.timePerQuestion).toBe(5);
+			expect(config.answerCount).toBe(4);
 			expect(config.label).toBe('Hard');
 		});
 	});
@@ -89,30 +96,115 @@ describe('pokemon-trivia-game.service', () => {
 	});
 
 	describe('updateStatsAfterGame', () => {
-		it('should increment stats correctly', () => {
-			updateStatsAfterGame(3, 2, 3);
+		it('should call record_user_game with correct parameters', async () => {
+			mockedInvoke.mockResolvedValue({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 1,
+				totalScore: 0,
+				bestScore: 0,
+				totalCorrect: 3,
+				totalWrong: 2,
+				bestStreak: 3,
+				longestGame: 5,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-15',
+				updatedAt: '2024-01-15'
+			});
 
-			const stats = triviaStatsService.get();
+			const stats = await updateStatsAfterGame(3, 2, 3);
+
+			expect(mockedInvoke).toHaveBeenCalledWith('record_user_game', {
+				gameType: 'pokemon-trivia',
+				score: 0,
+				correct: 3,
+				wrong: 2,
+				streak: 3
+			});
 			expect(stats.totalGamesPlayed).toBe(1);
 			expect(stats.totalCorrect).toBe(3);
 			expect(stats.totalWrong).toBe(2);
 		});
 
-		it('should accumulate stats over multiple games', () => {
-			updateStatsAfterGame(5, 0, 5); // Perfect game
-			updateStatsAfterGame(3, 2, 3); // Mixed game
+		it('should accumulate stats over multiple games', async () => {
+			// First game
+			mockedInvoke.mockResolvedValueOnce({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 1,
+				totalScore: 0,
+				bestScore: 0,
+				totalCorrect: 5,
+				totalWrong: 0,
+				bestStreak: 5,
+				longestGame: 5,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-15',
+				updatedAt: '2024-01-15'
+			});
 
-			const stats = triviaStatsService.get();
+			await updateStatsAfterGame(5, 0, 5);
+
+			// Second game
+			mockedInvoke.mockResolvedValueOnce({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 2,
+				totalScore: 0,
+				bestScore: 0,
+				totalCorrect: 8,
+				totalWrong: 2,
+				bestStreak: 5,
+				longestGame: 5,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-15',
+				updatedAt: '2024-01-15'
+			});
+
+			const stats = await updateStatsAfterGame(3, 2, 3);
+
 			expect(stats.totalGamesPlayed).toBe(2);
 			expect(stats.totalCorrect).toBe(8);
 			expect(stats.totalWrong).toBe(2);
 		});
 
-		it('should track best streak', () => {
-			updateStatsAfterGame(5, 0, 5); // 5 correct streak
-			updateStatsAfterGame(3, 0, 3); // 3 correct streak
+		it('should track best streak', async () => {
+			// First game with 5 streak
+			mockedInvoke.mockResolvedValueOnce({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 1,
+				totalScore: 0,
+				bestScore: 0,
+				totalCorrect: 5,
+				totalWrong: 0,
+				bestStreak: 5,
+				longestGame: 5,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-15',
+				updatedAt: '2024-01-15'
+			});
 
-			const stats = triviaStatsService.get();
+			await updateStatsAfterGame(5, 0, 5);
+
+			// Second game with 3 streak (best should stay 5)
+			mockedInvoke.mockResolvedValueOnce({
+				id: 'test-id',
+				gameType: 'pokemon-trivia',
+				totalGamesPlayed: 2,
+				totalScore: 0,
+				bestScore: 0,
+				totalCorrect: 8,
+				totalWrong: 0,
+				bestStreak: 5,
+				longestGame: 5,
+				lastPlayedAt: '2024-01-15',
+				createdAt: '2024-01-15',
+				updatedAt: '2024-01-15'
+			});
+
+			const stats = await updateStatsAfterGame(3, 0, 3);
+
 			expect(stats.bestStreak).toBe(5);
 		});
 	});

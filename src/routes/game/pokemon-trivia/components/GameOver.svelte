@@ -2,27 +2,23 @@
 	import classNames from 'classnames';
 	import { createEventDispatcher } from 'svelte';
 	import type { GameDifficulty, DifficultyConfig } from '$types/game-state.type';
-	import type { PokemonTriviaTemplateV2 } from '$types/pokemon-trivia-template.type';
-
-	interface AnsweredQuestion {
-		question: string;
-		pokemon: { name: string; image: string; tags?: Record<string, string> };
-		template: PokemonTriviaTemplateV2 | null;
-	}
 
 	interface Props {
 		correctAnswers: number;
-		answeredQuestions: AnsweredQuestion[];
 		difficulty: GameDifficulty;
 		difficultyConfig: DifficultyConfig;
+		boosterPacksClaimed?: boolean;
 	}
 
-	let { correctAnswers, answeredQuestions, difficulty, difficultyConfig }: Props = $props();
+	let { correctAnswers, difficulty, difficultyConfig, boosterPacksClaimed = false }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		playAgain: void;
-		changeCollection: void;
+		claimBoosterPacks: { packCount: number };
 	}>();
+
+	// Calculate earned booster packs (1 per 3 correct answers)
+	let earnedPacks = $derived(Math.floor(correctAnswers / 3));
 
 	function getResultEmoji(): string {
 		if (correctAnswers >= 10) return '🏆';
@@ -70,35 +66,44 @@
 					<div class="stat-title">Score</div>
 					<div class="stat-value text-success">{correctAnswers}</div>
 				</div>
+				{#if earnedPacks > 0}
+					<div class="stat">
+						<div class="stat-title">Packs Earned</div>
+						<div class="stat-value text-primary">{earnedPacks}</div>
+					</div>
+				{/if}
 			</div>
 
-			<div class="card-actions mt-6 gap-2">
+			<!-- Booster Pack Reward Section -->
+			<div class="bg-primary/10 border-primary/30 mt-4 rounded-lg border p-4 text-center">
+				{#if boosterPacksClaimed}
+					<p class="text-success font-medium">
+						Booster packs claimed!
+					</p>
+				{:else if earnedPacks > 0}
+					<p class="mb-2 text-sm">
+						You earned <span class="text-primary font-bold">{earnedPacks}</span> booster pack{earnedPacks !== 1 ? 's' : ''}!
+					</p>
+					<button
+						class="btn btn-primary"
+						onclick={() => dispatch('claimBoosterPacks', { packCount: earnedPacks })}
+					>
+						Open Booster Pack{earnedPacks !== 1 ? 's' : ''}
+					</button>
+				{:else}
+					<p class="text-base-content/50 mb-2 text-sm">
+						Get 3+ correct answers to earn booster packs!
+					</p>
+					<button class="btn btn-primary" disabled>
+						Open Booster Packs
+					</button>
+				{/if}
+			</div>
+
+			<div class="card-actions mt-6">
 				<button class="btn btn-primary" onclick={() => dispatch('playAgain')}>Play Again</button>
-				<button class="btn btn-outline" onclick={() => dispatch('changeCollection')}
-					>Choose Collection</button
-				>
 			</div>
 		</div>
 	</div>
 
-	<!-- Summary of correctly answered questions -->
-	{#if answeredQuestions.length > 0}
-		<div class="card bg-base-200 w-full max-w-2xl">
-			<div class="card-body">
-				<h3 class="card-title text-lg">Correctly Answered</h3>
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-					{#each answeredQuestions as item, index (index)}
-						<div class="bg-base-300 flex flex-col items-center gap-2 rounded-lg p-3">
-							<img
-								src={item.pokemon.image}
-								alt={item.pokemon.name}
-								class="h-16 w-16 object-contain"
-							/>
-							<span class="text-center text-sm font-medium">{item.pokemon.name}</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-		</div>
-	{/if}
 </div>

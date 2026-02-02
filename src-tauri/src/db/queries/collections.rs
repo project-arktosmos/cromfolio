@@ -8,7 +8,7 @@ use crate::models::{Collection, CollectionSticker, Sticker};
 pub fn get_all(conn: &Connection) -> Result<Vec<Collection>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, collection_type_id, title, description, cover_image, created_at, updated_at
+            "SELECT id, collection_type_id, title, description, region, cover_image, created_at, updated_at
              FROM collections
              ORDER BY title ASC",
         )
@@ -25,7 +25,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Collection>, String> {
 pub fn get_by_type(conn: &Connection, collection_type_id: &str) -> Result<Vec<Collection>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, collection_type_id, title, description, cover_image, created_at, updated_at
+            "SELECT id, collection_type_id, title, description, region, cover_image, created_at, updated_at
              FROM collections
              WHERE collection_type_id = ?1
              ORDER BY title ASC",
@@ -43,7 +43,7 @@ pub fn get_by_type(conn: &Connection, collection_type_id: &str) -> Result<Vec<Co
 pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Collection>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, collection_type_id, title, description, cover_image, created_at, updated_at
+            "SELECT id, collection_type_id, title, description, region, cover_image, created_at, updated_at
              FROM collections
              WHERE id = ?1",
         )
@@ -69,9 +69,9 @@ pub fn create(conn: &Connection, collection: &Collection) -> Result<Collection, 
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO collections (id, collection_type_id, title, description, cover_image, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![id, collection.collection_type_id, collection.title, collection.description, collection.cover_image, now, now],
+        "INSERT INTO collections (id, collection_type_id, title, description, region, cover_image, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        params![id, collection.collection_type_id, collection.title, collection.description, collection.region, collection.cover_image, now, now],
     )
     .map_err(|e| e.to_string())?;
 
@@ -87,9 +87,9 @@ pub fn update(conn: &Connection, collection: &Collection) -> Result<Collection, 
     let now = chrono_now();
 
     conn.execute(
-        "UPDATE collections SET collection_type_id = ?2, title = ?3, description = ?4, cover_image = ?5, updated_at = ?6
+        "UPDATE collections SET collection_type_id = ?2, title = ?3, description = ?4, region = ?5, cover_image = ?6, updated_at = ?7
          WHERE id = ?1",
-        params![collection.id, collection.collection_type_id, collection.title, collection.description, collection.cover_image, now],
+        params![collection.id, collection.collection_type_id, collection.title, collection.description, collection.region, collection.cover_image, now],
     )
     .map_err(|e| e.to_string())?;
 
@@ -198,7 +198,7 @@ pub fn get_collections_for_sticker(
 ) -> Result<Vec<Collection>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT c.id, c.collection_type_id, c.title, c.description, c.cover_image, c.created_at, c.updated_at
+            "SELECT c.id, c.collection_type_id, c.title, c.description, c.region, c.cover_image, c.created_at, c.updated_at
              FROM collections c
              INNER JOIN collection_stickers cs ON c.id = cs.collection_id
              WHERE cs.sticker_id = ?1
@@ -224,9 +224,10 @@ fn row_to_collection(row: &rusqlite::Row) -> Collection {
         collection_type_id: row.get(1).unwrap_or(None),
         title: row.get(2).unwrap_or_default(),
         description: row.get(3).unwrap_or_default(),
-        cover_image: row.get(4).unwrap_or(None),
-        created_at: row.get(5).unwrap_or_default(),
-        updated_at: row.get(6).unwrap_or_default(),
+        region: row.get(4).unwrap_or(None),
+        cover_image: row.get(5).unwrap_or(None),
+        created_at: row.get(6).unwrap_or_default(),
+        updated_at: row.get(7).unwrap_or_default(),
     }
 }
 

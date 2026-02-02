@@ -153,19 +153,21 @@ export function selectReverseLookupAnswers(
 		.filter((c) => c.id !== correct.id && c.tags[primaryAttribute] !== correctValue)
 		.slice(0, 3);
 
-	if (wrong.length < 3) {
-		const fallbackWrong = candidates.filter((c) => c.id !== correct.id).slice(0, 3);
+	// If no differentiated wrong answers exist, this template can't work for this pool
+	if (wrong.length === 0) {
 		return {
-			correct,
-			wrong: fallbackWrong,
-			message: `\u26a0\ufe0f Some wrong options may share the attribute`
+			correct: null,
+			wrong: [],
+			message: 'No differentiated options for this attribute'
 		};
 	}
 
 	return {
 		correct,
 		wrong,
-		message: `\u2713 Only ${correct.name} has ${primaryAttribute}: ${correctValue}`
+		message: wrong.length < 3
+			? 'Limited differentiated options'
+			: `\u2713 Only ${correct.name} has ${primaryAttribute}: ${correctValue}`
 	};
 }
 
@@ -345,17 +347,11 @@ export function selectTypeEffectivenessAnswers(
 	const correct = withTarget[Math.floor(Math.random() * withTarget.length)];
 	const wrong = withoutTarget.slice(0, 3);
 
-	if (wrong.length < 3) {
-		return {
-			correct,
-			wrong: candidates.filter((c) => c.id !== correct.id).slice(0, 3),
-			message: `\u26a0\ufe0f Limited differentiated options`
-		};
-	}
-
 	return {
 		correct,
 		wrong,
-		message: `\u2713 ${correct.name} has ${primaryAttribute}: ${targetValue}x`
+		message: wrong.length < 3
+			? 'Limited differentiated options'
+			: `\u2713 ${correct.name} has ${primaryAttribute}: ${targetValue}x`
 	};
 }
