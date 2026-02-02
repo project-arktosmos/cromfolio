@@ -15,7 +15,6 @@
 		type ComparisonConfig,
 		type Difficulty,
 		TEMPLATE_TYPE_INFO,
-		POKEMON_ATTRIBUTES,
 		parseConditions,
 		stringifyConditions,
 		parseScopeFilters,
@@ -23,6 +22,11 @@
 		parseComparisonConfig,
 		stringifyComparisonConfig
 	} from '$types/pokemon-trivia-template.type';
+	import {
+		groupAttributesByCategory,
+		requiresConditionBuilder,
+		requiresComparisonConfig
+	} from '$utils/pokemon-trivia';
 	import TemplateTypeSelector from './components/TemplateTypeSelector.svelte';
 	import ConditionBuilder from './components/ConditionBuilder.svelte';
 	import ScopeFilterBuilder from './components/ScopeFilterBuilder.svelte';
@@ -87,19 +91,10 @@
 	});
 
 	// Show condition builder for certain template types
-	let showConditionBuilder = $derived(
-		[
-			'reverse_lookup',
-			'multi_condition',
-			'range',
-			'negation',
-			'statistical',
-			'type_effectiveness'
-		].includes(formTemplateType)
-	);
+	let showConditionBuilder = $derived(requiresConditionBuilder(formTemplateType));
 
 	// Show comparison config for superlative/comparison types
-	let showComparisonConfig = $derived(['superlative', 'comparison'].includes(formTemplateType));
+	let showComparisonConfig = $derived(requiresComparisonConfig(formTemplateType));
 
 	// Show count selector for comparison type only
 	let showComparisonCount = $derived(formTemplateType === 'comparison');
@@ -241,16 +236,7 @@
 	);
 
 	// Get grouped attributes for dropdown
-	const attributesByCategory = $derived.by(() => {
-		const grouped: Record<string, [string, (typeof POKEMON_ATTRIBUTES)[string]][]> = {};
-		for (const [key, info] of Object.entries(POKEMON_ATTRIBUTES)) {
-			if (!grouped[info.category]) {
-				grouped[info.category] = [];
-			}
-			grouped[info.category].push([key, info]);
-		}
-		return grouped;
-	});
+	const attributesByCategory = groupAttributesByCategory();
 </script>
 
 <div class="flex flex-col h-full">

@@ -18,7 +18,8 @@
 	import {
 		getPlacedStickerIdsForCollection,
 		placeSticker,
-		unstickSticker
+		unstickSticker,
+		getAllStickerPlacementCounts
 	} from '$services/user-sticker-placements.service';
 	import type { Collection } from '$types/collection.type';
 	import type { CollectionType } from '$types/collection-type.type';
@@ -67,6 +68,7 @@
 	let selectedCollection = $state<Collection | null>(null);
 	let ownedStickerIds = $state<Set<string>>(new Set());
 	let placedStickerIds = $state<Set<string>>(new Set());
+	let globalPlacementCounts = $state<Map<string, number>>(new Map());
 	// Detailed stats per collection with rarity breakdown
 interface CollectionDetailedStats {
 	total: number;
@@ -161,6 +163,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		raritiesMap = new Map(rarities.map((r) => [String(r.id), r]));
 		await loadCollectionStats();
 		await refreshOwnedSet();
+		await refreshGlobalPlacementCounts();
 		isLoading = false;
 	});
 
@@ -289,6 +292,17 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		copyCountCache = new Map(copyCountCache).set(stickerId, count);
 	}
 
+	async function refreshGlobalPlacementCounts() {
+		globalPlacementCounts = await getAllStickerPlacementCounts();
+	}
+
+	// Get available copies = total owned - globally placed
+	function getAvailableCopies(stickerId: string | number): number {
+		const owned = getCachedCopyCount(stickerId);
+		const placed = globalPlacementCounts.get(String(stickerId)) ?? 0;
+		return owned - placed;
+	}
+
 	async function selectCollection(collection: Collection) {
 		if (selectedCollection?.id === collection.id) {
 			selectedCollection = null;
@@ -330,6 +344,11 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 			placedStickerIds = new Set(placedIds);
 
 			isLoadingStickers = false;
+
+			// Open to first page instead of cover if there are stickers
+			if (stickers.length > 0) {
+				currentSpread = 1;
+			}
 		}
 	}
 
@@ -593,6 +612,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		const stickerId = String(sticker.id);
 		const owned = getCachedCopyCount(stickerId) > 0;
 		const placed = placedStickerIds.has(stickerId);
+		const availableCopies = getAvailableCopies(stickerId);
 
 		if (!owned) {
 			// Can't place a sticker you don't own
@@ -603,10 +623,21 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 			// Unstick the sticker
 			await unstickSticker(sticker.id, selectedCollection.id);
 			placedStickerIds = new Set([...placedStickerIds].filter((id) => id !== stickerId));
+			// Update global placement count (decrease by 1)
+			const currentCount = globalPlacementCounts.get(stickerId) ?? 0;
+			globalPlacementCounts = new Map(globalPlacementCounts).set(stickerId, Math.max(0, currentCount - 1));
 		} else {
+			// Can only place if we have available copies
+			if (availableCopies <= 0) {
+				// All copies are placed in other collections
+				return;
+			}
 			// Place the sticker
 			await placeSticker(sticker.id, selectedCollection.id);
 			placedStickerIds = new Set([...placedStickerIds, stickerId]);
+			// Update global placement count (increase by 1)
+			const currentCount = globalPlacementCounts.get(stickerId) ?? 0;
+			globalPlacementCounts = new Map(globalPlacementCounts).set(stickerId, currentCount + 1);
 		}
 	}
 
@@ -712,12 +743,13 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		// Find the common rarity (sortOrder === 0) to use as fallback
 		const commonRarity = rarities.find((r) => r.sortOrder === 0);
 
-		// Acquire all stickers immediately (with common rarity since stickers don't have inherent rarity)
+		// Acquire all stickers (with common rarity since stickers don't have inherent rarity)
 		for (const sticker of boosterStickers) {
 			await acquireSticker(sticker.id, sticker.sourceId, commonRarity?.id);
 			await refreshCopyCount(String(sticker.id));
 		}
 		await refreshOwnedSet();
+		await refreshGlobalPlacementCounts();
 		await updateCollectionStats();
 
 		isOpeningPack = false;
@@ -1018,10 +1050,11 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 					<div class="grid grid-cols-5 gap-3 mb-4">
 						{#each boosterStickers as sticker, index (sticker.id + '-' + index)}
 							{@const rarity = getStickerRarity(sticker)}
+							{@const displaySticker = { ...sticker, sourceName: boosterCollection?.title }}
 							<div class="aspect-[3/4] rounded-lg ring-2 ring-primary">
 								<div class="h-full flex flex-col p-2">
 									<StickerItem
-										{sticker}
+										sticker={displaySticker}
 										bgColor={rarity?.colorFrom ?? '#6B7280'}
 										borderColor={rarity?.colorTo}
 										classes="w-full flex-1"
@@ -1298,6 +1331,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(topLeft.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(topLeft.id))}
+													{@const availableCopies = getAvailableCopies(topLeft.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(topLeft)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1308,12 +1344,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={topLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1324,6 +1364,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(topRight.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(topRight.id))}
+													{@const availableCopies = getAvailableCopies(topRight.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(topRight)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1334,12 +1377,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={topRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1350,6 +1397,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(bottomLeft.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(bottomLeft.id))}
+													{@const availableCopies = getAvailableCopies(bottomLeft.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(bottomLeft)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1360,12 +1410,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={bottomLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1376,6 +1430,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(bottomRight.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(bottomRight.id))}
+													{@const availableCopies = getAvailableCopies(bottomRight.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(bottomRight)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1386,12 +1443,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={bottomRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1452,6 +1513,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(topLeft.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(topLeft.id))}
+													{@const availableCopies = getAvailableCopies(topLeft.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(topLeft)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1462,12 +1526,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={topLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1478,6 +1546,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(topRight.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(topRight.id))}
+													{@const availableCopies = getAvailableCopies(topRight.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(topRight)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1488,12 +1559,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={topRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1504,6 +1579,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(bottomLeft.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(bottomLeft.id))}
+													{@const availableCopies = getAvailableCopies(bottomLeft.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(bottomLeft)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1514,12 +1592,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={bottomLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1530,6 +1612,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(bottomRight.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(bottomRight.id))}
+													{@const availableCopies = getAvailableCopies(bottomRight.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(bottomRight)}
 													<div
 														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
@@ -1540,12 +1625,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														role="button"
 														tabindex="0"
 													>
-														{#if owned && !placed}
+														{#if canPlace}
 															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
 																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 															</div>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem sticker={bottomRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
 														</div>
 													</div>
@@ -1654,6 +1743,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 												{@const copyCount = getCachedCopyCount(sticker.id)}
 												{@const owned = copyCount > 0}
 												{@const placed = placedStickerIds.has(String(sticker.id))}
+												{@const availableCopies = getAvailableCopies(sticker.id)}
+												{@const canPlace = owned && !placed && availableCopies > 0}
+												{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 												{@const rarity = getStickerRarity(sticker)}
 												<div
 													class={classNames(
@@ -1667,15 +1759,21 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													role="button"
 													tabindex="0"
 												>
-													{#if owned && !placed}
+													{#if canPlace}
 														<button
 															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
 															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
 														>
 															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 														</button>
+													{:else if placedElsewhere}
+														<div
+															class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20"
+														>
+															<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+														</div>
 													{/if}
-													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 														<StickerItem
 															{sticker}
 															bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1726,6 +1824,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 												{@const copyCount = getCachedCopyCount(sticker.id)}
 												{@const owned = copyCount > 0}
 												{@const placed = placedStickerIds.has(String(sticker.id))}
+												{@const availableCopies = getAvailableCopies(sticker.id)}
+												{@const canPlace = owned && !placed && availableCopies > 0}
+												{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 												{@const rarity = getStickerRarity(sticker)}
 												<div
 													class={classNames(
@@ -1739,15 +1840,21 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													role="button"
 													tabindex="0"
 												>
-													{#if owned && !placed}
+													{#if canPlace}
 														<button
 															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
 															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
 														>
 															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
 														</button>
+													{:else if placedElsewhere}
+														<div
+															class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20"
+														>
+															<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
+														</div>
 													{/if}
-													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 														<StickerItem
 															{sticker}
 															bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1794,7 +1901,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													>
 														{#each currentRightStickers as sticker (sticker.id)}
 															{@const rarity = getStickerRarity(sticker)}
-															<div class="overflow-hidden">
+															{@const owned = getCachedCopyCount(sticker.id) > 0}
+															<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																<StickerItem
 																	{sticker}
 																	bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1814,7 +1922,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														>
 															{#each targetLeftStickers as sticker (sticker.id)}
 																{@const rarity = getStickerRarity(sticker)}
-																<div class="overflow-hidden">
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																	<StickerItem
 																		{sticker}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1843,7 +1952,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													>
 														{#each currentLeftStickers as sticker (sticker.id)}
 															{@const rarity = getStickerRarity(sticker)}
-															<div class="overflow-hidden">
+															{@const owned = getCachedCopyCount(sticker.id) > 0}
+															<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																<StickerItem
 																	{sticker}
 																	bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1863,7 +1973,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														>
 															{#each targetRightStickers as sticker (sticker.id)}
 																{@const rarity = getStickerRarity(sticker)}
-																<div class="overflow-hidden">
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																	<StickerItem
 																		{sticker}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -1935,6 +2046,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(sticker.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(sticker.id))}
+													{@const availableCopies = getAvailableCopies(sticker.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(sticker)}
 													<div
 														class={classNames(
@@ -1951,15 +2065,19 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														{#if !placed}
 															<p class="absolute top-1 left-0 right-0 text-[10px] text-gray-600 text-center truncate px-1 z-10 bg-white/80">{sticker.name}</p>
 														{/if}
-														{#if owned && !placed}
+														{#if canPlace}
 															<button
 																class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
 																onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
 															>
 																<span class="text-primary/60 text-xs font-medium">Click to stick</span>
 															</button>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[9px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem
 																{sticker}
 																bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -2012,6 +2130,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{@const copyCount = getCachedCopyCount(sticker.id)}
 													{@const owned = copyCount > 0}
 													{@const placed = placedStickerIds.has(String(sticker.id))}
+													{@const availableCopies = getAvailableCopies(sticker.id)}
+													{@const canPlace = owned && !placed && availableCopies > 0}
+													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
 													{@const rarity = getStickerRarity(sticker)}
 													<div
 														class={classNames(
@@ -2028,15 +2149,19 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														{#if !placed}
 															<p class="absolute top-1 left-0 right-0 text-[10px] text-gray-600 text-center truncate px-1 z-10 bg-white/80">{sticker.name}</p>
 														{/if}
-														{#if owned && !placed}
+														{#if canPlace}
 															<button
 																class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
 																onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
 															>
 																<span class="text-primary/60 text-xs font-medium">Click to stick</span>
 															</button>
+														{:else if placedElsewhere}
+															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
+																<span class="text-warning text-[9px] font-medium text-center px-1">In other album</span>
+															</div>
 														{/if}
-														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
 															<StickerItem
 																{sticker}
 																bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -2094,7 +2219,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														{#each currentRightPage.rows as row}
 															{#each row.stickers as { sticker } (sticker.id)}
 																{@const rarity = getStickerRarity(sticker)}
-																<div class="p-1 overflow-hidden">
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																	<StickerItem
 																		{sticker}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -2116,7 +2242,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 															{#each targetLeftPage.rows as row}
 																{#each row.stickers as { sticker } (sticker.id)}
 																	{@const rarity = getStickerRarity(sticker)}
-																	<div class="p-1 overflow-hidden">
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																		<StickerItem
 																			{sticker}
 																			bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -2147,7 +2274,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 														{#each currentLeftPage.rows as row}
 															{#each row.stickers as { sticker } (sticker.id)}
 																{@const rarity = getStickerRarity(sticker)}
-																<div class="p-1 overflow-hidden">
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																	<StickerItem
 																		{sticker}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
@@ -2169,7 +2297,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 															{#each targetRightPage.rows as row}
 																{#each row.stickers as { sticker } (sticker.id)}
 																	{@const rarity = getStickerRarity(sticker)}
-																	<div class="p-1 overflow-hidden">
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
 																		<StickerItem
 																			{sticker}
 																			bgColor={rarity?.colorFrom ?? '#6B7280'}

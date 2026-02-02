@@ -371,6 +371,8 @@ pub fn run() {
             commands::unstick_sticker,
             commands::clear_collection_sticker_placements,
             commands::clear_all_sticker_placements,
+            commands::get_sticker_placement_count,
+            commands::get_all_sticker_placement_counts,
             // LLM Configs
             commands::get_all_llm_configs,
             commands::get_llm_config,

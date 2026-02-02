@@ -72,3 +72,21 @@ export async function clearCollectionPlacements(collectionId: ID): Promise<boole
 export async function clearAllPlacements(): Promise<number> {
 	return await invoke<number>('clear_all_sticker_placements');
 }
+
+/**
+ * Get the number of times a sticker is placed globally (across all collections)
+ */
+export async function getStickerPlacementCount(stickerId: ID): Promise<number> {
+	return await invoke<number>('get_sticker_placement_count', {
+		stickerId: String(stickerId)
+	});
+}
+
+/**
+ * Get placement counts for all stickers
+ * Returns an array of [stickerId, count] tuples
+ */
+export async function getAllStickerPlacementCounts(): Promise<Map<string, number>> {
+	const counts = await invoke<[string, number][]>('get_all_sticker_placement_counts');
+	return new Map(counts);
+}

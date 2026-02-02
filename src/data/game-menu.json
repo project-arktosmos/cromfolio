@@ -6,9 +6,19 @@
 			"path": "/game/albums"
 		},
 		{
+			"id": "booster-pack",
+			"label": "Booster Pack",
+			"path": "/game/booster-pack"
+		},
+		{
 			"id": "player",
 			"label": "Player",
 			"path": "/game/player"
+		},
+		{
+			"id": "pokemon-trivia",
+			"label": "Pokemon Trivia",
+			"path": "/game/pokemon-trivia"
 		},
 		{
 			"id": "settings",
@@ -42,13 +52,7 @@
 			"label": "Odd One Out",
 			"path": "/game/odd-one-out",
 			"group": "Minigames"
-		},
-		{
-			"id": "pokemon-trivia",
-			"label": "Pokemon Trivia",
-			"path": "/game/pokemon-trivia",
-			"group": "Minigames"
 		}
 	],
-	"generatedAt": "2026-02-02T04:06:27.228Z"
+	"generatedAt": "2026-02-02T04:57:06.404Z"
 }

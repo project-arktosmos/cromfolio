@@ -1,21 +1,44 @@
 <script lang="ts">
 	import classNames from 'classnames';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { getAllCollections, getStickersForCollection } from '$services/collections.service';
 	import { getActivePokemonTriviaTemplatesV2 } from '$services/pokemon-trivia-templates.service';
 	import { getTagsBySticker, type PokemonWithTags } from '$services/tags.service';
 	import type { Collection } from '$types/collection.type';
-	import type { Sticker } from '$types/sticker.type';
-	import type { PokemonTriviaTemplateV2 } from '$types/pokemon-trivia-template.type';
-	import type { Tag } from '$types/tag.type';
+	import type { PokemonTriviaTemplateV2, TemplateType } from '$types/pokemon-trivia-template.type';
+	import {
+		replacePlaceholders,
+		getAnswerValue,
+		shuffleArray,
+		selectAnswers
+	} from '$utils/pokemon-trivia';
 
-	// Game configuration
-	const TOTAL_QUESTIONS = 5;
-	const ANSWER_COUNT = 3; // 1 correct + 2 wrong
+	// Difficulty configurations
+	type GameDifficulty = 'easy' | 'hard';
+
+	const DIFFICULTY_CONFIG: Record<
+		GameDifficulty,
+		{ questions: number; timePerQuestion: number; answerCount: number; label: string; description: string }
+	> = {
+		easy: {
+			questions: 3,
+			timePerQuestion: 10,
+			answerCount: 3,
+			label: 'Easy',
+			description: '3 questions, 10 seconds each, 3 choices'
+		},
+		hard: {
+			questions: 5,
+			timePerQuestion: 5,
+			answerCount: 4,
+			label: 'Hard',
+			description: '5 questions, 5 seconds each, 4 choices'
+		}
+	};
 
 	// View state
-	type ViewState = 'collection-select' | 'playing' | 'question-result' | 'game-over';
+	type ViewState = 'collection-select' | 'difficulty-select' | 'playing' | 'question-result' | 'game-over';
 	let viewState = $state<ViewState>('collection-select');
 
 	// Collection selection state
@@ -25,16 +48,22 @@
 
 	// Game data
 	let selectedCollection = $state<Collection | null>(null);
+	let selectedDifficulty = $state<GameDifficulty>('easy');
 	let templates: PokemonTriviaTemplateV2[] = $state([]);
 	let pokemonPool: PokemonWithTags[] = $state([]);
 
 	// Current question state
 	let currentQuestionIndex = $state(0);
 	let currentQuestion = $state<string>('');
-	let currentAnswers = $state<{ text: string; isCorrect: boolean }[]>([]);
-	let currentPokemon = $state<PokemonWithTags | null>(null);
+	let currentAnswers = $state<{ text: string; pokemon: PokemonWithTags; isCorrect: boolean }[]>([]);
+	let currentTemplate = $state<PokemonTriviaTemplateV2 | null>(null);
+	let correctPokemon = $state<PokemonWithTags | null>(null);
 	let selectedAnswerIndex = $state<number | null>(null);
 	let hasAnswered = $state(false);
+
+	// Timer state
+	let timeRemaining = $state(0);
+	let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 	// Score tracking
 	let correctAnswers = $state(0);
@@ -44,6 +73,11 @@
 	let totalGamesPlayed = $state(0);
 	let totalCorrect = $state(0);
 	let totalWrong = $state(0);
+
+	// Derived values based on difficulty
+	let totalQuestions = $derived(DIFFICULTY_CONFIG[selectedDifficulty].questions);
+	let wrongAnswerCount = $derived(DIFFICULTY_CONFIG[selectedDifficulty].answerCount - 1);
+	let timePerQuestion = $derived(DIFFICULTY_CONFIG[selectedDifficulty].timePerQuestion);
 
 	onMount(async () => {
 		if (browser) {
@@ -65,6 +99,10 @@
 		templates = await getActivePokemonTriviaTemplatesV2();
 
 		isLoading = false;
+	});
+
+	onDestroy(() => {
+		stopTimer();
 	});
 
 	function loadStats() {
@@ -93,8 +131,8 @@
 	}
 
 	function canPlayCollection(collectionId: string | number): boolean {
-		// Need at least 3 Pokemon for wrong answers
-		return getStickerCount(collectionId) >= 3 && templates.length > 0;
+		// Need at least 4 Pokemon for answer selection algorithm (1 correct + 3 wrong options pool)
+		return getStickerCount(collectionId) >= 4 && templates.length > 0;
 	}
 
 	async function loadPokemonForCollection(collectionId: string | number): Promise<PokemonWithTags[]> {
@@ -105,7 +143,7 @@
 			const tags = await getTagsBySticker(sticker.id);
 			const tagsMap: Record<string, string> = {};
 			for (const tag of tags) {
-				// Handle multi-value tags (like type) by keeping the first one for simplicity
+				// Handle multi-value tags by keeping the first one for simplicity
 				if (!tagsMap[tag.key]) {
 					tagsMap[tag.key] = tag.value;
 				}
@@ -121,12 +159,17 @@
 		return pokemonList;
 	}
 
-	async function startGame(collection: Collection) {
+	function selectCollection(collection: Collection) {
 		selectedCollection = collection;
+		viewState = 'difficulty-select';
+	}
+
+	async function startGame(difficulty: GameDifficulty) {
+		selectedDifficulty = difficulty;
 		isLoading = true;
 
 		// Load Pokemon with tags for this collection
-		pokemonPool = await loadPokemonForCollection(collection.id);
+		pokemonPool = await loadPokemonForCollection(selectedCollection!.id);
 
 		// Reset game state
 		currentQuestionIndex = 0;
@@ -135,55 +178,106 @@
 
 		isLoading = false;
 		generateQuestion();
+		startTimer();
 		viewState = 'playing';
 	}
 
+	function startTimer() {
+		stopTimer();
+		timeRemaining = timePerQuestion;
+		timerInterval = setInterval(() => {
+			timeRemaining--;
+			if (timeRemaining <= 0) {
+				handleTimeOut();
+			}
+		}, 1000);
+	}
+
+	function stopTimer() {
+		if (timerInterval) {
+			clearInterval(timerInterval);
+			timerInterval = null;
+		}
+	}
+
+	function handleTimeOut() {
+		if (hasAnswered) return;
+
+		stopTimer();
+		hasAnswered = true;
+		selectedAnswerIndex = null; // No answer selected
+		wrongAnswers++;
+		viewState = 'question-result';
+	}
+
 	function generateQuestion() {
-		if (pokemonPool.length < 3 || templates.length === 0) {
+		if (pokemonPool.length < 4 || templates.length === 0) {
 			viewState = 'game-over';
 			return;
 		}
 
-		// Pick a random Pokemon
-		const randomPokemonIndex = Math.floor(Math.random() * pokemonPool.length);
-		currentPokemon = pokemonPool[randomPokemonIndex];
+		// Shuffle the pool for this question
+		const shuffledPool = shuffleArray(pokemonPool);
 
-		// Try to find a template that works with this Pokemon's tags
-		let template: PokemonTriviaTemplateV2 | null = null;
-		let attempts = 0;
-		const maxAttempts = templates.length * 2;
+		// Try to find a template that works with the available Pokemon
+		let selectedTemplate: PokemonTriviaTemplateV2 | null = null;
+		let selectionResult: ReturnType<typeof selectAnswers> | null = null;
 
-		while (!template && attempts < maxAttempts) {
-			const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-			const primaryAttr = randomTemplate.primaryAttribute;
+		// Try each template weighted by their weight value
+		const weightedTemplates = templates.flatMap((t) =>
+			Array(Math.max(1, Math.min(t.weight, 10))).fill(t)
+		);
+		const shuffledTemplates = shuffleArray(weightedTemplates);
 
-			// Check if the Pokemon has this attribute
-			if (currentPokemon.tags[primaryAttr]) {
-				template = randomTemplate;
+		for (const template of shuffledTemplates) {
+			// Check if we have Pokemon with the primary attribute
+			const pokemonWithAttr = shuffledPool.filter(
+				(p) => p.tags[template.primaryAttribute] !== undefined
+			);
+
+			if (pokemonWithAttr.length < 4) continue;
+
+			// Use the answer selection utility to get correct and wrong answers
+			const result = selectAnswers(
+				shuffledArray(pokemonWithAttr),
+				template.templateType as TemplateType,
+				template.primaryAttribute,
+				template.questionTemplate
+			);
+
+			if (result.correct && result.wrong.length >= wrongAnswerCount) {
+				selectedTemplate = template;
+				selectionResult = result;
+				break;
 			}
-			attempts++;
 		}
 
-		// If no suitable template found, use a simple name-based question
-		if (!template) {
-			generateSimpleQuestion();
+		// Fallback to simple name-based question if no template works
+		if (!selectedTemplate || !selectionResult || !selectionResult.correct) {
+			generateSimpleQuestion(shuffledPool);
 			return;
 		}
 
-		// Generate the question text
-		currentQuestion = renderTemplate(template.questionTemplate, currentPokemon);
+		currentTemplate = selectedTemplate;
+		correctPokemon = selectionResult.correct;
 
-		// Get the correct answer
-		const correctAnswer = renderTemplate(template.answerTemplate, currentPokemon);
+		// Generate the question text using the utility
+		currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, correctPokemon);
 
-		// Get wrong answers from other Pokemon
-		const wrongAnswerTexts = getWrongAnswers(template.primaryAttribute, correctAnswer, 2);
+		// Get the correct answer value
+		const correctAnswerText = getAnswerValue(correctPokemon, selectedTemplate.answerTemplate);
 
-		// Combine and shuffle answers
+		// Build answer options: 1 correct + N wrong (shuffled)
+		const wrongAnswersList = selectionResult.wrong.slice(0, wrongAnswerCount);
 		const answers = [
-			{ text: correctAnswer, isCorrect: true },
-			...wrongAnswerTexts.map((text) => ({ text, isCorrect: false }))
+			{ text: correctAnswerText, pokemon: correctPokemon, isCorrect: true },
+			...wrongAnswersList.map((p) => ({
+				text: getAnswerValue(p, selectedTemplate!.answerTemplate),
+				pokemon: p,
+				isCorrect: false
+			}))
 		];
+
 		currentAnswers = shuffleArray(answers);
 
 		// Reset answer state
@@ -191,82 +285,38 @@
 		hasAnswered = false;
 	}
 
-	function generateSimpleQuestion() {
-		if (!currentPokemon) return;
+	function generateSimpleQuestion(pool: PokemonWithTags[]) {
+		// Fallback: "Which Pokemon is this?" with image
+		const correct = pool[0];
+		correctPokemon = correct;
+		currentTemplate = null;
 
-		// Fallback: "What is the name of this Pokemon?" with image
 		currentQuestion = `Which Pokemon is shown in the image?`;
 
-		const correctAnswer = currentPokemon.name;
-
-		// Get wrong answers from other Pokemon names
-		const otherPokemon = pokemonPool.filter((p) => p.id !== currentPokemon!.id);
-		const shuffledOthers = shuffleArray(otherPokemon);
-		const wrongAnswers = shuffledOthers.slice(0, 2).map((p) => p.name);
+		const wrongPokemon = pool.filter((p) => p.id !== correct.id).slice(0, wrongAnswerCount);
 
 		const answers = [
-			{ text: correctAnswer, isCorrect: true },
-			...wrongAnswers.map((text) => ({ text, isCorrect: false }))
+			{ text: correct.name, pokemon: correct, isCorrect: true },
+			...wrongPokemon.map((p) => ({
+				text: p.name,
+				pokemon: p,
+				isCorrect: false
+			}))
 		];
-		currentAnswers = shuffleArray(answers);
 
+		currentAnswers = shuffleArray(answers);
 		selectedAnswerIndex = null;
 		hasAnswered = false;
 	}
 
-	function renderTemplate(template: string, pokemon: PokemonWithTags): string {
-		let result = template;
-
-		// Replace {name} with Pokemon name
-		result = result.replace(/{name}/gi, pokemon.name);
-
-		// Replace any {attribute} with the Pokemon's tag value
-		const tagPlaceholders = result.match(/{([^}]+)}/g);
-		if (tagPlaceholders) {
-			for (const placeholder of tagPlaceholders) {
-				const attr = placeholder.slice(1, -1); // Remove { and }
-				const value = pokemon.tags[attr] || '???';
-				result = result.replace(placeholder, value);
-			}
-		}
-
-		return result;
-	}
-
-	function getWrongAnswers(attribute: string, correctAnswer: string, count: number): string[] {
-		// Get unique values for this attribute from other Pokemon
-		const otherValues = new Set<string>();
-
-		for (const pokemon of pokemonPool) {
-			const value = pokemon.tags[attribute];
-			if (value && value !== correctAnswer) {
-				otherValues.add(value);
-			}
-		}
-
-		// If not enough unique values, fall back to Pokemon names
-		if (otherValues.size < count) {
-			const otherNames = pokemonPool
-				.filter((p) => p.name !== correctAnswer)
-				.map((p) => p.name);
-			return shuffleArray(otherNames).slice(0, count);
-		}
-
-		return shuffleArray([...otherValues]).slice(0, count);
-	}
-
-	function shuffleArray<T>(array: T[]): T[] {
-		const shuffled = [...array];
-		for (let i = shuffled.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-		}
-		return shuffled;
+	function shuffledArray<T>(items: T[]): T[] {
+		return shuffleArray(items);
 	}
 
 	function selectAnswer(index: number) {
 		if (hasAnswered) return;
 
+		stopTimer();
 		selectedAnswerIndex = index;
 		hasAnswered = true;
 
@@ -283,7 +333,7 @@
 	function nextQuestion() {
 		currentQuestionIndex++;
 
-		if (currentQuestionIndex >= TOTAL_QUESTIONS) {
+		if (currentQuestionIndex >= totalQuestions) {
 			// Game over
 			totalGamesPlayed++;
 			totalCorrect += correctAnswers;
@@ -294,19 +344,28 @@
 			viewState = 'game-over';
 		} else {
 			generateQuestion();
+			startTimer();
 			viewState = 'playing';
 		}
 	}
 
 	function playAgain() {
-		if (selectedCollection) {
-			startGame(selectedCollection);
-		}
+		viewState = 'difficulty-select';
 	}
 
 	function backToCollections() {
+		stopTimer();
 		viewState = 'collection-select';
 		selectedCollection = null;
+		pokemonPool = [];
+		currentQuestionIndex = 0;
+		correctAnswers = 0;
+		wrongAnswers = 0;
+	}
+
+	function backToDifficultySelect() {
+		stopTimer();
+		viewState = 'difficulty-select';
 		pokemonPool = [];
 		currentQuestionIndex = 0;
 		correctAnswers = 0;
@@ -332,8 +391,29 @@
 	}
 
 	function getProgressPercentage(): number {
-		return (currentQuestionIndex / TOTAL_QUESTIONS) * 100;
+		return (currentQuestionIndex / totalQuestions) * 100;
 	}
+
+	function getTimerClass(): string {
+		if (timeRemaining <= 3) return 'text-error';
+		if (timeRemaining <= 5) return 'text-warning';
+		return 'text-primary';
+	}
+
+	function getTimerProgressClass(): string {
+		if (timeRemaining <= 3) return 'progress-error';
+		if (timeRemaining <= 5) return 'progress-warning';
+		return 'progress-primary';
+	}
+
+	// Check if the question mentions the Pokemon by name (e.g., "What is Cyndaquil's...")
+	// If so, show the Pokemon image above the question, not in the answer buttons
+	let questionMentionsPokemon = $derived(
+		currentTemplate?.questionTemplate.includes('{name}') ?? false
+	);
+
+	// Timer percentage for progress bar
+	let timerPercentage = $derived((timeRemaining / timePerQuestion) * 100);
 </script>
 
 <div class="space-y-6">
@@ -344,10 +424,18 @@
 			<p class="text-base-content/70 mt-1">
 				{#if viewState === 'collection-select'}
 					Select a collection to start the trivia game
+				{:else if viewState === 'difficulty-select'}
+					Choose your difficulty
 				{:else if viewState === 'playing'}
-					Question {currentQuestionIndex + 1} of {TOTAL_QUESTIONS}
+					Question {currentQuestionIndex + 1} of {totalQuestions}
 				{:else if viewState === 'question-result'}
-					{currentAnswers[selectedAnswerIndex ?? 0]?.isCorrect ? 'Correct!' : 'Wrong!'}
+					{#if selectedAnswerIndex === null}
+						Time's up!
+					{:else if currentAnswers[selectedAnswerIndex]?.isCorrect}
+						Correct!
+					{:else}
+						Wrong!
+					{/if}
 				{:else}
 					Game Over!
 				{/if}
@@ -390,8 +478,8 @@
 							'cursor-pointer hover:shadow-lg hover:scale-[1.02]': canPlay,
 							'opacity-50 cursor-not-allowed': !canPlay
 						})}
-						onclick={() => canPlay && startGame(collection)}
-						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(collection)}
+						onclick={() => canPlay && selectCollection(collection)}
+						onkeydown={(e) => e.key === 'Enter' && canPlay && selectCollection(collection)}
 						role="button"
 						tabindex={canPlay ? 0 : -1}
 					>
@@ -428,9 +516,7 @@
 							</p>
 							{#if !canPlay}
 								<p class="text-xs text-error">
-									{stickerCount < 3
-										? 'Need at least 3 Pokemon'
-										: 'No active trivia templates'}
+									{stickerCount < 4 ? 'Need at least 4 Pokemon' : 'No active trivia templates'}
 								</p>
 							{/if}
 							<div class="card-actions justify-end mt-2">
@@ -449,12 +535,94 @@
 				{/each}
 			</div>
 		{/if}
+	{:else if viewState === 'difficulty-select'}
+		<!-- Difficulty Selection View -->
+		<div class="flex flex-col items-center gap-6">
+			<button class="btn btn-ghost btn-sm gap-2 self-start" onclick={backToCollections}>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M15 19l-7-7 7-7"
+					/>
+				</svg>
+				Back to Collections
+			</button>
+
+			{#if selectedCollection}
+				<div class="text-center">
+					<h2 class="text-2xl font-bold">{selectedCollection.title}</h2>
+					<p class="text-base-content/70">Select difficulty to begin</p>
+				</div>
+			{/if}
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+				<!-- Easy Mode -->
+				<div
+					class="card bg-success/10 border-2 border-success hover:bg-success/20 transition-all cursor-pointer"
+					onclick={() => startGame('easy')}
+					onkeydown={(e) => e.key === 'Enter' && startGame('easy')}
+					role="button"
+					tabindex="0"
+				>
+					<div class="card-body items-center text-center">
+						<div class="text-5xl mb-2">🌱</div>
+						<h3 class="card-title text-success text-2xl">Easy</h3>
+						<div class="space-y-2 text-base-content/80">
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-success">3</span> Questions
+							</p>
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-success">10s</span> Per Question
+							</p>
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-success">3</span> Answer Choices
+							</p>
+						</div>
+						<button class="btn btn-success btn-wide mt-4">Start Easy</button>
+					</div>
+				</div>
+
+				<!-- Hard Mode -->
+				<div
+					class="card bg-error/10 border-2 border-error hover:bg-error/20 transition-all cursor-pointer"
+					onclick={() => startGame('hard')}
+					onkeydown={(e) => e.key === 'Enter' && startGame('hard')}
+					role="button"
+					tabindex="0"
+				>
+					<div class="card-body items-center text-center">
+						<div class="text-5xl mb-2">🔥</div>
+						<h3 class="card-title text-error text-2xl">Hard</h3>
+						<div class="space-y-2 text-base-content/80">
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-error">5</span> Questions
+							</p>
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-error">5s</span> Per Question
+							</p>
+							<p class="flex items-center gap-2 justify-center">
+								<span class="badge badge-error">4</span> Answer Choices
+							</p>
+						</div>
+						<button class="btn btn-error btn-wide mt-4">Start Hard</button>
+					</div>
+				</div>
+			</div>
+		</div>
 	{:else if viewState === 'playing' || viewState === 'question-result'}
 		<!-- Game View -->
 		<div class="flex flex-col items-center gap-6">
 			<!-- Navigation and progress -->
 			<div class="flex items-center justify-between w-full max-w-3xl">
-				<button class="btn btn-ghost btn-sm gap-2" onclick={backToCollections}>
+				<button class="btn btn-ghost btn-sm gap-2" onclick={backToDifficultySelect}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-4 w-4"
@@ -469,8 +637,18 @@
 							d="M15 19l-7-7 7-7"
 						/>
 					</svg>
-					Back
+					Quit
 				</button>
+
+				<!-- Difficulty badge -->
+				<div
+					class={classNames('badge badge-lg', {
+						'badge-success': selectedDifficulty === 'easy',
+						'badge-error': selectedDifficulty === 'hard'
+					})}
+				>
+					{DIFFICULTY_CONFIG[selectedDifficulty].label}
+				</div>
 
 				<!-- Score display -->
 				<div class="flex gap-4">
@@ -516,20 +694,36 @@
 				></progress>
 			</div>
 
-			<!-- Pokemon Image (if showing image-based question) -->
-			{#if currentPokemon && currentQuestion.includes('image')}
-				<div class="w-48 h-48">
-					<img
-						src={currentPokemon.image}
-						alt="Mystery Pokemon"
-						class="w-full h-full object-contain"
-					/>
+			<!-- Timer (only during playing) -->
+			{#if viewState === 'playing'}
+				<div class="w-full max-w-3xl">
+					<div class="flex items-center gap-3">
+						<span class={classNames('text-2xl font-bold tabular-nums', getTimerClass())}>
+							{timeRemaining}s
+						</span>
+						<progress
+							class={classNames('progress flex-1', getTimerProgressClass())}
+							value={timerPercentage}
+							max="100"
+						></progress>
+					</div>
 				</div>
 			{/if}
 
 			<!-- Question Card -->
 			<div class="card bg-base-200 w-full max-w-3xl">
 				<div class="card-body">
+					<!-- Pokemon image when the question mentions the Pokemon by name -->
+					{#if questionMentionsPokemon && correctPokemon}
+						<div class="flex justify-center mb-4">
+							<img
+								src={correctPokemon.image}
+								alt={correctPokemon.name}
+								class="w-32 h-32 object-contain"
+							/>
+						</div>
+					{/if}
+
 					<h2 class="card-title text-xl text-center justify-center">{currentQuestion}</h2>
 
 					<!-- Answer buttons -->
@@ -540,17 +734,34 @@
 								onclick={() => selectAnswer(index)}
 								disabled={hasAnswered}
 							>
+								{#if !questionMentionsPokemon}
+									<img
+										src={answer.pokemon.image}
+										alt={hasAnswered ? answer.pokemon.name : 'Pokemon option'}
+										class="w-12 h-12 object-contain flex-shrink-0"
+									/>
+								{/if}
 								<span class="font-bold mr-3">{String.fromCharCode(65 + index)}.</span>
-								{answer.text}
+								<span class="flex-1">{answer.text}</span>
+								{#if hasAnswered && currentTemplate}
+									<span class="text-sm opacity-70 ml-auto">
+										{answer.pokemon.tags[currentTemplate.primaryAttribute] || 'N/A'}
+									</span>
+								{/if}
 							</button>
 						{/each}
 					</div>
+
+					<!-- Time out message -->
+					{#if viewState === 'question-result' && selectedAnswerIndex === null}
+						<p class="text-center text-error mt-4">You ran out of time!</p>
+					{/if}
 
 					<!-- Next button (shown after answering) -->
 					{#if viewState === 'question-result'}
 						<div class="card-actions justify-center mt-6">
 							<button class="btn btn-primary btn-lg" onclick={nextQuestion}>
-								{currentQuestionIndex + 1 >= TOTAL_QUESTIONS ? 'See Results' : 'Next Question'}
+								{currentQuestionIndex + 1 >= totalQuestions ? 'See Results' : 'Next Question'}
 							</button>
 						</div>
 					{/if}
@@ -562,10 +773,10 @@
 		<div class="flex flex-col items-center gap-6">
 			<div class="card bg-base-200 w-full max-w-md">
 				<div class="card-body items-center text-center">
-					{#if correctAnswers === TOTAL_QUESTIONS}
+					{#if correctAnswers === totalQuestions}
 						<div class="text-6xl mb-2">🏆</div>
 						<h2 class="card-title text-success text-2xl">Perfect Score!</h2>
-					{:else if correctAnswers >= TOTAL_QUESTIONS / 2}
+					{:else if correctAnswers >= totalQuestions / 2}
 						<div class="text-6xl mb-2">🎉</div>
 						<h2 class="card-title text-primary text-2xl">Good Job!</h2>
 					{:else}
@@ -573,8 +784,17 @@
 						<h2 class="card-title text-warning text-2xl">Keep Learning!</h2>
 					{/if}
 
+					<div
+						class={classNames('badge mt-2', {
+							'badge-success': selectedDifficulty === 'easy',
+							'badge-error': selectedDifficulty === 'hard'
+						})}
+					>
+						{DIFFICULTY_CONFIG[selectedDifficulty].label} Mode
+					</div>
+
 					<p class="text-base-content/70 mt-2">
-						You answered {correctAnswers} out of {TOTAL_QUESTIONS} questions correctly.
+						You answered {correctAnswers} out of {totalQuestions} questions correctly.
 					</p>
 
 					<div class="stats stats-vertical sm:stats-horizontal mt-6 bg-base-300">
@@ -589,7 +809,7 @@
 						<div class="stat">
 							<div class="stat-title">Score</div>
 							<div class="stat-value text-primary">
-								{Math.round((correctAnswers / TOTAL_QUESTIONS) * 100)}%
+								{Math.round((correctAnswers / totalQuestions) * 100)}%
 							</div>
 						</div>
 					</div>

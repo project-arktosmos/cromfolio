@@ -1,6 +1,7 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { POKEMON_ATTRIBUTES, type ComparisonConfig } from '$types/pokemon-trivia-template.type';
+	import { getNumericAttributesByCategory } from '$utils/pokemon-trivia';
 
 	interface Props {
 		config: ComparisonConfig | null;
@@ -11,22 +12,7 @@
 
 	let { config, onchange, showCount = false, disabled = false }: Props = $props();
 
-	// Numeric attributes that can be compared
-	const numericAttributes = Object.entries(POKEMON_ATTRIBUTES).filter(
-		([_, info]) => info.type === 'number'
-	);
-
-	// Group by category
-	const attributesByCategory = $derived.by(() => {
-		const grouped: Record<string, [string, (typeof POKEMON_ATTRIBUTES)[string]][]> = {};
-		for (const [key, info] of numericAttributes) {
-			if (!grouped[info.category]) {
-				grouped[info.category] = [];
-			}
-			grouped[info.category].push([key, info]);
-		}
-		return grouped;
-	});
+	const attributesByCategory = getNumericAttributesByCategory();
 
 	function updateConfig(updates: Partial<ComparisonConfig>) {
 		if (!config) {

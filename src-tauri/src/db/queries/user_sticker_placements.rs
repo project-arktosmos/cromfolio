@@ -63,6 +63,40 @@ pub fn is_sticker_placed(conn: &Connection, sticker_id: &str) -> Result<bool, St
     Ok(count > 0)
 }
 
+/// Get the number of times a sticker is placed globally (across all collections)
+pub fn get_placement_count(conn: &Connection, sticker_id: &str) -> Result<i64, String> {
+    conn.query_row(
+        "SELECT COUNT(*) FROM _user_sticker_placements WHERE sticker_id = ?1",
+        params![sticker_id],
+        |row| row.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
+/// Get placement counts for all stickers (sticker_id -> count)
+/// Returns only stickers that have at least one placement
+pub fn get_all_placement_counts(conn: &Connection) -> Result<Vec<(String, i64)>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT sticker_id, COUNT(*) as cnt
+             FROM _user_sticker_placements
+             GROUP BY sticker_id"
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, i64>(1)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
+}
+
 /// Get placement by sticker and collection
 pub fn get_by_sticker_collection(conn: &Connection, sticker_id: &str, collection_id: &str) -> Result<Option<UserStickerPlacement>, String> {
     let mut stmt = conn

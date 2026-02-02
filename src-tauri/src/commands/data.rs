@@ -998,6 +998,18 @@ pub fn clear_all_sticker_placements(db: State<'_, Database>) -> Result<i64, Stri
     queries::user_sticker_placements::delete_all(&conn)
 }
 
+#[command]
+pub fn get_sticker_placement_count(sticker_id: String, db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::get_placement_count(&conn, &sticker_id)
+}
+
+#[command]
+pub fn get_all_sticker_placement_counts(db: State<'_, Database>) -> Result<Vec<(String, i64)>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::get_all_placement_counts(&conn)
+}
+
 // ============================================================================
 // LLM CONFIGS
 // ============================================================================

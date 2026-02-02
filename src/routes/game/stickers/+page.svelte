@@ -7,7 +7,7 @@
 		mixStickers,
 		type MixableStickerInfo
 	} from '$services/user-stickers.service';
-	import { getAllPlacedStickerIds } from '$services/user-sticker-placements.service';
+	import { getAllPlacedStickerIds, getAllStickerPlacementCounts } from '$services/user-sticker-placements.service';
 	import { getSticker } from '$services/stickers.service';
 	import { getRarityCollection } from '$services/rarities.service';
 	import StickerItem from '$components/core/StickerItem.svelte';
@@ -29,6 +29,7 @@
 	let userStickers = $state<UserSticker[]>([]);
 	let stickerDetails = $state<Map<string, Sticker>>(new Map());
 	let placedStickerIds = $state<Set<string>>(new Set());
+	let placementCounts = $state<Map<string, number>>(new Map());
 	let rarities = $state<Rarity[]>([]);
 	let raritiesMap = $state<Map<string, Rarity>>(new Map());
 	let sortedRarities = $state<Rarity[]>([]); // Sorted by sortOrder ascending
@@ -92,15 +93,17 @@
 		isLoading = true;
 
 		// Load data in parallel
-		const [userStickersData, placedIdsData, raritiesData, mixableData] = await Promise.all([
+		const [userStickersData, placedIdsData, raritiesData, mixableData, placementCountsData] = await Promise.all([
 			getAllUserStickers(),
 			getAllPlacedStickerIds(),
 			getRarityCollection(),
-			getMixableStickers()
+			getMixableStickers(),
+			getAllStickerPlacementCounts()
 		]);
 
 		userStickers = userStickersData;
 		placedStickerIds = new Set(placedIdsData);
+		placementCounts = placementCountsData;
 		rarities = raritiesData;
 		raritiesMap = new Map(rarities.map((r) => [String(r.id), r]));
 		sortedRarities = [...rarities].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -131,6 +134,14 @@
 
 	function isPlaced(stickerId: string): boolean {
 		return placedStickerIds.has(stickerId);
+	}
+
+	function getPlacementCount(stickerId: string): number {
+		return placementCounts.get(stickerId) ?? 0;
+	}
+
+	function getTotalCopies(stickerId: string): number {
+		return userStickers.filter((us) => String(us.stickerId) === stickerId).length;
 	}
 
 	function getNextRarity(currentRarity: Rarity | null): Rarity | null {
@@ -377,11 +388,17 @@
 
 					<!-- Placed Indicator -->
 					{#if placed}
-						<div class="absolute top-1 left-1 badge badge-success badge-sm gap-1">
+						{@const placedCount = getPlacementCount(group.stickerId)}
+						{@const totalCopies = getTotalCopies(group.stickerId)}
+						{@const allPlaced = placedCount >= totalCopies}
+						<div class={classNames(
+							'absolute top-1 left-1 badge badge-sm gap-1',
+							allPlaced ? 'badge-success' : 'badge-warning'
+						)}>
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 							</svg>
-							Placed
+							{placedCount}/{totalCopies}
 						</div>
 					{/if}
 				</div>
