@@ -30,8 +30,8 @@ export type GameDifficulty = 'easy' | 'hard';
  * Configuration for a difficulty level
  */
 export interface DifficultyConfig {
-	/** Number of questions in a game */
-	questions: number;
+	/** Number of lives (wrong answers allowed before game over) */
+	maxLives: number;
 	/** Time per question in seconds */
 	timePerQuestion: number;
 	/** Number of answer options to display */

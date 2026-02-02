@@ -1,5 +1,3 @@
 {
-	"groups": {
-		"Minigames": ["guess-the-name", "matching-pairs", "odd-one-out"]
-	}
+	"groups": {}
 }

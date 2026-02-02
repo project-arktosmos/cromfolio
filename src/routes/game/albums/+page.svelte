@@ -982,7 +982,7 @@
 		window.removeEventListener('wheel', handleIconPlacementWheel);
 	}
 
-	function handleIconPageClick(event: MouseEvent, pageElement: HTMLElement, pageIndex: number) {
+	async function handleIconPageClick(event: MouseEvent, pageElement: HTMLElement, pageIndex: number) {
 		if (!isIconPlacementMode || !selectedIconPath || !selectedCollection) return;
 
 		// Calculate position as percentage of page dimensions
@@ -990,8 +990,8 @@
 		const positionX = ((event.clientX - rect.left) / rect.width) * 100;
 		const positionY = ((event.clientY - rect.top) / rect.height) * 100;
 
-		// Place the icon
-		const placedIcon = placeIcon(
+		// Place the icon (async)
+		const placedIcon = await placeIcon(
 			selectedIconPath,
 			selectedCollection.id,
 			pageIndex,
@@ -1014,8 +1014,8 @@
 		exitIconPlacementMode();
 	}
 
-	function handlePlacedIconRemove(placedIcon: UserPlacedIcon) {
-		removePlacedIcon(placedIcon.id);
+	async function handlePlacedIconRemove(placedIcon: UserPlacedIcon) {
+		await removePlacedIcon(placedIcon.id);
 
 		// Update local state
 		const collectionId = String(placedIcon.collectionId);
@@ -1031,8 +1031,8 @@
 		return allPlaced.filter((pi) => pi.pageIndex === pageIndex);
 	}
 
-	function loadPlacedIconsForCollection(collectionId: string) {
-		const placedIcons = getPlacedIconsByCollection(collectionId);
+	async function loadPlacedIconsForCollection(collectionId: string) {
+		const placedIcons = await getPlacedIconsByCollection(collectionId);
 		placedIconsForCollection = new Map(placedIconsForCollection).set(collectionId, placedIcons);
 	}
 </script>

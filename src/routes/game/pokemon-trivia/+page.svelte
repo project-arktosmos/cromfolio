@@ -4,7 +4,7 @@
 	import { getAllCollections, getStickersForCollection } from '$services/collections.service';
 	import { getActivePokemonTriviaTemplatesV2 } from '$services/pokemon-trivia-templates.service';
 	import { getTagsBySticker, type PokemonWithTags } from '$services/tags.service';
-	import { triviaStatsService, updateStatsAfterGame } from '$services/pokemon-trivia-game.service';
+	import { getTriviaStats, updateStatsAfterGame } from '$services/pokemon-trivia-game.service';
 	import {
 		replacePlaceholders,
 		getAnswerValue,
@@ -29,21 +29,21 @@
 	import QuestionCard from './components/QuestionCard.svelte';
 	import GameOver from './components/GameOver.svelte';
 
-	// Difficulty configuration (matches original game settings)
+	// Difficulty configuration - lives-based gameplay
 	const DIFFICULTY_CONFIGS: Record<GameDifficulty, DifficultyConfig> = {
 		easy: {
-			questions: 3,
+			maxLives: 3,
 			timePerQuestion: 10,
 			answerCount: 3,
 			label: 'Easy',
-			description: '3 questions, 10s each'
+			description: '3 lives, 10s per question'
 		},
 		hard: {
-			questions: 5,
+			maxLives: 1,
 			timePerQuestion: 5,
 			answerCount: 4,
 			label: 'Hard',
-			description: '5 questions, 5s each'
+			description: '1 life, 5s per question'
 		}
 	};
 
@@ -78,14 +78,31 @@
 	let correctAnswers = $state(0);
 	let wrongAnswers = $state(0);
 
-	// Stats from service
-	let stats = $state<TriviaStats>(triviaStatsService.get());
+	// Track correctly answered questions for game over summary
+	interface AnsweredQuestion {
+		question: string;
+		pokemon: PokemonWithTags;
+		template: PokemonTriviaTemplateV2 | null;
+	}
+	let answeredQuestions = $state<AnsweredQuestion[]>([]);
+
+	// Stats from service (loaded async)
+	let stats = $state<TriviaStats>({
+		id: 'pokemon-trivia-stats',
+		totalGamesPlayed: 0,
+		totalCorrect: 0,
+		totalWrong: 0,
+		bestStreak: 0,
+		longestGame: 0
+	});
 
 	// Derived values
 	let difficultyConfig = $derived(DIFFICULTY_CONFIGS[selectedDifficulty]);
-	let totalQuestions = $derived(difficultyConfig.questions);
+	let maxLives = $derived(difficultyConfig.maxLives);
+	let livesRemaining = $derived(maxLives - wrongAnswers);
 	let wrongAnswerCount = $derived(difficultyConfig.answerCount - 1);
 	let timePerQuestion = $derived(difficultyConfig.timePerQuestion);
+	let isGameOver = $derived(wrongAnswers >= maxLives);
 
 	let headerSubtitle = $derived.by(() => {
 		switch (viewState) {
@@ -94,7 +111,7 @@
 			case 'difficulty-select':
 				return 'Choose your difficulty';
 			case 'playing':
-				return `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+				return `Question ${currentQuestionIndex + 1}`;
 			case 'question-result':
 				if (selectedAnswerIndex === null) return "Time's up!";
 				return currentAnswers[selectedAnswerIndex]?.isCorrect ? 'Correct!' : 'Wrong!';
@@ -106,7 +123,9 @@
 	});
 
 	onMount(async () => {
-		if (browser) stats = triviaStatsService.get();
+		if (browser) {
+			stats = await getTriviaStats();
+		}
 
 		collections = await getAllCollections();
 		const counts = new Map<string, number>();
@@ -260,18 +279,32 @@
 		stopTimer();
 		selectedAnswerIndex = event.detail;
 		hasAnswered = true;
-		if (currentAnswers[event.detail].isCorrect) correctAnswers++;
-		else wrongAnswers++;
+		if (currentAnswers[event.detail].isCorrect) {
+			correctAnswers++;
+			// Track correctly answered question for summary
+			if (correctPokemon) {
+				answeredQuestions = [
+					...answeredQuestions,
+					{
+						question: currentQuestion,
+						pokemon: correctPokemon,
+						template: currentTemplate
+					}
+				];
+			}
+		} else {
+			wrongAnswers++;
+		}
 		viewState = 'question-result';
 	}
 
-	function handleNextQuestion() {
-		currentQuestionIndex++;
-		if (currentQuestionIndex >= totalQuestions) {
-			updateStatsAfterGame(correctAnswers, wrongAnswers, 0);
-			stats = triviaStatsService.get();
+	async function handleNextQuestion() {
+		// Check if game is over (ran out of lives)
+		if (wrongAnswers >= maxLives) {
+			stats = await updateStatsAfterGame(correctAnswers, wrongAnswers, 0);
 			viewState = 'game-over';
 		} else {
+			currentQuestionIndex++;
 			generateQuestion();
 			startTimer();
 			viewState = 'playing';
@@ -301,6 +334,7 @@
 		currentQuestionIndex = 0;
 		correctAnswers = 0;
 		wrongAnswers = 0;
+		answeredQuestions = [];
 	}
 </script>
 
@@ -329,9 +363,9 @@
 		<div class="flex flex-col items-center gap-6">
 			<GamePlayHeader
 				{currentQuestionIndex}
-				{totalQuestions}
+				{livesRemaining}
+				{maxLives}
 				{correctAnswers}
-				{wrongAnswers}
 				difficulty={selectedDifficulty}
 				{difficultyConfig}
 				on:quit={handleQuit}
@@ -348,7 +382,7 @@
 				template={currentTemplate}
 				{selectedAnswerIndex}
 				{hasAnswered}
-				isLastQuestion={currentQuestionIndex + 1 >= totalQuestions}
+				{isGameOver}
 				on:answer={handleAnswer}
 				on:next={handleNextQuestion}
 			/>
@@ -356,8 +390,7 @@
 	{:else if viewState === 'game-over'}
 		<GameOver
 			{correctAnswers}
-			{wrongAnswers}
-			{totalQuestions}
+			{answeredQuestions}
 			difficulty={selectedDifficulty}
 			{difficultyConfig}
 			on:playAgain={handlePlayAgain}

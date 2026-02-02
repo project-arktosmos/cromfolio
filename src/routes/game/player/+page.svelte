@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
-		playerService,
+		getPlayer,
 		setPlayerName,
 		addExperience,
 		resetPlayer
@@ -14,18 +14,25 @@
 	let isEditingName = $state(false);
 	let editNameValue = $state('');
 	let showResetConfirm = $state(false);
+	let isLoading = $state(true);
 
 	// Debug XP amount for testing
 	let debugXpAmount = $state(100);
 
-	onMount(() => {
-		const unsubscribe = playerService.store.subscribe((p) => {
+	onMount(async () => {
+		await loadPlayer();
+	});
+
+	async function loadPlayer() {
+		isLoading = true;
+		try {
+			const p = await getPlayer();
 			player = p;
 			levelInfo = getLevelInfo(p.experience);
-		});
-
-		return () => unsubscribe();
-	});
+		} finally {
+			isLoading = false;
+		}
+	}
 
 	function startEditingName() {
 		if (player) {
@@ -34,9 +41,11 @@
 		}
 	}
 
-	function saveName() {
+	async function saveName() {
 		if (editNameValue.trim()) {
-			setPlayerName(editNameValue.trim());
+			const updated = await setPlayerName(editNameValue.trim());
+			player = updated;
+			levelInfo = getLevelInfo(updated.experience);
 		}
 		isEditingName = false;
 	}
@@ -54,13 +63,17 @@
 		}
 	}
 
-	function confirmReset() {
-		resetPlayer();
+	async function confirmReset() {
+		const updated = await resetPlayer();
+		player = updated;
+		levelInfo = getLevelInfo(updated.experience);
 		showResetConfirm = false;
 	}
 
-	function handleDebugAddXp() {
-		addExperience(debugXpAmount);
+	async function handleDebugAddXp() {
+		const updated = await addExperience(debugXpAmount);
+		player = updated;
+		levelInfo = getLevelInfo(updated.experience);
 	}
 
 	function formatDate(isoString: string): string {
@@ -90,7 +103,11 @@
 		</div>
 	</div>
 
-	{#if player && levelInfo}
+	{#if isLoading}
+		<div class="flex justify-center p-8">
+			<span class="loading loading-spinner loading-lg"></span>
+		</div>
+	{:else if player && levelInfo}
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Player Card -->
 			<div class="lg:col-span-1">
@@ -312,13 +329,13 @@
 								/>
 							</div>
 							<button class="btn btn-primary btn-sm" onclick={handleDebugAddXp}> Add XP </button>
-							<button class="btn btn-sm btn-outline" onclick={() => addExperience(1000)}>
+							<button class="btn btn-sm btn-outline" onclick={async () => { const u = await addExperience(1000); player = u; levelInfo = getLevelInfo(u.experience); }}>
 								+1,000 XP
 							</button>
-							<button class="btn btn-sm btn-outline" onclick={() => addExperience(10000)}>
+							<button class="btn btn-sm btn-outline" onclick={async () => { const u = await addExperience(10000); player = u; levelInfo = getLevelInfo(u.experience); }}>
 								+10,000 XP
 							</button>
-							<button class="btn btn-sm btn-outline" onclick={() => addExperience(100000)}>
+							<button class="btn btn-sm btn-outline" onclick={async () => { const u = await addExperience(100000); player = u; levelInfo = getLevelInfo(u.experience); }}>
 								+100,000 XP
 							</button>
 						</div>

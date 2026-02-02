@@ -48,7 +48,7 @@
 				<h3 class="card-title text-success text-2xl">{configs.easy.label}</h3>
 				<div class="text-base-content/80 space-y-2">
 					<p class="flex items-center justify-center gap-2">
-						<span class="badge badge-success">{configs.easy.questions}</span> Questions
+						<span class="badge badge-success">{configs.easy.maxLives}</span> Lives
 					</p>
 					<p class="flex items-center justify-center gap-2">
 						<span class="badge badge-success">{configs.easy.timePerQuestion}s</span> Per Question
@@ -74,7 +74,7 @@
 				<h3 class="card-title text-error text-2xl">{configs.hard.label}</h3>
 				<div class="text-base-content/80 space-y-2">
 					<p class="flex items-center justify-center gap-2">
-						<span class="badge badge-error">{configs.hard.questions}</span> Questions
+						<span class="badge badge-error">{configs.hard.maxLives}</span> Life
 					</p>
 					<p class="flex items-center justify-center gap-2">
 						<span class="badge badge-error">{configs.hard.timePerQuestion}s</span> Per Question

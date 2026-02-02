@@ -16,24 +16,9 @@
 			"path": "/admin/database"
 		},
 		{
-			"id": "duplicates",
-			"label": "Duplicates",
-			"path": "/admin/duplicates"
-		},
-		{
-			"id": "export",
-			"label": "Export",
-			"path": "/admin/export"
-		},
-		{
 			"id": "icons",
 			"label": "Icons",
 			"path": "/admin/icons"
-		},
-		{
-			"id": "llama",
-			"label": "Llama",
-			"path": "/admin/llama"
 		},
 		{
 			"id": "pokemon-trivia",
@@ -44,32 +29,7 @@
 			"id": "rarity",
 			"label": "Rarity",
 			"path": "/admin/rarity"
-		},
-		{
-			"id": "sources",
-			"label": "Sources",
-			"path": "/admin/sources"
-		},
-		{
-			"id": "torrent",
-			"label": "Torrent",
-			"path": "/admin/torrent"
-		},
-		{
-			"id": "trivia",
-			"label": "Trivia",
-			"path": "/admin/trivia"
-		},
-		{
-			"id": "trivia-awards",
-			"label": "Trivia Awards",
-			"path": "/admin/trivia-awards"
-		},
-		{
-			"id": "wikidata",
-			"label": "Wikidata",
-			"path": "/admin/wikidata"
 		}
 	],
-	"generatedAt": "2026-02-02T12:31:13.455Z"
+	"generatedAt": "2026-02-02T13:21:55.343Z"
 }

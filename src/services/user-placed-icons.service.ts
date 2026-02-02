@@ -1,37 +1,47 @@
-import { ArrayServiceClass } from '$services/classes/array-service.class';
+/**
+ * User Placed Icons Service
+ *
+ * Manages SVG icons placed on album pages.
+ * Uses SQLite via Tauri for persistence in the _user_placed_icons table.
+ */
+
+import { invoke } from '@tauri-apps/api/core';
 import type { ID } from '$types/core.type';
 import type { UserPlacedIcon } from '$types/user-placed-icon.type';
-
-// Service for managing placed icons using localStorage
-const placedIconsService = new ArrayServiceClass<UserPlacedIcon>('user-placed-icons', []);
 
 /**
  * Get all placed icons for a collection
  */
-export function getPlacedIconsByCollection(collectionId: ID): UserPlacedIcon[] {
-	return placedIconsService.filter((icon) => String(icon.collectionId) === String(collectionId));
+export async function getPlacedIconsByCollection(collectionId: ID): Promise<UserPlacedIcon[]> {
+	return await invoke<UserPlacedIcon[]>('get_placed_icons_by_collection', {
+		collectionId: String(collectionId)
+	});
 }
 
 /**
  * Get placed icons for a specific page in a collection
  */
-export function getPlacedIconsByPage(collectionId: ID, pageIndex: number): UserPlacedIcon[] {
-	return placedIconsService.filter(
-		(icon) => String(icon.collectionId) === String(collectionId) && icon.pageIndex === pageIndex
-	);
+export async function getPlacedIconsByPage(
+	collectionId: ID,
+	pageIndex: number
+): Promise<UserPlacedIcon[]> {
+	return await invoke<UserPlacedIcon[]>('get_placed_icons_by_page', {
+		collectionId: String(collectionId),
+		pageIndex
+	});
 }
 
 /**
  * Get a single placed icon by ID
  */
-export function getPlacedIcon(id: ID): UserPlacedIcon | null {
-	return placedIconsService.exists(String(id));
+export async function getPlacedIcon(id: ID): Promise<UserPlacedIcon | null> {
+	return await invoke<UserPlacedIcon | null>('get_placed_icon', { id: String(id) });
 }
 
 /**
  * Place an icon on an album page
  */
-export function placeIcon(
+export async function placeIcon(
 	iconPath: string,
 	collectionId: ID,
 	pageIndex: number,
@@ -40,9 +50,8 @@ export function placeIcon(
 	scale: number = 1.0,
 	rotation: number = 0,
 	color: string = '#000000'
-): UserPlacedIcon {
-	const placedIcon: UserPlacedIcon = {
-		id: crypto.randomUUID(),
+): Promise<UserPlacedIcon> {
+	const placedIcon: Partial<UserPlacedIcon> = {
 		iconPath,
 		collectionId: String(collectionId),
 		pageIndex,
@@ -50,52 +59,35 @@ export function placeIcon(
 		positionY,
 		scale,
 		rotation,
-		color,
-		placedAt: new Date().toISOString()
+		color
 	};
-	placedIconsService.add(placedIcon);
-	return placedIcon;
+	return await invoke<UserPlacedIcon>('place_icon', { placedIcon });
 }
 
 /**
  * Update a placed icon's position, scale, rotation, or color
  */
-export function updatePlacedIcon(placedIcon: UserPlacedIcon): UserPlacedIcon {
-	placedIconsService.update(placedIcon);
-	return placedIcon;
+export async function updatePlacedIcon(placedIcon: UserPlacedIcon): Promise<UserPlacedIcon> {
+	return await invoke<UserPlacedIcon>('update_placed_icon', { placedIcon });
 }
 
 /**
  * Remove a placed icon
  */
-export function removePlacedIcon(id: ID): boolean {
-	const icon = placedIconsService.exists(String(id));
-	if (icon) {
-		placedIconsService.remove(icon);
-		return true;
-	}
-	return false;
+export async function removePlacedIcon(id: ID): Promise<boolean> {
+	return await invoke<boolean>('remove_placed_icon', { id: String(id) });
 }
 
 /**
  * Clear all icons from a collection
  */
-export function clearCollectionIcons(collectionId: ID): boolean {
-	const icons = getPlacedIconsByCollection(collectionId);
-	for (const icon of icons) {
-		placedIconsService.remove(icon);
-	}
-	return true;
+export async function clearCollectionIcons(collectionId: ID): Promise<boolean> {
+	return await invoke<boolean>('clear_collection_icons', { collectionId: String(collectionId) });
 }
 
 /**
  * Clear all placed icons
  */
-export function clearAllPlacedIcons(): number {
-	const all = placedIconsService.all();
-	const count = all.length;
-	for (const icon of all) {
-		placedIconsService.remove(icon);
-	}
-	return count;
+export async function clearAllPlacedIcons(): Promise<number> {
+	return await invoke<number>('clear_all_placed_icons');
 }

@@ -848,7 +848,79 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create _user_sticker_placements collection_id index: {}", e))?;
 
-        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements) created successfully");
+        // _user_placed_icons table - tracks SVG icons placed on album pages
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_placed_icons (
+                id TEXT PRIMARY KEY,
+                icon_path TEXT NOT NULL,
+                collection_id TEXT NOT NULL,
+                page_index INTEGER NOT NULL,
+                position_x REAL NOT NULL,
+                position_y REAL NOT NULL,
+                scale REAL NOT NULL DEFAULT 1.0,
+                rotation REAL NOT NULL DEFAULT 0,
+                color TEXT NOT NULL DEFAULT '#000000',
+                placed_at TEXT NOT NULL,
+                FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_icons table: {}", e))?;
+
+        // Indexes for _user_placed_icons
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_placed_icons_collection_id ON _user_placed_icons(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_icons collection_id index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_placed_icons_collection_page ON _user_placed_icons(collection_id, page_index)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_icons collection_page index: {}", e))?;
+
+        // _user_player table - singleton table for player profile
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_player (
+                id TEXT PRIMARY KEY DEFAULT 'player',
+                name TEXT NOT NULL DEFAULT 'Adventurer',
+                experience INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                last_played_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_player table: {}", e))?;
+
+        // _user_game_stats table - stores game statistics by game type
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_game_stats (
+                id TEXT PRIMARY KEY,
+                game_type TEXT NOT NULL UNIQUE,
+                total_games_played INTEGER NOT NULL DEFAULT 0,
+                total_score INTEGER NOT NULL DEFAULT 0,
+                best_score INTEGER NOT NULL DEFAULT 0,
+                total_correct INTEGER NOT NULL DEFAULT 0,
+                total_wrong INTEGER NOT NULL DEFAULT 0,
+                best_streak INTEGER NOT NULL DEFAULT 0,
+                longest_game INTEGER NOT NULL DEFAULT 0,
+                last_played_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_game_stats table: {}", e))?;
+
+        // Index for _user_game_stats by game_type
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_game_stats_game_type ON _user_game_stats(game_type)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_game_stats game_type index: {}", e))?;
+
+        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements, _user_placed_icons, _user_player, _user_game_stats) created successfully");
         Ok(())
     }
 

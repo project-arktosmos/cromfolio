@@ -21,7 +21,7 @@
 		template: PokemonTriviaTemplateV2 | null;
 		selectedAnswerIndex: number | null;
 		hasAnswered: boolean;
-		isLastQuestion: boolean;
+		isGameOver: boolean;
 	}
 
 	let {
@@ -31,7 +31,7 @@
 		template,
 		selectedAnswerIndex,
 		hasAnswered,
-		isLastQuestion
+		isGameOver
 	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{
@@ -89,7 +89,7 @@
 		{#if hasAnswered}
 			<div class="card-actions mt-6 justify-center">
 				<button class="btn btn-primary btn-lg" onclick={() => dispatch('next')}>
-					{isLastQuestion ? 'See Results' : 'Next Question'}
+					{isGameOver ? 'See Results' : 'Next Question'}
 				</button>
 			</div>
 		{/if}

@@ -3,9 +3,10 @@
  *
  * Manages the Pokemon Trivia game state, question generation, scoring, and statistics.
  * All game logic is extracted from the component into this service.
+ * Stats are persisted to SQLite via Tauri in the _user_game_stats table.
  */
 
-import { ObjectServiceClass } from '$services/classes/object-service.class';
+import { invoke } from '@tauri-apps/api/core';
 import type {
 	TriviaStats,
 	TriviaQuestion,
@@ -18,25 +19,55 @@ import type {
 import type { PokemonTriviaTemplateV2 } from '$types/pokemon-trivia-template.type';
 
 // ============================================================================
-// Stats Service (localStorage persistence)
+// Game Stats Types (from database)
 // ============================================================================
 
-const DEFAULT_STATS: TriviaStats = {
-	id: 'pokemon-trivia-stats',
-	totalGamesPlayed: 0,
-	totalCorrect: 0,
-	totalWrong: 0,
-	bestStreak: 0,
-	longestGame: 0
-};
+interface UserGameStats {
+	id: string;
+	gameType: string;
+	totalGamesPlayed: number;
+	totalScore: number;
+	bestScore: number;
+	totalCorrect: number;
+	totalWrong: number;
+	bestStreak: number;
+	longestGame: number;
+	lastPlayedAt?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+const GAME_TYPE = 'pokemon-trivia';
+
+// ============================================================================
+// Stats Service (SQLite persistence via Tauri)
+// ============================================================================
 
 /**
- * Service for persisting trivia stats to localStorage
+ * Get trivia stats from SQLite
  */
-export const triviaStatsService = new ObjectServiceClass<TriviaStats>(
-	'pokemon-trivia-stats',
-	DEFAULT_STATS
-);
+export async function getTriviaStats(): Promise<TriviaStats> {
+	const stats = await invoke<UserGameStats | null>('get_user_game_stats', { gameType: GAME_TYPE });
+	if (!stats) {
+		return {
+			id: 'pokemon-trivia-stats',
+			totalGamesPlayed: 0,
+			totalCorrect: 0,
+			totalWrong: 0,
+			bestStreak: 0,
+			longestGame: 0
+		};
+	}
+	return {
+		id: stats.id,
+		totalGamesPlayed: stats.totalGamesPlayed,
+		totalCorrect: stats.totalCorrect,
+		totalWrong: stats.totalWrong,
+		bestStreak: stats.bestStreak,
+		longestGame: stats.longestGame,
+		lastPlayedAt: stats.lastPlayedAt
+	};
+}
 
 // ============================================================================
 // Difficulty Configuration
@@ -44,18 +75,18 @@ export const triviaStatsService = new ObjectServiceClass<TriviaStats>(
 
 const DIFFICULTY_CONFIGS: Record<GameDifficulty, DifficultyConfig> = {
 	easy: {
-		questions: 10,
-		timePerQuestion: 15,
-		answerCount: 4,
+		maxLives: 3,
+		timePerQuestion: 10,
+		answerCount: 3,
 		label: 'Easy',
-		description: '10 questions, 15 seconds each, 4 options'
+		description: '3 lives, 10s per question'
 	},
 	hard: {
-		questions: 20,
-		timePerQuestion: 10,
-		answerCount: 6,
+		maxLives: 1,
+		timePerQuestion: 5,
+		answerCount: 4,
 		label: 'Hard',
-		description: '20 questions, 10 seconds each, 6 options'
+		description: '1 life, 5s per question'
 	}
 };
 
@@ -268,25 +299,31 @@ export function isGameComplete(currentIndex: number, total: number): boolean {
 }
 
 /**
- * Update stats after a game
+ * Update stats after a game (async - uses SQLite via Tauri)
  */
-export function updateStatsAfterGame(
+export async function updateStatsAfterGame(
 	correctAnswers: number,
 	wrongAnswers: number,
 	streak: number
-): void {
-	const current = triviaStatsService.get();
-	const totalQuestions = correctAnswers + wrongAnswers;
-
-	triviaStatsService.update({
-		...current,
-		totalGamesPlayed: current.totalGamesPlayed + 1,
-		totalCorrect: current.totalCorrect + correctAnswers,
-		totalWrong: current.totalWrong + wrongAnswers,
-		bestStreak: Math.max(current.bestStreak || 0, streak),
-		longestGame: Math.max(current.longestGame || 0, totalQuestions),
-		lastPlayedAt: new Date().toISOString()
+): Promise<TriviaStats> {
+	// Use the record_user_game Tauri command which handles all stat updates atomically
+	const stats = await invoke<UserGameStats>('record_user_game', {
+		gameType: GAME_TYPE,
+		score: 0, // Trivia doesn't track score, just correct/wrong
+		correct: correctAnswers,
+		wrong: wrongAnswers,
+		streak
 	});
+
+	return {
+		id: stats.id,
+		totalGamesPlayed: stats.totalGamesPlayed,
+		totalCorrect: stats.totalCorrect,
+		totalWrong: stats.totalWrong,
+		bestStreak: stats.bestStreak,
+		longestGame: stats.longestGame,
+		lastPlayedAt: stats.lastPlayedAt
+	};
 }
 
 /**

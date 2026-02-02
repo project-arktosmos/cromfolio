@@ -322,52 +322,6 @@ pub fn get_random_pokemon_by_generation(
 }
 
 // ============================================================================
-// QUESTIONS (trivia)
-// ============================================================================
-
-#[command]
-pub fn get_all_questions(db: State<'_, Database>) -> Result<Vec<Question>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::get_all(&conn)
-}
-
-#[command]
-pub fn get_questions_by_source(source_id: String, db: State<'_, Database>) -> Result<Vec<Question>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::get_by_source_id(&conn, &source_id)
-}
-
-#[command]
-pub fn get_question(id: String, db: State<'_, Database>) -> Result<Option<Question>, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::get_by_id(&conn, &id)
-}
-
-#[command]
-pub fn create_question(question: Question, db: State<'_, Database>) -> Result<Question, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::create(&conn, &question)
-}
-
-#[command]
-pub fn update_question(question: Question, db: State<'_, Database>) -> Result<Question, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::update(&conn, &question)
-}
-
-#[command]
-pub fn delete_question(id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::delete(&conn, &id)
-}
-
-#[command]
-pub fn delete_questions_by_source(source_id: String, db: State<'_, Database>) -> Result<bool, String> {
-    let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::questions::delete_by_source_id(&conn, &source_id)
-}
-
-// ============================================================================
 // COLLECTIONS
 // ============================================================================
 
@@ -1217,6 +1171,145 @@ pub fn delete_stamp_pack_files(app: AppHandle, pack_id: String) -> Result<bool, 
 }
 
 // ============================================================================
+// USER PLAYER (singleton player profile, stored in _user_player)
+// ============================================================================
+
+#[command]
+pub fn get_user_player(db: State<'_, Database>) -> Result<UserPlayer, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_player::get(&conn)
+}
+
+#[command]
+pub fn update_user_player(player: UserPlayer, db: State<'_, Database>) -> Result<UserPlayer, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_player::update(&conn, &player)
+}
+
+#[command]
+pub fn add_user_experience(amount: i64, db: State<'_, Database>) -> Result<UserPlayer, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_player::add_experience(&conn, amount)
+}
+
+#[command]
+pub fn set_user_player_name(name: String, db: State<'_, Database>) -> Result<UserPlayer, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_player::set_name(&conn, &name)
+}
+
+#[command]
+pub fn reset_user_player(db: State<'_, Database>) -> Result<UserPlayer, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_player::reset(&conn)
+}
+
+// ============================================================================
+// USER GAME STATS (per-game statistics, stored in _user_game_stats)
+// ============================================================================
+
+#[command]
+pub fn get_all_user_game_stats(db: State<'_, Database>) -> Result<Vec<UserGameStats>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::get_all(&conn)
+}
+
+#[command]
+pub fn get_user_game_stats(game_type: String, db: State<'_, Database>) -> Result<Option<UserGameStats>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::get_by_game_type(&conn, &game_type)
+}
+
+#[command]
+pub fn get_or_create_user_game_stats(game_type: String, db: State<'_, Database>) -> Result<UserGameStats, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::get_or_create(&conn, &game_type)
+}
+
+#[command]
+pub fn update_user_game_stats(stats: UserGameStats, db: State<'_, Database>) -> Result<UserGameStats, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::update(&conn, &stats)
+}
+
+#[command]
+pub fn record_user_game(
+    game_type: String,
+    score: i64,
+    correct: i64,
+    wrong: i64,
+    streak: i64,
+    db: State<'_, Database>,
+) -> Result<UserGameStats, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::record_game(&conn, &game_type, score, correct, wrong, streak)
+}
+
+#[command]
+pub fn delete_user_game_stats(game_type: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::delete_by_game_type(&conn, &game_type)
+}
+
+#[command]
+pub fn delete_all_user_game_stats(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_game_stats::delete_all(&conn)
+}
+
+// ============================================================================
+// USER PLACED ICONS (icons placed on album pages, stored in _user_placed_icons)
+// ============================================================================
+
+#[command]
+pub fn get_placed_icons_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::get_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn get_placed_icons_by_page(collection_id: String, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::get_by_collection_page(&conn, &collection_id, page_index)
+}
+
+#[command]
+pub fn get_placed_icon(id: String, db: State<'_, Database>) -> Result<Option<UserPlacedIcon>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn place_icon(placed_icon: UserPlacedIcon, db: State<'_, Database>) -> Result<UserPlacedIcon, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::create(&conn, &placed_icon)
+}
+
+#[command]
+pub fn update_placed_icon(placed_icon: UserPlacedIcon, db: State<'_, Database>) -> Result<UserPlacedIcon, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::update(&conn, &placed_icon)
+}
+
+#[command]
+pub fn remove_placed_icon(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::delete(&conn, &id)
+}
+
+#[command]
+pub fn clear_collection_icons(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::delete_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn clear_all_placed_icons(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_icons::delete_all(&conn)
+}
+
+// ============================================================================
 // CLEAR ALL USER DATA
 // ============================================================================
 
@@ -1229,6 +1322,9 @@ pub struct ClearUserDataResult {
     pub user_sources_deleted: i64,
     pub placed_stamps_deleted: i64,
     pub sticker_placements_deleted: i64,
+    pub placed_icons_deleted: i64,
+    pub game_stats_deleted: i64,
+    pub player_reset: bool,
 }
 
 /// Clear all user data from all _user tables
@@ -1239,9 +1335,12 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
     // Delete in order to respect any potential foreign key constraints
     let sticker_placements_deleted = queries::user_sticker_placements::delete_all(&conn)?;
     let placed_stamps_deleted = queries::user_placed_stamps::delete_all(&conn)?;
+    let placed_icons_deleted = queries::user_placed_icons::delete_all(&conn)?;
     let user_stickers_deleted = queries::user_stickers::delete_all(&conn)?;
     let user_collections_deleted = queries::user_collections::delete_all(&conn)?;
     let user_sources_deleted = queries::user_sources::delete_all(&conn)?;
+    let game_stats_deleted = queries::user_game_stats::delete_all(&conn)?;
+    let player_reset = queries::user_player::reset(&conn).is_ok();
 
     Ok(ClearUserDataResult {
         user_stickers_deleted,
@@ -1249,6 +1348,9 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
         user_sources_deleted,
         placed_stamps_deleted,
         sticker_placements_deleted,
+        placed_icons_deleted,
+        game_stats_deleted,
+        player_reset,
     })
 }
 

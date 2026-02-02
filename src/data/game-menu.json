@@ -6,11 +6,6 @@
 			"path": "/game/albums"
 		},
 		{
-			"id": "booster-pack",
-			"label": "Booster Pack",
-			"path": "/game/booster-pack"
-		},
-		{
 			"id": "player",
 			"label": "Player",
 			"path": "/game/player"
@@ -34,25 +29,7 @@
 			"id": "stickers",
 			"label": "Stickers",
 			"path": "/game/stickers"
-		},
-		{
-			"id": "guess-the-name",
-			"label": "Guess The Name",
-			"path": "/game/guess-the-name",
-			"group": "Minigames"
-		},
-		{
-			"id": "matching-pairs",
-			"label": "Matching Pairs",
-			"path": "/game/matching-pairs",
-			"group": "Minigames"
-		},
-		{
-			"id": "odd-one-out",
-			"label": "Odd One Out",
-			"path": "/game/odd-one-out",
-			"group": "Minigames"
 		}
 	],
-	"generatedAt": "2026-02-02T12:31:13.492Z"
+	"generatedAt": "2026-02-02T13:21:55.378Z"
 }
