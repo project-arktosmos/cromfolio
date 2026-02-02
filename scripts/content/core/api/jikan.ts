@@ -152,8 +152,7 @@ export async function getAnimeCharacters(malId: number): Promise<CharacterItem[]
 			const profileUrl = charData.character.images.jpg.image_url;
 			if (!profileUrl) return null;
 
-			const profileThumbUrl =
-				charData.character.images.jpg.small_image_url || profileUrl;
+			const profileThumbUrl = charData.character.images.jpg.small_image_url || profileUrl;
 
 			// Find Japanese voice actor
 			const jpVa = charData.voice_actors.find((va) => va.language === 'Japanese');
@@ -196,7 +195,10 @@ export async function findMalId(title: string): Promise<number | null> {
 /**
  * Search for anime by title (alternative to AniList)
  */
-export async function searchAnime(query: string, limit: number = 15): Promise<
+export async function searchAnime(
+	query: string,
+	limit: number = 15
+): Promise<
 	{
 		malId: number;
 		title: string;

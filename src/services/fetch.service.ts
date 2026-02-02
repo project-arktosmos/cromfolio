@@ -192,17 +192,11 @@ export interface ContentDetails {
 // SEARCH FUNCTIONS
 // ============================================================================
 
-export async function searchMovies(
-	query: string,
-	year?: string
-): Promise<MovieSearchResult[]> {
+export async function searchMovies(query: string, year?: string): Promise<MovieSearchResult[]> {
 	return invoke<MovieSearchResult[]>('search_movies', { query, year });
 }
 
-export async function searchTv(
-	query: string,
-	year?: string
-): Promise<TvSearchResult[]> {
+export async function searchTv(query: string, year?: string): Promise<TvSearchResult[]> {
 	return invoke<TvSearchResult[]>('search_tv', { query, year });
 }
 
@@ -218,15 +212,11 @@ export async function searchAnime(
 	return invoke<AnimeSearchResult[]>('search_anime', { query, page, perPage });
 }
 
-export async function searchSportsTeams(
-	query: string
-): Promise<SportsTeamSearchResult[]> {
+export async function searchSportsTeams(query: string): Promise<SportsTeamSearchResult[]> {
 	return invoke<SportsTeamSearchResult[]>('search_sports_teams', { query });
 }
 
-export async function searchSportsLeagues(
-	country: string
-): Promise<SportsLeagueSearchResult[]> {
+export async function searchSportsLeagues(country: string): Promise<SportsLeagueSearchResult[]> {
 	return invoke<SportsLeagueSearchResult[]>('search_sports_leagues', { country });
 }
 
@@ -284,15 +274,11 @@ export async function fetchSourceImages(
 // HELPER FUNCTIONS
 // ============================================================================
 
-export async function getSpeciesInGenus(
-	genusWikidataId: string
-): Promise<SpeciesResult[]> {
+export async function getSpeciesInGenus(genusWikidataId: string): Promise<SpeciesResult[]> {
 	return invoke<SpeciesResult[]>('get_species_in_genus', { genusWikidataId });
 }
 
-export async function getTeamsInLeague(
-	leagueName: string
-): Promise<SportsTeamSearchResult[]> {
+export async function getTeamsInLeague(leagueName: string): Promise<SportsTeamSearchResult[]> {
 	return invoke<SportsTeamSearchResult[]>('get_teams_in_league', { leagueName });
 }
 

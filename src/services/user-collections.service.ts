@@ -63,7 +63,9 @@ export async function startCollection(collectionId: ID): Promise<UserCollection>
 /**
  * Update a user collection progress record
  */
-export async function updateUserCollection(userCollection: UserCollection): Promise<UserCollection> {
+export async function updateUserCollection(
+	userCollection: UserCollection
+): Promise<UserCollection> {
 	return await invoke<UserCollection>('update_user_collection', { userCollection });
 }
 

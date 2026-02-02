@@ -239,9 +239,7 @@ export async function getMovieCredits(tmdbId: number): Promise<TMDBCreditsRespon
 	}
 
 	try {
-		const response = await fetch(
-			`${TMDB_BASE_URL}/movie/${tmdbId}/credits?api_key=${apiKey}`
-		);
+		const response = await fetch(`${TMDB_BASE_URL}/movie/${tmdbId}/credits?api_key=${apiKey}`);
 
 		if (!response.ok) {
 			throw new Error(`TMDB API error: ${response.status}`);
@@ -265,9 +263,7 @@ export async function getTVCredits(tmdbId: number): Promise<TMDBCreditsResponse 
 	}
 
 	try {
-		const response = await fetch(
-			`${TMDB_BASE_URL}/tv/${tmdbId}/credits?api_key=${apiKey}`
-		);
+		const response = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/credits?api_key=${apiKey}`);
 
 		if (!response.ok) {
 			throw new Error(`TMDB API error: ${response.status}`);

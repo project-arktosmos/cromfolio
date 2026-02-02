@@ -78,7 +78,10 @@ export function loadAwardEvent(eventId: string): AwardEvent | null {
 export function findAwardEventByTitle(title: string): { id: string; data: AwardEvent } | null {
 	const normalizedTitle = title.toLowerCase().trim();
 	for (const [id, name] of Object.entries(EVENT_NAMES)) {
-		if (name.toLowerCase().includes(normalizedTitle) || normalizedTitle.includes(name.toLowerCase())) {
+		if (
+			name.toLowerCase().includes(normalizedTitle) ||
+			normalizedTitle.includes(name.toLowerCase())
+		) {
 			const data = AWARD_EVENTS[id];
 			if (data) {
 				return { id, data };

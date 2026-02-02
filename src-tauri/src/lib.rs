@@ -433,6 +433,9 @@ pub fn run() {
             commands::delete_pokemon_trivia_template_v2,
             // Utility
             commands::get_cwd,
+            // Generic Query Executor (TypeScript query builder support)
+            commands::execute_query,
+            commands::execute_transaction,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

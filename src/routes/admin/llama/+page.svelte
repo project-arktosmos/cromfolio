@@ -155,8 +155,8 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<div class="flex items-center justify-between mb-4">
+<div class="flex h-full flex-col">
+	<div class="mb-4 flex items-center justify-between">
 		<h1 class="text-2xl font-bold">LLM Chat</h1>
 		<div class="flex items-center gap-2">
 			<!-- Provider Toggle -->
@@ -194,19 +194,17 @@
 						{serverOnline ? 'Online' : 'Offline'}
 					</span>
 				{/if}
-				<button class="btn btn-ghost btn-xs" onclick={connectToServer} title="Refresh">
-					🔄
-				</button>
+				<button class="btn btn-ghost btn-xs" onclick={connectToServer} title="Refresh"> 🔄 </button>
 			</div>
-			<span class="text-xs text-base-content/60">{currentBaseUrl}</span>
+			<span class="text-base-content/60 text-xs">{currentBaseUrl}</span>
 		</div>
 	</div>
 
-	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4">
 		<!-- Column 1: Models List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Models</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Models</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if isCheckingServer || isLoadingModels}
@@ -214,26 +212,26 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if !serverOnline}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Server is offline.</p>
-							<p class="text-sm mt-1">
+							<p class="mt-1 text-sm">
 								Make sure {providerLabels[currentProvider]} is running at {currentBaseUrl}
 							</p>
 						</div>
 					{:else if models.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No models available.</p>
-							<p class="text-sm mt-1">Load a model in {providerLabels[currentProvider]} first.</p>
+							<p class="mt-1 text-sm">Load a model in {providerLabels[currentProvider]} first.</p>
 						</div>
 					{:else}
 						<div class="space-y-1">
 							{#each models as model (model.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedModel?.id === model.id,
+											'bg-primary/20 ring-primary ring-2': selectedModel?.id === model.id,
 											'bg-base-100': selectedModel?.id !== model.id
 										}
 									)}
@@ -242,8 +240,8 @@
 									role="button"
 									tabindex="0"
 								>
-									<div class="font-medium text-sm">{model.name}</div>
-									<div class="text-xs text-base-content/60 flex flex-wrap gap-1 mt-1">
+									<div class="text-sm font-medium">{model.name}</div>
+									<div class="text-base-content/60 mt-1 flex flex-wrap gap-1 text-xs">
 										{#if model.parameterSize}
 											<span class="badge badge-xs badge-ghost">{model.parameterSize}</span>
 										{/if}
@@ -264,7 +262,7 @@
 				</div>
 
 				{#if serverOnline}
-					<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+					<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 						{models.length} model{models.length !== 1 ? 's' : ''} available
 					</div>
 				{/if}
@@ -272,13 +270,13 @@
 		</div>
 
 		<!-- Columns 2-3: Chat Interface -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col col-span-2">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 col-span-2 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">
 						Chat
 						{#if selectedModel}
-							<span class="text-sm font-normal text-base-content/60">
+							<span class="text-base-content/60 text-sm font-normal">
 								with {selectedModel.name}
 							</span>
 						{/if}
@@ -289,15 +287,15 @@
 				</div>
 
 				<!-- Messages -->
-				<div class="flex-1 overflow-y-auto mb-4">
+				<div class="mb-4 flex-1 overflow-y-auto">
 					{#if !selectedModel}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Select a model to start chatting.</p>
 						</div>
 					{:else if messages.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No messages yet.</p>
-							<p class="text-sm mt-1">Send a message to start the conversation.</p>
+							<p class="mt-1 text-sm">Send a message to start the conversation.</p>
 						</div>
 					{:else}
 						<div class="space-y-4">
@@ -314,7 +312,7 @@
 											'bg-base-100': message.role === 'assistant'
 										})}
 									>
-										<div class="text-sm whitespace-pre-wrap">{message.content}</div>
+										<div class="whitespace-pre-wrap text-sm">{message.content}</div>
 									</div>
 								</div>
 							{/each}
@@ -331,7 +329,7 @@
 
 				<!-- Input -->
 				{#if selectedModel}
-					<div class="border-t border-base-300 pt-4">
+					<div class="border-base-300 border-t pt-4">
 						<div class="flex gap-2">
 							<textarea
 								placeholder="Type a message... (Enter to send, Shift+Enter for new line)"

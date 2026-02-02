@@ -146,7 +146,11 @@
 
 		// Compute image hashes if enabled
 		if (includeImageScan) {
-			imageScanProgress = { current: 0, total: stickersWithMeta.length, phase: 'Computing image hashes...' };
+			imageScanProgress = {
+				current: 0,
+				total: stickersWithMeta.length,
+				phase: 'Computing image hashes...'
+			};
 
 			const BATCH_SIZE = 10;
 			for (let i = 0; i < stickersWithMeta.length; i += BATCH_SIZE) {
@@ -218,7 +222,10 @@
 
 		for (const [name, group] of byName) {
 			if (group.length >= 2) {
-				const ids = group.map((t) => String(t.id)).sort().join(',');
+				const ids = group
+					.map((t) => String(t.id))
+					.sort()
+					.join(',');
 				if (!processedPairs.has(ids)) {
 					processedPairs.add(ids);
 					groups.push({
@@ -318,7 +325,9 @@
 			if (searchQuery.trim()) {
 				const query = searchQuery.toLowerCase();
 				const matchesName = group.stickers.some((t) => t.name.toLowerCase().includes(query));
-				const matchesAlbum = group.stickers.some((t) => t.source?.title.toLowerCase().includes(query));
+				const matchesAlbum = group.stickers.some((t) =>
+					t.source?.title.toLowerCase().includes(query)
+				);
 				if (!matchesName && !matchesAlbum) return false;
 			}
 
@@ -429,13 +438,13 @@
 	}
 </script>
 
-<div class="flex flex-col h-full gap-4">
+<div class="flex h-full flex-col gap-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Duplicate Detection</h1>
 
 		<div class="flex items-center gap-2">
 			{#if selectedStickers.size > 0}
-				<span class="text-sm text-base-content/70">{selectedStickers.size} selected</span>
+				<span class="text-base-content/70 text-sm">{selectedStickers.size} selected</span>
 				<button class="btn btn-ghost btn-sm" onclick={clearSelection} disabled={isDeleting}>
 					Clear
 				</button>
@@ -447,7 +456,7 @@
 				</button>
 			{/if}
 
-			<label class="flex items-center gap-2 cursor-pointer">
+			<label class="flex cursor-pointer items-center gap-2">
 				<input
 					type="checkbox"
 					class="checkbox checkbox-sm checkbox-primary"
@@ -457,11 +466,7 @@
 				<span class="text-sm">Image scan</span>
 			</label>
 
-			<button
-				class="btn btn-primary btn-sm"
-				onclick={scanForDuplicates}
-				disabled={isLoading}
-			>
+			<button class="btn btn-primary btn-sm" onclick={scanForDuplicates} disabled={isLoading}>
 				{#if isLoading}
 					<span class="loading loading-spinner loading-xs"></span>
 				{/if}
@@ -471,16 +476,16 @@
 	</div>
 
 	{#if isLoading}
-		<div class="flex flex-col items-center justify-center flex-1 gap-4">
+		<div class="flex flex-1 flex-col items-center justify-center gap-4">
 			<span class="loading loading-spinner loading-lg"></span>
 			<div class="text-center">
 				<p class="text-base-content/70">{imageScanProgress.phase}</p>
 				{#if imageScanProgress.total > 0}
-					<p class="text-sm text-base-content/50 mt-1">
+					<p class="text-base-content/50 mt-1 text-sm">
 						{imageScanProgress.current} / {imageScanProgress.total}
 					</p>
 					<progress
-						class="progress progress-primary w-56 mt-2"
+						class="progress progress-primary mt-2 w-56"
 						value={imageScanProgress.current}
 						max={imageScanProgress.total}
 					></progress>
@@ -488,15 +493,20 @@
 			</div>
 		</div>
 	{:else if !hasScanned}
-		<div class="flex flex-col items-center justify-center flex-1 gap-4">
+		<div class="flex flex-1 flex-col items-center justify-center gap-4">
 			<div class="text-center">
-				<p class="text-lg text-base-content/70 mb-2">Click "Scan for Duplicates" to analyze your sticker library</p>
-				<p class="text-sm text-base-content/50">
-					Checks for: exact name matches, similar names in same source{includeImageScan ? ', and visually similar images' : ''}.
+				<p class="text-base-content/70 mb-2 text-lg">
+					Click "Scan for Duplicates" to analyze your sticker library
+				</p>
+				<p class="text-base-content/50 text-sm">
+					Checks for: exact name matches, similar names in same source{includeImageScan
+						? ', and visually similar images'
+						: ''}.
 				</p>
 				{#if includeImageScan}
-					<p class="text-xs text-base-content/40 mt-2">
-						Image scanning uses perceptual hashing to detect similar images regardless of size or minor edits.
+					<p class="text-base-content/40 mt-2 text-xs">
+						Image scanning uses perceptual hashing to detect similar images regardless of size or
+						minor edits.
 					</p>
 				{/if}
 			</div>
@@ -504,7 +514,7 @@
 	{:else}
 		<!-- Filters -->
 		<div class="card bg-base-200 p-4">
-			<div class="flex flex-wrap gap-4 items-center">
+			<div class="flex flex-wrap items-center gap-4">
 				<div class="form-control">
 					<label class="label py-0">
 						<span class="label-text text-xs">Search</span>
@@ -549,18 +559,18 @@
 
 				<div class="flex-1"></div>
 
-				<div class="stats stats-horizontal shadow bg-base-100">
-					<div class="stat py-2 px-4">
+				<div class="stats stats-horizontal bg-base-100 shadow">
+					<div class="stat px-4 py-2">
 						<div class="stat-title text-xs">Total Stickers</div>
 						<div class="stat-value text-lg">{stickers.length}</div>
 					</div>
-					<div class="stat py-2 px-4">
+					<div class="stat px-4 py-2">
 						<div class="stat-title text-xs">Duplicate Groups</div>
 						<div class="stat-value text-lg">{filteredGroups.length}</div>
 					</div>
-					<div class="stat py-2 px-4">
+					<div class="stat px-4 py-2">
 						<div class="stat-title text-xs">Potential Duplicates</div>
-						<div class="stat-value text-lg text-warning">
+						<div class="stat-value text-warning text-lg">
 							{filteredGroups.reduce((acc, g) => acc + g.stickers.length - 1, 0)}
 						</div>
 					</div>
@@ -585,12 +595,12 @@
 					{#each paginatedGroups as group (group.id)}
 						<div class="card bg-base-200">
 							<div class="card-body p-4">
-								<div class="flex items-center justify-between mb-3">
+								<div class="mb-3 flex items-center justify-between">
 									<div class="flex items-center gap-3">
 										<span class={classNames('badge', getReasonBadgeClass(group.reason))}>
 											{group.stickers.length} items
 										</span>
-										<span class="text-sm text-base-content/70">{group.reason}</span>
+										<span class="text-base-content/70 text-sm">{group.reason}</span>
 									</div>
 									<button
 										class="btn btn-ghost btn-xs"
@@ -606,11 +616,11 @@
 										{@const isSelected = selectedStickers.has(String(sticker.id))}
 										<div
 											class={classNames(
-												'flex gap-3 p-3 rounded-lg bg-base-100 w-80 transition-all cursor-pointer',
+												'bg-base-100 flex w-80 cursor-pointer gap-3 rounded-lg p-3 transition-all',
 												{
-													'ring-2 ring-primary': isSelected,
-													'ring-2 ring-success': idx === 0 && !isSelected,
-													'hover:ring-2 hover:ring-base-content/20': !isSelected && idx !== 0
+													'ring-primary ring-2': isSelected,
+													'ring-success ring-2': idx === 0 && !isSelected,
+													'hover:ring-base-content/20 hover:ring-2': !isSelected && idx !== 0
 												}
 											)}
 											onclick={() => toggleSelection(String(sticker.id))}
@@ -633,7 +643,7 @@
 											<img
 												src={sticker.image}
 												alt={sticker.name}
-												class="w-12 h-16 object-cover rounded flex-shrink-0"
+												class="h-16 w-12 flex-shrink-0 rounded object-cover"
 												loading="lazy"
 												onerror={(e) => {
 													(e.target as HTMLImageElement).src =
@@ -642,9 +652,9 @@
 											/>
 
 											<!-- Content -->
-											<div class="flex-1 min-w-0 flex flex-col gap-1">
+											<div class="flex min-w-0 flex-1 flex-col gap-1">
 												<div class="flex items-center gap-2">
-													<span class="font-medium text-sm truncate">{sticker.name}</span>
+													<span class="truncate text-sm font-medium">{sticker.name}</span>
 													{#if idx === 0}
 														<span class="badge badge-success badge-xs">Keep</span>
 													{/if}
@@ -663,7 +673,7 @@
 													</div>
 												{/if}
 
-												<div class="text-xs text-base-content/40 mt-1">
+												<div class="text-base-content/40 mt-1 text-xs">
 													ID: {sticker.id}
 												</div>
 											</div>
@@ -677,7 +687,7 @@
 
 				<!-- Pagination -->
 				{#if totalPages > 1}
-					<div class="flex justify-center items-center gap-2 mt-4 pb-4">
+					<div class="mt-4 flex items-center justify-center gap-2 pb-4">
 						<button
 							class="btn btn-sm btn-ghost"
 							onclick={() => goToPage(1)}
@@ -693,7 +703,7 @@
 							&lsaquo;
 						</button>
 
-						<span class="text-sm px-4">
+						<span class="px-4 text-sm">
 							Page {currentPage} of {totalPages}
 						</span>
 

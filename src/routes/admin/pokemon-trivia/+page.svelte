@@ -239,22 +239,22 @@
 	const attributesByCategory = groupAttributesByCategory();
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Pokemon Trivia Templates</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Pokemon Trivia Templates</h1>
 
-	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4">
 		<!-- Column 1: Templates List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">Templates</h2>
-					<span class="text-sm text-base-content/60"
+					<span class="text-base-content/60 text-sm"
 						>{filteredTemplates.length} / {templates.length}</span
 					>
 				</div>
 
 				<!-- Search and Filter -->
-				<div class="space-y-2 mb-3">
+				<div class="mb-3 space-y-2">
 					<input
 						type="text"
 						class="input input-bordered input-sm w-full"
@@ -278,19 +278,19 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if filteredTemplates.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No templates found.</p>
-							<p class="text-sm mt-1">Create templates using the form.</p>
+							<p class="mt-1 text-sm">Create templates using the form.</p>
 						</div>
 					{:else}
 						<div class="space-y-2">
 							{#each filteredTemplates as template (template.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedTemplate?.id === template.id,
+											'bg-primary/20 ring-primary ring-2': selectedTemplate?.id === template.id,
 											'bg-base-100': selectedTemplate?.id !== template.id,
 											'opacity-50': !template.isActive
 										}
@@ -301,8 +301,8 @@
 									tabindex="0"
 								>
 									<div class="flex items-start justify-between gap-2">
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1 flex-wrap">
+										<div class="min-w-0 flex-1">
+											<div class="mb-1 flex flex-wrap items-center gap-2">
 												<span class="badge badge-primary badge-sm">
 													{TEMPLATE_TYPE_INFO[template.templateType as TemplateType]?.icon ?? ''}
 													{TEMPLATE_TYPE_INFO[template.templateType as TemplateType]?.label ??
@@ -316,8 +316,8 @@
 													<span class="badge badge-warning badge-xs">inactive</span>
 												{/if}
 											</div>
-											<div class="font-medium text-sm truncate">{template.name}</div>
-											<div class="text-xs text-base-content/60 line-clamp-1 mt-1">
+											<div class="truncate text-sm font-medium">{template.name}</div>
+											<div class="text-base-content/60 mt-1 line-clamp-1 text-xs">
 												{template.questionTemplate}
 											</div>
 										</div>
@@ -350,9 +350,9 @@
 		</div>
 
 		<!-- Column 2 & 3: Editor -->
-		<div class="col-span-2 card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 col-span-2 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">
 						{isEditing ? 'Edit Template' : 'New Template'}
 					</h2>
@@ -430,7 +430,7 @@
 								<textarea
 									id="question-template"
 									placeholder={'What type is {name}?'}
-									class="textarea textarea-bordered w-full h-20"
+									class="textarea textarea-bordered h-20 w-full"
 									bind:value={formQuestionTemplate}
 									disabled={isSaving}
 								></textarea>
@@ -442,12 +442,12 @@
 							</div>
 							<div class="form-control">
 								<label class="label" for="answer-template">
-									<span class="label-text font-semibold text-success">Answer Template *</span>
+									<span class="label-text text-success font-semibold">Answer Template *</span>
 								</label>
 								<textarea
 									id="answer-template"
 									placeholder={'{type}'}
-									class="textarea textarea-bordered textarea-success w-full h-20"
+									class="textarea textarea-bordered textarea-success h-20 w-full"
 									bind:value={formAnswerTemplate}
 									disabled={isSaving}
 								></textarea>

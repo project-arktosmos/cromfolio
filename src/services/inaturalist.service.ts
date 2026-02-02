@@ -134,7 +134,10 @@ export async function getSpeciesPhotos(
  * Convert iNaturalist photo URL to different sizes
  * iNat URLs have size in the path: square, small, medium, large, original
  */
-export function getPhotoUrl(photo: INatPhoto, size: 'square' | 'small' | 'medium' | 'large' | 'original' = 'medium'): string {
+export function getPhotoUrl(
+	photo: INatPhoto,
+	size: 'square' | 'small' | 'medium' | 'large' | 'original' = 'medium'
+): string {
 	// iNat photo URLs follow pattern: https://static.inaturalist.org/photos/{id}/{size}.{ext}
 	// or https://inaturalist-open-data.s3.amazonaws.com/photos/{id}/{size}.{ext}
 	switch (size) {

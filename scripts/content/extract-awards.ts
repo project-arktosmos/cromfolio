@@ -151,9 +151,7 @@ if (values['list-types']) {
 	console.log(`\nAward Types for ${eventName} (${values.year}):\n`);
 	for (const awardType of awardTypes) {
 		const categories = awardsLoader.getCategoriesForAwardType(eventData, values.year, awardType);
-		console.log(
-			`  ${awardType}  (${categories.length} categories)`
-		);
+		console.log(`  ${awardType}  (${categories.length} categories)`);
 	}
 
 	console.log(`\nTotal: ${awardTypes.length} award types`);

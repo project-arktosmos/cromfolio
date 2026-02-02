@@ -170,11 +170,7 @@ export const evmService = {
 	 * @param limit Max number of transactions to return (default 20, max 100)
 	 * @param offset Pagination offset
 	 */
-	async getTransactions(
-		address?: string,
-		limit?: number,
-		offset?: number
-	): Promise<Transaction[]> {
+	async getTransactions(address?: string, limit?: number, offset?: number): Promise<Transaction[]> {
 		return await invoke('evm_get_transactions', { address, limit, offset });
 	},
 

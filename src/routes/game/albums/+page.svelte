@@ -1,20 +1,33 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
-	import { getAllCollections, getStickersForCollection, getCollection } from '$services/collections.service';
+	import {
+		getAllCollections,
+		getStickersForCollection,
+		getCollection
+	} from '$services/collections.service';
 	import { getCollectionType } from '$services/collection-types.service';
 	import {
-	acquireSticker,
-	getOwnedStickerIds,
-	getStickerCopyCount,
-	getAllUserStickers
-} from '$services/user-stickers.service';
+		acquireSticker,
+		getOwnedStickerIds,
+		getStickerCopyCount,
+		getAllUserStickers
+	} from '$services/user-stickers.service';
 	import { getRarityCollection } from '$services/rarities.service';
 	import { sourceExists } from '$services/sources.service';
 	import { getStickerType } from '$services/sticker-types.service';
 	import { getTagsBySticker, getTagsForStickers } from '$services/tags.service';
-	import { getAllStampPacks, getStampsByPack, getStamp, getStampsDataDir } from '$services/stamp-packs.service';
-	import { getPlacedStampsByCollection, placeStamp, removePlacedStamp } from '$services/user-placed-stamps.service';
+	import {
+		getAllStampPacks,
+		getStampsByPack,
+		getStamp,
+		getStampsDataDir
+	} from '$services/stamp-packs.service';
+	import {
+		getPlacedStampsByCollection,
+		placeStamp,
+		removePlacedStamp
+	} from '$services/user-placed-stamps.service';
 	import {
 		getPlacedStickerIdsForCollection,
 		placeSticker,
@@ -32,7 +45,11 @@
 	import type { StampPack, Stamp } from '$types/stamp-pack.type';
 	import type { UserPlacedStamp } from '$types/user-placed-stamp.type';
 	import { DEFAULT_GRID_PACKING_CONFIG, getGridPageAspectRatio } from '$types/album-layout.type';
-	import { packStickersIntoGrid, separateWinnerStickers, groupFragmentStickers } from '$utils/album-packing';
+	import {
+		packStickersIntoGrid,
+		separateWinnerStickers,
+		groupFragmentStickers
+	} from '$utils/album-packing';
 	import { weightedRandomSelect, getRarityWeight } from '$utils/weighted-select';
 	import StickerItem from '$components/core/StickerItem.svelte';
 	import StickerPreview from '$components/core/StickerPreview.svelte';
@@ -70,16 +87,16 @@
 	let placedStickerIds = $state<Set<string>>(new Set());
 	let globalPlacementCounts = $state<Map<string, number>>(new Map());
 	// Detailed stats per collection with rarity breakdown
-interface CollectionDetailedStats {
-	total: number;
-	owned: number;
-	// Maps rarityId -> count of unique stickers owned at that rarity
-	rarityBreakdown: Map<string, number>;
-	// Score-based completion (each rarity contributes sortOrder + 1 points)
-	completionScore: number;
-	maxCompletionScore: number;
-}
-let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new Map());
+	interface CollectionDetailedStats {
+		total: number;
+		owned: number;
+		// Maps rarityId -> count of unique stickers owned at that rarity
+		rarityBreakdown: Map<string, number>;
+		// Score-based completion (each rarity contributes sortOrder + 1 points)
+		completionScore: number;
+		maxCompletionScore: number;
+	}
+	let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new Map());
 	let copyCountCache = $state<Map<string, number>>(new Map());
 	let stickerTagsMap = $state<Map<string, Tag[]>>(new Map());
 	let stickerRarityMap = $state<Map<string, string>>(new Map()); // stickerId -> rarityId
@@ -353,13 +370,15 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	}
 
 	function getCollectionStats(collectionId: string | number): CollectionDetailedStats {
-		return collectionStickerCounts.get(String(collectionId)) ?? {
-			total: 0,
-			owned: 0,
-			rarityBreakdown: new Map(),
-			completionScore: 0,
-			maxCompletionScore: 0
-		};
+		return (
+			collectionStickerCounts.get(String(collectionId)) ?? {
+				total: 0,
+				owned: 0,
+				rarityBreakdown: new Map(),
+				completionScore: 0,
+				maxCompletionScore: 0
+			}
+		);
 	}
 
 	function getTotalOwned(): number {
@@ -388,7 +407,8 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	// Dynamic packing - computed when stickers change
 	// Separate regular stickers from winners
 	let { regularStickers, winnerStickers } = $derived.by(() => {
-		if (stickers.length === 0) return { regularStickers: [] as Sticker[], winnerStickers: [] as Sticker[] };
+		if (stickers.length === 0)
+			return { regularStickers: [] as Sticker[], winnerStickers: [] as Sticker[] };
 		const { regular, winners } = separateWinnerStickers(stickers, stickerTagsMap);
 		return { regularStickers: regular, winnerStickers: winners };
 	});
@@ -625,7 +645,10 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 			placedStickerIds = new Set([...placedStickerIds].filter((id) => id !== stickerId));
 			// Update global placement count (decrease by 1)
 			const currentCount = globalPlacementCounts.get(stickerId) ?? 0;
-			globalPlacementCounts = new Map(globalPlacementCounts).set(stickerId, Math.max(0, currentCount - 1));
+			globalPlacementCounts = new Map(globalPlacementCounts).set(
+				stickerId,
+				Math.max(0, currentCount - 1)
+			);
 		} else {
 			// Can only place if we have available copies
 			if (availableCopies <= 0) {
@@ -853,7 +876,10 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		// Update local state
 		const collectionId = String(selectedCollection.id);
 		const existing = placedStampsForCollection.get(collectionId) ?? [];
-		placedStampsForCollection = new Map(placedStampsForCollection).set(collectionId, [...existing, placedStamp]);
+		placedStampsForCollection = new Map(placedStampsForCollection).set(collectionId, [
+			...existing,
+			placedStamp
+		]);
 
 		// Cache the stamp image
 		stampImageCache.set(selectedStamp.id, selectedStamp);
@@ -979,7 +1005,10 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		// Update local state
 		const collectionId = String(selectedCollection.id);
 		const existing = placedIconsForCollection.get(collectionId) ?? [];
-		placedIconsForCollection = new Map(placedIconsForCollection).set(collectionId, [...existing, placedIcon]);
+		placedIconsForCollection = new Map(placedIconsForCollection).set(collectionId, [
+			...existing,
+			placedIcon
+		]);
 
 		// Exit placement mode
 		exitIconPlacementMode();
@@ -1008,12 +1037,10 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	}
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex h-full flex-col">
 	<div class="mb-6">
 		<h1 class="text-3xl font-bold">Albums</h1>
-		<p class="text-base-content/70 mt-1">
-			Browse your collection albums
-		</p>
+		<p class="text-base-content/70 mt-1">Browse your collection albums</p>
 	</div>
 
 	{#if isLoading}
@@ -1029,9 +1056,9 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		{#if showBoosterPack}
 			<div class="card bg-base-200 mb-6">
 				<div class="card-body">
-					<div class="flex items-center justify-between mb-4">
+					<div class="mb-4 flex items-center justify-between">
 						<div>
-							<h3 class="font-bold text-xl">Booster Pack</h3>
+							<h3 class="text-xl font-bold">Booster Pack</h3>
 							{#if boosterCollection}
 								<p class="text-base-content/70">{boosterCollection.title}</p>
 							{/if}
@@ -1041,57 +1068,70 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 							onclick={closeBoosterPack}
 							aria-label="Close booster pack"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-5 w-5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 						</button>
 					</div>
 
-					<div class="grid grid-cols-5 gap-3 mb-4">
+					<div class="mb-4 grid grid-cols-5 gap-3">
 						{#each boosterStickers as sticker, index (sticker.id + '-' + index)}
 							{@const rarity = getStickerRarity(sticker)}
 							{@const displaySticker = { ...sticker, sourceName: boosterCollection?.title }}
-							<div class="aspect-[3/4] rounded-lg ring-2 ring-primary">
-								<div class="h-full flex flex-col p-2">
+							<div class="ring-primary aspect-[3/4] rounded-lg ring-2">
+								<div class="flex h-full flex-col p-2">
 									<StickerItem
 										sticker={displaySticker}
 										bgColor={rarity?.colorFrom ?? '#6B7280'}
 										borderColor={rarity?.colorTo}
 										classes="w-full flex-1"
 									/>
-									<p class="text-xs text-center truncate mt-1" title={sticker.name}>{sticker.name}</p>
+									<p class="mt-1 truncate text-center text-xs" title={sticker.name}>
+										{sticker.name}
+									</p>
 								</div>
 							</div>
 						{/each}
 					</div>
 
 					<div class="flex justify-end">
-						<button class="btn btn-primary btn-sm" onclick={closeBoosterPack}>
-							Done
-						</button>
+						<button class="btn btn-primary btn-sm" onclick={closeBoosterPack}> Done </button>
 					</div>
 				</div>
 			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+		<div class="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Collections Column -->
-			<div class="lg:col-span-1 flex flex-col min-h-0">
-				<div class="card bg-base-200 flex-1 flex flex-col min-h-0">
-					<div class="card-body flex flex-col min-h-0">
+			<div class="flex min-h-0 flex-col lg:col-span-1">
+				<div class="card bg-base-200 flex min-h-0 flex-1 flex-col">
+					<div class="card-body flex min-h-0 flex-col">
 						<h2 class="card-title shrink-0">Collections</h2>
-						<div class="space-y-2 flex-1 overflow-y-auto min-h-0">
+						<div class="min-h-0 flex-1 space-y-2 overflow-y-auto">
 							{#each collections as collection (collection.id)}
 								{@const stats = getCollectionStats(collection.id)}
-								{@const isComplete = stats.maxCompletionScore > 0 && stats.completionScore === stats.maxCompletionScore}
+								{@const isComplete =
+									stats.maxCompletionScore > 0 &&
+									stats.completionScore === stats.maxCompletionScore}
 								<div
 									class={classNames(
-										'p-3 rounded-lg cursor-pointer transition-all',
+										'cursor-pointer rounded-lg p-3 transition-all',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedCollection?.id === collection.id,
+											'bg-primary/20 ring-primary ring-2': selectedCollection?.id === collection.id,
 											'bg-base-100': selectedCollection?.id !== collection.id,
-											'ring-2 ring-success': isComplete && selectedCollection?.id !== collection.id
+											'ring-success ring-2': isComplete && selectedCollection?.id !== collection.id
 										}
 									)}
 									onclick={() => selectCollection(collection)}
@@ -1104,30 +1144,43 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 											<img
 												src={collection.coverImage}
 												alt={collection.title}
-												class="w-12 h-16 object-cover rounded"
+												class="h-16 w-12 rounded object-cover"
 											/>
 										{:else}
-											<div class="w-12 h-16 bg-base-300 rounded flex items-center justify-center text-base-content/30">
-												<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+											<div
+												class="bg-base-300 text-base-content/30 flex h-16 w-12 items-center justify-center rounded"
+											>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													class="h-6 w-6"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+													/>
 												</svg>
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
+										<div class="min-w-0 flex-1">
 											<div class="flex items-center gap-2">
-												<span class="font-medium truncate">{collection.title}</span>
+												<span class="truncate font-medium">{collection.title}</span>
 												{#if isComplete}
 													<span class="badge badge-success badge-sm">Complete</span>
 												{/if}
 											</div>
 											<!-- Rarity breakdown display -->
 											{#if stats.rarityBreakdown.size > 0}
-												<div class="flex flex-wrap gap-1 mt-1">
+												<div class="mt-1 flex flex-wrap gap-1">
 													{#each rarities.toSorted((a, b) => b.sortOrder - a.sortOrder) as rarity (rarity.id)}
 														{@const count = stats.rarityBreakdown.get(String(rarity.id)) ?? 0}
 														{#if count > 0}
 															<span
-																class="text-xs px-1.5 py-0.5 rounded font-medium"
+																class="rounded px-1.5 py-0.5 text-xs font-medium"
 																style="background: linear-gradient(135deg, {rarity.colorFrom}, {rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
 																title="{rarity.name}: {count}"
 															>
@@ -1137,22 +1190,27 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 													{/each}
 												</div>
 											{:else if stats.owned === 0}
-												<div class="text-sm text-base-content/40 mt-1">No stickers yet</div>
+												<div class="text-base-content/40 mt-1 text-sm">No stickers yet</div>
 											{/if}
 											<!-- Completion progress bar (score-based) -->
 											{#if stats.maxCompletionScore > 0}
-												{@const completionPercent = Math.round((stats.completionScore / stats.maxCompletionScore) * 100)}
-												<div class="flex items-center gap-2 mt-1">
+												{@const completionPercent = Math.round(
+													(stats.completionScore / stats.maxCompletionScore) * 100
+												)}
+												<div class="mt-1 flex items-center gap-2">
 													<progress
-														class={classNames('progress flex-1 h-2', {
+														class={classNames('progress h-2 flex-1', {
 															'progress-success': completionPercent === 100,
-															'progress-warning': completionPercent >= 50 && completionPercent < 100,
+															'progress-warning':
+																completionPercent >= 50 && completionPercent < 100,
 															'progress-primary': completionPercent < 50
 														})}
 														value={stats.completionScore}
 														max={stats.maxCompletionScore}
 													></progress>
-													<span class="text-xs font-mono text-base-content/60 w-10 text-right">{completionPercent}%</span>
+													<span class="text-base-content/60 w-10 text-right font-mono text-xs"
+														>{completionPercent}%</span
+													>
 												</div>
 											{/if}
 											{#if stats.total > 0}
@@ -1175,56 +1233,68 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 
 			<!-- Album Page Column -->
 			<div class="lg:col-span-2">
-				<div class="border-2 border-blue-500 rounded-lg p-4 overflow-hidden">
-				{#if !selectedCollection}
-					<div class="card bg-base-200 min-h-[400px]">
-						<div class="card-body">
-							<div class="flex flex-col items-center justify-center h-64 text-base-content/60">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-								</svg>
-								<p>Select a collection to view its album</p>
+				<div class="overflow-hidden rounded-lg border-2 border-blue-500 p-4">
+					{#if !selectedCollection}
+						<div class="card bg-base-200 min-h-[400px]">
+							<div class="card-body">
+								<div class="text-base-content/60 flex h-64 flex-col items-center justify-center">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="mb-4 h-16 w-16"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+										/>
+									</svg>
+									<p>Select a collection to view its album</p>
+								</div>
 							</div>
 						</div>
-					</div>
-				{:else}
-					{@const stats = getCollectionStats(selectedCollection.id)}
-					{@const totalRegularPages = getTotalRegularPages()}
-					{@const totalWinnerPages = getTotalWinnerPages()}
-					{@const totalSpreads = getTotalSpreads()}
-					<div class="flex items-center justify-between mb-4">
-						<h2 class="text-xl font-bold">{selectedCollection.title}</h2>
-						<span class="badge badge-lg">
-							{stats.owned} / {stats.total} owned
-						</span>
-					</div>
-
-					{#if isLoadingStickers}
-						<div class="flex flex-col items-center justify-center p-8">
-							<span class="loading loading-spinner loading-lg"></span>
-						</div>
-					{:else if stickers.length === 0}
-						<div class="alert alert-info">
-							<span>No stickers in this collection yet.</span>
-						</div>
 					{:else}
-						{#if isCoverSpread()}
+						{@const stats = getCollectionStats(selectedCollection.id)}
+						{@const totalRegularPages = getTotalRegularPages()}
+						{@const totalWinnerPages = getTotalWinnerPages()}
+						{@const totalSpreads = getTotalSpreads()}
+						<div class="mb-4 flex items-center justify-between">
+							<h2 class="text-xl font-bold">{selectedCollection.title}</h2>
+							<span class="badge badge-lg">
+								{stats.owned} / {stats.total} owned
+							</span>
+						</div>
+
+						{#if isLoadingStickers}
+							<div class="flex flex-col items-center justify-center p-8">
+								<span class="loading loading-spinner loading-lg"></span>
+							</div>
+						{:else if stickers.length === 0}
+							<div class="alert alert-info">
+								<span>No stickers in this collection yet.</span>
+							</div>
+						{:else}
+							{#if isCoverSpread()}
 								<!-- Cover Page (single) -->
 								{@const coverPlacedStamps = getPlacedStampsForPage(-1)}
 								{@const coverPlacedIcons = getPlacedIconsForPage(-1)}
 								<div class="flex justify-center">
 									<div
 										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-lg overflow-hidden w-1/2 relative',
+											'relative w-1/2 overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
 											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
 										)}
 										style="aspect-ratio: {PAGE_ASPECT};"
 										onclick={(e) => {
 											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, -1);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, -1);
+											if (isIconPlacementMode)
+												handleIconPageClick(e, e.currentTarget as HTMLElement, -1);
 										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
+										role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+										tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
 									>
 										<PlacedStampOverlay
 											placedStamps={coverPlacedStamps}
@@ -1238,28 +1308,49 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 											editable={!isPlacementMode && !isIconPlacementMode}
 											oniconremove={(pi) => handlePlacedIconRemove(pi)}
 										/>
-										<div class="h-full flex flex-col">
+										<div class="flex h-full flex-col">
 											{#if selectedCollection.coverImage}
 												<img
 													src={selectedCollection.coverImage}
 													alt={selectedCollection.title}
-													class="w-full h-full object-cover"
+													class="h-full w-full object-cover"
 												/>
 											{:else}
-												<div class="h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary to-secondary p-8">
-													<div class="text-6xl mb-6 text-white/30">
-														<svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+												<div
+													class="from-primary to-secondary flex h-full flex-col items-center justify-center bg-gradient-to-br p-8"
+												>
+													<div class="mb-6 text-6xl text-white/30">
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															class="h-24 w-24"
+															fill="none"
+															viewBox="0 0 24 24"
+															stroke="currentColor"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+															/>
 														</svg>
 													</div>
-													<h2 class="text-3xl font-bold text-white text-center drop-shadow-lg">{selectedCollection.title}</h2>
+													<h2 class="text-center text-3xl font-bold text-white drop-shadow-lg">
+														{selectedCollection.title}
+													</h2>
 													{#if selectedCollection.description}
-														<p class="text-white/80 text-center mt-4 max-w-xs">{selectedCollection.description}</p>
+														<p class="mt-4 max-w-xs text-center text-white/80">
+															{selectedCollection.description}
+														</p>
 													{/if}
-													<div class="mt-8 text-white/60 text-sm">
+													<div class="mt-8 text-sm text-white/60">
 														{stickers.length} stickers · {totalRegularPages + totalWinnerPages} pages
 														{#if totalWinnerPages > 0}
-															<span class="ml-1">(incl. {totalWinnerPages} winner{totalWinnerPages > 1 ? 's' : ''})</span>
+															<span class="ml-1"
+																>(incl. {totalWinnerPages} winner{totalWinnerPages > 1
+																	? 's'
+																	: ''})</span
+															>
 														{/if}
 													</div>
 												</div>
@@ -1268,1109 +1359,1653 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 									</div>
 								</div>
 							{:else if isWinnerSpread()}
-							<!-- Winner Book View (two pages side by side) -->
-							<!-- During forward flip, show target right page; during backward flip, show target left page -->
-							{@const leftWinner = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
-								? getLeftWinnerForSpread(targetSpread)
-								: getLeftWinner()}
-							{@const rightWinner = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
-								? getRightWinnerForSpread(targetSpread)
-								: getRightWinner()}
-							{@const winnerSpreadIndex = currentSpread - (1 + getRegularSpreadsCount())}
-							{@const winnerLeftPageIndex = getTotalRegularPages() + (winnerSpreadIndex * 2)}
-							{@const winnerRightPageIndex = getTotalRegularPages() + (winnerSpreadIndex * 2) + 1}
+								<!-- Winner Book View (two pages side by side) -->
+								<!-- During forward flip, show target right page; during backward flip, show target left page -->
+								{@const leftWinner =
+									isFlipping && flipDirection === 'backward' && targetSpread !== null
+										? getLeftWinnerForSpread(targetSpread)
+										: getLeftWinner()}
+								{@const rightWinner =
+									isFlipping && flipDirection === 'forward' && targetSpread !== null
+										? getRightWinnerForSpread(targetSpread)
+										: getRightWinner()}
+								{@const winnerSpreadIndex = currentSpread - (1 + getRegularSpreadsCount())}
+								{@const winnerLeftPageIndex = getTotalRegularPages() + winnerSpreadIndex * 2}
+								{@const winnerRightPageIndex = getTotalRegularPages() + winnerSpreadIndex * 2 + 1}
 
-							<div class="book-perspective relative">
-								<div class="flex w-full gap-1">
-								<!-- Left Winner Page -->
-								{#if leftWinner}
-									{@const topLeft = leftWinner.fragments.get(1)}
-									{@const topRight = leftWinner.fragments.get(2)}
-									{@const bottomLeft = leftWinner.fragments.get(3)}
-									{@const bottomRight = leftWinner.fragments.get(4)}
-									{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
-									{@const winnerName = firstSticker?.name?.replace(/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/, '') ?? 'Winner'}
-									{@const leftPlacedStamps = getPlacedStampsForPage(winnerLeftPageIndex)}
-									{@const leftPlacedIcons = getPlacedIconsForPage(winnerLeftPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, winnerLeftPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, winnerLeftPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={leftPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={leftPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div class="h-full flex flex-col p-4 relative">
-											<div class="absolute top-2 right-2 z-10">
-												<span class="badge badge-warning badge-sm gap-1">
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-													</svg>
-												</span>
-											</div>
-											<h3 class="text-sm font-bold text-gray-800 text-center mb-2 truncate">{winnerName}</h3>
-											<div class="flex-1 grid grid-cols-2 grid-rows-2 gap-px">
-												{#if topLeft}
-													{@const copyCount = getCachedCopyCount(topLeft.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(topLeft.id))}
-													{@const availableCopies = getAvailableCopies(topLeft.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(topLeft)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(topLeft)}
-														onmouseenter={() => handleStickerMouseEnter(topLeft)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={topLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if topRight}
-													{@const copyCount = getCachedCopyCount(topRight.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(topRight.id))}
-													{@const availableCopies = getAvailableCopies(topRight.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(topRight)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(topRight)}
-														onmouseenter={() => handleStickerMouseEnter(topRight)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={topRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if bottomLeft}
-													{@const copyCount = getCachedCopyCount(bottomLeft.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(bottomLeft.id))}
-													{@const availableCopies = getAvailableCopies(bottomLeft.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(bottomLeft)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(bottomLeft)}
-														onmouseenter={() => handleStickerMouseEnter(bottomLeft)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={bottomLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if bottomRight}
-													{@const copyCount = getCachedCopyCount(bottomRight.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(bottomRight.id))}
-													{@const availableCopies = getAvailableCopies(bottomRight.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(bottomRight)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(bottomRight)}
-														onmouseenter={() => handleStickerMouseEnter(bottomRight)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={bottomRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-											</div>
-										</div>
-									</div>
-								{/if}
-
-								<!-- Right Winner Page -->
-								{#if rightWinner}
-									{@const topLeft = rightWinner.fragments.get(1)}
-									{@const topRight = rightWinner.fragments.get(2)}
-									{@const bottomLeft = rightWinner.fragments.get(3)}
-									{@const bottomRight = rightWinner.fragments.get(4)}
-									{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
-									{@const winnerName = firstSticker?.name?.replace(/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/, '') ?? 'Winner'}
-									{@const rightPlacedStamps = getPlacedStampsForPage(winnerRightPageIndex)}
-									{@const rightPlacedIcons = getPlacedIconsForPage(winnerRightPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, winnerRightPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, winnerRightPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={rightPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={rightPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div class="h-full flex flex-col p-4 relative">
-											<div class="absolute top-2 right-2 z-10">
-												<span class="badge badge-warning badge-sm gap-1">
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-													</svg>
-												</span>
-											</div>
-											<h3 class="text-sm font-bold text-gray-800 text-center mb-2 truncate">{winnerName}</h3>
-											<div class="flex-1 grid grid-cols-2 grid-rows-2 gap-px">
-												{#if topLeft}
-													{@const copyCount = getCachedCopyCount(topLeft.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(topLeft.id))}
-													{@const availableCopies = getAvailableCopies(topLeft.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(topLeft)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(topLeft)}
-														onmouseenter={() => handleStickerMouseEnter(topLeft)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={topLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if topRight}
-													{@const copyCount = getCachedCopyCount(topRight.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(topRight.id))}
-													{@const availableCopies = getAvailableCopies(topRight.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(topRight)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(topRight)}
-														onmouseenter={() => handleStickerMouseEnter(topRight)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={topRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if bottomLeft}
-													{@const copyCount = getCachedCopyCount(bottomLeft.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(bottomLeft.id))}
-													{@const availableCopies = getAvailableCopies(bottomLeft.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(bottomLeft)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(bottomLeft)}
-														onmouseenter={() => handleStickerMouseEnter(bottomLeft)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={bottomLeft} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-												{#if bottomRight}
-													{@const copyCount = getCachedCopyCount(bottomRight.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(bottomRight.id))}
-													{@const availableCopies = getAvailableCopies(bottomRight.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(bottomRight)}
-													<div
-														class={classNames('cursor-pointer relative', { 'grayscale opacity-50': !owned })}
-														onclick={() => handleStickerClick(bottomRight)}
-														onmouseenter={() => handleStickerMouseEnter(bottomRight)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if canPlace}
-															<div class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20">
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</div>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames({ 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem sticker={bottomRight} bgColor={rarity?.colorFrom ?? '#6B7280'} borderColor={rarity?.colorTo} classes="w-full h-full" />
-														</div>
-													</div>
-												{:else}
-													<div class="bg-gray-200 rounded"></div>
-												{/if}
-											</div>
-										</div>
-									</div>
-								{:else}
-									<!-- Empty right page placeholder -->
-									<div
-										class="bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 opacity-30"
-										style="aspect-ratio: {PAGE_ASPECT};"
-									>
-										<div class="h-full p-4 flex flex-col items-center justify-center">
-											<span class="text-gray-300">End of album</span>
-										</div>
-									</div>
-								{/if}
-								</div>
-
-								<!-- Flip Animation Overlay for Winners -->
-								{#if isFlipping && targetSpread !== null}
-									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
-										{#if flipDirection === 'forward'}
-											<!-- Forward: right page flips to left -->
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+								<div class="book-perspective relative">
+									<div class="flex w-full gap-1">
+										<!-- Left Winner Page -->
+										{#if leftWinner}
+											{@const topLeft = leftWinner.fragments.get(1)}
+											{@const topRight = leftWinner.fragments.get(2)}
+											{@const bottomLeft = leftWinner.fragments.get(3)}
+											{@const bottomRight = leftWinner.fragments.get(4)}
+											{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
+											{@const winnerName =
+												firstSticker?.name?.replace(
+													/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/,
+													''
+												) ?? 'Winner'}
+											{@const leftPlacedStamps = getPlacedStampsForPage(winnerLeftPageIndex)}
+											{@const leftPlacedIcons = getPlacedIconsForPage(winnerLeftPageIndex)}
 											<div
-												class="page-container flex-1 flip-forward"
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
 												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, winnerLeftPageIndex);
+													if (isIconPlacementMode)
+														handleIconPageClick(
+															e,
+															e.currentTarget as HTMLElement,
+															winnerLeftPageIndex
+														);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
 											>
-												<!-- Front face: simple winner page representation -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0 flex items-center justify-center">
-													<span class="badge badge-warning">Winner</span>
-												</div>
-												<!-- Back face: paper texture -->
-												<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
-											</div>
-										{:else if flipDirection === 'backward'}
-											<!-- Backward: left page flips to right -->
-											<div
-												class="page-container flex-1 flip-backward"
-												style="aspect-ratio: {PAGE_ASPECT};"
-											>
-												<!-- Front face: simple winner page representation -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0 flex items-center justify-center">
-													<span class="badge badge-warning">Winner</span>
-												</div>
-												<!-- Back face: paper texture -->
-												<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
-											</div>
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
-										{/if}
-									</div>
-								{/if}
-							</div>
-						{:else if isPokemonCollection}
-							<!-- Pokemon Book View (3x4 grid enforced) -->
-							<!-- During forward flip, show target right page; during backward flip, show target left page -->
-							{@const leftPokemonStickers = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
-								? getLeftPokemonPageForSpread(targetSpread)
-								: getLeftPokemonPage()}
-							{@const rightPokemonStickers = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
-								? getRightPokemonPageForSpread(targetSpread)
-								: getRightPokemonPage()}
-							{@const leftPageIndex = (currentSpread - 1) * 2}
-							{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
-
-							<div class="book-perspective relative">
-								<div class="flex w-full gap-1">
-								<!-- Left Page -->
-								{#if leftPokemonStickers}
-									{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
-									{@const leftPlacedIcons = getPlacedIconsForPage(leftPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={leftPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={leftPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div
-											class="h-full grid"
-											style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-										>
-											{#each leftPokemonStickers as sticker (sticker.id)}
-												{@const copyCount = getCachedCopyCount(sticker.id)}
-												{@const owned = copyCount > 0}
-												{@const placed = placedStickerIds.has(String(sticker.id))}
-												{@const availableCopies = getAvailableCopies(sticker.id)}
-												{@const canPlace = owned && !placed && availableCopies > 0}
-												{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-												{@const rarity = getStickerRarity(sticker)}
-												<div
-													class={classNames(
-														'cursor-pointer overflow-hidden flex flex-col relative',
-														{ 'grayscale opacity-50': !owned }
-													)}
-													onclick={() => handleStickerClick(sticker)}
-													onmouseenter={() => handleStickerMouseEnter(sticker)}
-													onmousemove={handleStickerMouseMove}
-													onmouseleave={handleStickerMouseLeave}
-													role="button"
-													tabindex="0"
-												>
-													{#if canPlace}
-														<button
-															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
-															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
-														>
-															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-														</button>
-													{:else if placedElsewhere}
-														<div
-															class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20"
-														>
-															<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-														</div>
-													{/if}
-													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-														<StickerItem
-															{sticker}
-															bgColor={rarity?.colorFrom ?? '#6B7280'}
-															borderColor={rarity?.colorTo}
-															classes="w-full h-full object-contain"
-														/>
-													</div>
-												</div>
-											{/each}
-										</div>
-									</div>
-								{/if}
-
-								<!-- Right Page -->
-								{#if rightPokemonStickers}
-									{@const rightPlacedStamps = getPlacedStampsForPage(rightPageIndex)}
-									{@const rightPlacedIcons = getPlacedIconsForPage(rightPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={rightPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={rightPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div
-											class="h-full grid"
-											style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-										>
-											{#each rightPokemonStickers as sticker (sticker.id)}
-												{@const copyCount = getCachedCopyCount(sticker.id)}
-												{@const owned = copyCount > 0}
-												{@const placed = placedStickerIds.has(String(sticker.id))}
-												{@const availableCopies = getAvailableCopies(sticker.id)}
-												{@const canPlace = owned && !placed && availableCopies > 0}
-												{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-												{@const rarity = getStickerRarity(sticker)}
-												<div
-													class={classNames(
-														'cursor-pointer overflow-hidden flex flex-col relative',
-														{ 'grayscale opacity-50': !owned }
-													)}
-													onclick={() => handleStickerClick(sticker)}
-													onmouseenter={() => handleStickerMouseEnter(sticker)}
-													onmousemove={handleStickerMouseMove}
-													onmouseleave={handleStickerMouseLeave}
-													role="button"
-													tabindex="0"
-												>
-													{#if canPlace}
-														<button
-															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
-															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
-														>
-															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-														</button>
-													{:else if placedElsewhere}
-														<div
-															class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20"
-														>
-															<span class="text-warning text-[8px] font-medium text-center px-1">In other album</span>
-														</div>
-													{/if}
-													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-														<StickerItem
-															{sticker}
-															bgColor={rarity?.colorFrom ?? '#6B7280'}
-															borderColor={rarity?.colorTo}
-															classes="w-full h-full object-contain"
-														/>
-													</div>
-												</div>
-											{/each}
-										</div>
-									</div>
-								{:else}
-									<!-- Empty right page placeholder -->
-									<div
-										class="bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 opacity-30"
-										style="aspect-ratio: {PAGE_ASPECT};"
-									>
-										<div class="h-full p-4 flex items-center justify-center">
-											<span class="text-gray-300">End of album</span>
-										</div>
-									</div>
-								{/if}
-								</div>
-
-								<!-- Flip Animation Overlay for Pokemon -->
-								{#if isFlipping && targetSpread !== null}
-									{@const currentRightStickers = getRightPokemonPage()}
-									{@const currentLeftStickers = getLeftPokemonPage()}
-									{@const targetLeftStickers = getLeftPokemonPageForSpread(targetSpread)}
-									{@const targetRightStickers = getRightPokemonPageForSpread(targetSpread)}
-									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
-										{#if flipDirection === 'forward' && currentRightStickers}
-											<!-- Forward: right page flips to left -->
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
-											<div
-												class="page-container flex-1 flip-forward"
-												style="aspect-ratio: {PAGE_ASPECT};"
-											>
-												<!-- Front face: current right page -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0">
-													<div
-														class="h-full grid"
-														style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-													>
-														{#each currentRightStickers as sticker (sticker.id)}
-															{@const rarity = getStickerRarity(sticker)}
-															{@const owned = getCachedCopyCount(sticker.id) > 0}
-															<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																<StickerItem
-																	{sticker}
-																	bgColor={rarity?.colorFrom ?? '#6B7280'}
-																	borderColor={rarity?.colorTo}
-																	classes="w-full h-full object-contain"
+												<PlacedStampOverlay
+													placedStamps={leftPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={leftPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div class="relative flex h-full flex-col p-4">
+													<div class="absolute right-2 top-2 z-10">
+														<span class="badge badge-warning badge-sm gap-1">
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																class="h-3 w-3"
+																fill="currentColor"
+																viewBox="0 0 24 24"
+															>
+																<path
+																	d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
 																/>
-															</div>
-														{/each}
+															</svg>
+														</span>
 													</div>
-												</div>
-												<!-- Back face: target left page -->
-												{#if targetLeftStickers}
-													<div class="page-back bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full">
-														<div
-															class="h-full grid"
-															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-														>
-															{#each targetLeftStickers as sticker (sticker.id)}
-																{@const rarity = getStickerRarity(sticker)}
-																{@const owned = getCachedCopyCount(sticker.id) > 0}
-																<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
+													<h3 class="mb-2 truncate text-center text-sm font-bold text-gray-800">
+														{winnerName}
+													</h3>
+													<div class="grid flex-1 grid-cols-2 grid-rows-2 gap-px">
+														{#if topLeft}
+															{@const copyCount = getCachedCopyCount(topLeft.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(topLeft.id))}
+															{@const availableCopies = getAvailableCopies(topLeft.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(topLeft)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(topLeft)}
+																onmouseenter={() => handleStickerMouseEnter(topLeft)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
 																	<StickerItem
-																		{sticker}
+																		sticker={topLeft}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
 																		borderColor={rarity?.colorTo}
-																		classes="w-full h-full object-contain"
+																		classes="w-full h-full"
 																	/>
 																</div>
-															{/each}
-														</div>
-													</div>
-												{:else}
-													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
-												{/if}
-											</div>
-										{:else if flipDirection === 'backward' && currentLeftStickers}
-											<!-- Backward: left page flips to right -->
-											<div
-												class="page-container flex-1 flip-backward"
-												style="aspect-ratio: {PAGE_ASPECT};"
-											>
-												<!-- Front face: current left page -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0">
-													<div
-														class="h-full grid"
-														style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-													>
-														{#each currentLeftStickers as sticker (sticker.id)}
-															{@const rarity = getStickerRarity(sticker)}
-															{@const owned = getCachedCopyCount(sticker.id) > 0}
-															<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																<StickerItem
-																	{sticker}
-																	bgColor={rarity?.colorFrom ?? '#6B7280'}
-																	borderColor={rarity?.colorTo}
-																	classes="w-full h-full object-contain"
-																/>
 															</div>
-														{/each}
-													</div>
-												</div>
-												<!-- Back face: target right page -->
-												{#if targetRightStickers}
-													<div class="page-back bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full">
-														<div
-															class="h-full grid"
-															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
-														>
-															{#each targetRightStickers as sticker (sticker.id)}
-																{@const rarity = getStickerRarity(sticker)}
-																{@const owned = getCachedCopyCount(sticker.id) > 0}
-																<div class={classNames('overflow-hidden', { 'grayscale opacity-50': !owned })}>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
+														{#if topRight}
+															{@const copyCount = getCachedCopyCount(topRight.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(topRight.id))}
+															{@const availableCopies = getAvailableCopies(topRight.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(topRight)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(topRight)}
+																onmouseenter={() => handleStickerMouseEnter(topRight)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
 																	<StickerItem
-																		{sticker}
+																		sticker={topRight}
 																		bgColor={rarity?.colorFrom ?? '#6B7280'}
 																		borderColor={rarity?.colorTo}
-																		classes="w-full h-full object-contain"
+																		classes="w-full h-full"
 																	/>
 																</div>
-															{/each}
-														</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
+														{#if bottomLeft}
+															{@const copyCount = getCachedCopyCount(bottomLeft.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(bottomLeft.id))}
+															{@const availableCopies = getAvailableCopies(bottomLeft.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(bottomLeft)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(bottomLeft)}
+																onmouseenter={() => handleStickerMouseEnter(bottomLeft)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={bottomLeft}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
+														{#if bottomRight}
+															{@const copyCount = getCachedCopyCount(bottomRight.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(bottomRight.id))}
+															{@const availableCopies = getAvailableCopies(bottomRight.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(bottomRight)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(bottomRight)}
+																onmouseenter={() => handleStickerMouseEnter(bottomRight)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={bottomRight}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
 													</div>
-												{:else}
-													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
-												{/if}
+												</div>
 											</div>
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
 										{/if}
-									</div>
-								{/if}
-							</div>
-						{:else}
-							<!-- Regular Book View (two pages side by side) -->
-							<!-- During forward flip, show target right page; during backward flip, show target left page -->
-							{@const leftPage = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
-								? getLeftPageForSpread(targetSpread)
-								: getLeftPage()}
-							{@const rightPage = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
-								? getRightPageForSpread(targetSpread)
-								: getRightPage()}
-							{@const leftPageIndex = (currentSpread - 1) * 2}
-							{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
 
-							<div class="book-perspective relative">
-								<div class="flex w-full gap-1">
-								<!-- Left Page -->
-								{#if leftPage}
-									{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
-									{@const leftPlacedIcons = getPlacedIconsForPage(leftPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={leftPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={leftPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div
-											class="h-full grid"
-											style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-										>
-											{#each leftPage.rows as row}
-												{#each row.stickers as { sticker } (sticker.id)}
-													{@const copyCount = getCachedCopyCount(sticker.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(sticker.id))}
-													{@const availableCopies = getAvailableCopies(sticker.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(sticker)}
-													<div
-														class={classNames(
-															'p-1 cursor-pointer overflow-hidden flex flex-col relative',
-															{ 'grayscale opacity-50': !owned }
-														)}
-														onclick={() => handleStickerClick(sticker)}
-														onmouseenter={() => handleStickerMouseEnter(sticker)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if !placed}
-															<p class="absolute top-1 left-0 right-0 text-[10px] text-gray-600 text-center truncate px-1 z-10 bg-white/80">{sticker.name}</p>
-														{/if}
-														{#if canPlace}
-															<button
-																class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
-																onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
+										<!-- Right Winner Page -->
+										{#if rightWinner}
+											{@const topLeft = rightWinner.fragments.get(1)}
+											{@const topRight = rightWinner.fragments.get(2)}
+											{@const bottomLeft = rightWinner.fragments.get(3)}
+											{@const bottomRight = rightWinner.fragments.get(4)}
+											{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
+											{@const winnerName =
+												firstSticker?.name?.replace(
+													/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/,
+													''
+												) ?? 'Winner'}
+											{@const rightPlacedStamps = getPlacedStampsForPage(winnerRightPageIndex)}
+											{@const rightPlacedIcons = getPlacedIconsForPage(winnerRightPageIndex)}
+											<div
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(
+															e,
+															e.currentTarget as HTMLElement,
+															winnerRightPageIndex
+														);
+													if (isIconPlacementMode)
+														handleIconPageClick(
+															e,
+															e.currentTarget as HTMLElement,
+															winnerRightPageIndex
+														);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+											>
+												<PlacedStampOverlay
+													placedStamps={rightPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={rightPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div class="relative flex h-full flex-col p-4">
+													<div class="absolute right-2 top-2 z-10">
+														<span class="badge badge-warning badge-sm gap-1">
+															<svg
+																xmlns="http://www.w3.org/2000/svg"
+																class="h-3 w-3"
+																fill="currentColor"
+																viewBox="0 0 24 24"
 															>
-																<span class="text-primary/60 text-xs font-medium">Click to stick</span>
-															</button>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[9px] font-medium text-center px-1">In other album</span>
-															</div>
-														{/if}
-														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem
-																{sticker}
-																bgColor={rarity?.colorFrom ?? '#6B7280'}
-																borderColor={rarity?.colorTo}
-																classes="w-full"
-															/>
-														</div>
+																<path
+																	d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+																/>
+															</svg>
+														</span>
 													</div>
-												{/each}
-											{/each}
-										</div>
-									</div>
-								{/if}
-
-								<!-- Right Page -->
-								{#if rightPage}
-									{@const rightPlacedStamps = getPlacedStampsForPage(rightPageIndex)}
-									{@const rightPlacedIcons = getPlacedIconsForPage(rightPageIndex)}
-									<div
-										class={classNames(
-											'bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 relative',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT};"
-										onclick={(e) => {
-											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
-											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
-										}}
-										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
-										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={rightPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={rightPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div
-											class="h-full grid"
-											style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-										>
-											{#each rightPage.rows as row}
-												{#each row.stickers as { sticker } (sticker.id)}
-													{@const copyCount = getCachedCopyCount(sticker.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(sticker.id))}
-													{@const availableCopies = getAvailableCopies(sticker.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(sticker)}
-													<div
-														class={classNames(
-															'p-1 cursor-pointer overflow-hidden flex flex-col relative',
-															{ 'grayscale opacity-50': !owned }
-														)}
-														onclick={() => handleStickerClick(sticker)}
-														onmouseenter={() => handleStickerMouseEnter(sticker)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
-														role="button"
-														tabindex="0"
-													>
-														{#if !placed}
-															<p class="absolute top-1 left-0 right-0 text-[10px] text-gray-600 text-center truncate px-1 z-10 bg-white/80">{sticker.name}</p>
-														{/if}
-														{#if canPlace}
-															<button
-																class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
-																onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
+													<h3 class="mb-2 truncate text-center text-sm font-bold text-gray-800">
+														{winnerName}
+													</h3>
+													<div class="grid flex-1 grid-cols-2 grid-rows-2 gap-px">
+														{#if topLeft}
+															{@const copyCount = getCachedCopyCount(topLeft.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(topLeft.id))}
+															{@const availableCopies = getAvailableCopies(topLeft.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(topLeft)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(topLeft)}
+																onmouseenter={() => handleStickerMouseEnter(topLeft)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
 															>
-																<span class="text-primary/60 text-xs font-medium">Click to stick</span>
-															</button>
-														{:else if placedElsewhere}
-															<div class="absolute inset-0 bg-warning/20 rounded border-2 border-dashed border-warning/40 flex items-center justify-center z-20">
-																<span class="text-warning text-[9px] font-medium text-center px-1">In other album</span>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={topLeft}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
 															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
 														{/if}
-														<div class={classNames('w-full flex-1', { 'opacity-70 hover:opacity-100 transition-opacity': canPlace })}>
-															<StickerItem
-																{sticker}
-																bgColor={rarity?.colorFrom ?? '#6B7280'}
-																borderColor={rarity?.colorTo}
-																classes="w-full"
-															/>
-														</div>
+														{#if topRight}
+															{@const copyCount = getCachedCopyCount(topRight.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(topRight.id))}
+															{@const availableCopies = getAvailableCopies(topRight.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(topRight)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(topRight)}
+																onmouseenter={() => handleStickerMouseEnter(topRight)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={topRight}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
+														{#if bottomLeft}
+															{@const copyCount = getCachedCopyCount(bottomLeft.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(bottomLeft.id))}
+															{@const availableCopies = getAvailableCopies(bottomLeft.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(bottomLeft)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(bottomLeft)}
+																onmouseenter={() => handleStickerMouseEnter(bottomLeft)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={bottomLeft}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
+														{#if bottomRight}
+															{@const copyCount = getCachedCopyCount(bottomRight.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(bottomRight.id))}
+															{@const availableCopies = getAvailableCopies(bottomRight.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(bottomRight)}
+															<div
+																class={classNames('relative cursor-pointer', {
+																	'opacity-50 grayscale': !owned
+																})}
+																onclick={() => handleStickerClick(bottomRight)}
+																onmouseenter={() => handleStickerMouseEnter(bottomRight)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if canPlace}
+																	<div
+																		class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span class="text-primary/60 text-[10px] font-medium"
+																			>Stick</span
+																		>
+																	</div>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[8px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames({
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		sticker={bottomRight}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full"
+																	/>
+																</div>
+															</div>
+														{:else}
+															<div class="rounded bg-gray-200"></div>
+														{/if}
 													</div>
-												{/each}
-											{/each}
-										</div>
-									</div>
-								{:else}
-									<!-- Empty right page placeholder -->
-									<div
-										class="bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 opacity-30"
-										style="aspect-ratio: {PAGE_ASPECT};"
-									>
-										<div class="h-full p-4 flex flex-col">
-											<div class="text-center mb-2">
-												<p class="text-xs text-gray-500">--</p>
+												</div>
 											</div>
-											<div class="flex-1 flex items-center justify-center">
-												{#if totalWinnerPages > 0}
-													<span class="text-gray-300">Winners ahead →</span>
-												{:else}
+										{:else}
+											<!-- Empty right page placeholder -->
+											<div
+												class="flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 opacity-30 shadow-xl"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<div class="flex h-full flex-col items-center justify-center p-4">
 													<span class="text-gray-300">End of album</span>
-												{/if}
-											</div>
-										</div>
-									</div>
-								{/if}
-								</div>
-
-								<!-- Flip Animation Overlay for Regular -->
-								{#if isFlipping && targetSpread !== null}
-									{@const currentLeftPage = getLeftPage()}
-									{@const currentRightPage = getRightPage()}
-									{@const targetLeftPage = getLeftPageForSpread(targetSpread)}
-									{@const targetRightPage = getRightPageForSpread(targetSpread)}
-									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
-										{#if flipDirection === 'forward' && currentRightPage}
-											<!-- Forward: right page flips to left -->
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
-											<div
-												class="page-container flex-1 flip-forward"
-												style="aspect-ratio: {PAGE_ASPECT};"
-											>
-												<!-- Front face: current right page -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0">
-													<div
-														class="h-full grid"
-														style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-													>
-														{#each currentRightPage.rows as row}
-															{#each row.stickers as { sticker } (sticker.id)}
-																{@const rarity = getStickerRarity(sticker)}
-																{@const owned = getCachedCopyCount(sticker.id) > 0}
-																<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																	<StickerItem
-																		{sticker}
-																		bgColor={rarity?.colorFrom ?? '#6B7280'}
-																		borderColor={rarity?.colorTo}
-																		classes="w-full"
-																	/>
-																</div>
-															{/each}
-														{/each}
-													</div>
 												</div>
-												<!-- Back face: target left page -->
-												{#if targetLeftPage}
-													<div class="page-back bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full">
-														<div
-															class="h-full grid"
-															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-														>
-															{#each targetLeftPage.rows as row}
-																{#each row.stickers as { sticker } (sticker.id)}
-																	{@const rarity = getStickerRarity(sticker)}
-																	{@const owned = getCachedCopyCount(sticker.id) > 0}
-																	<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																		<StickerItem
-																			{sticker}
-																			bgColor={rarity?.colorFrom ?? '#6B7280'}
-																			borderColor={rarity?.colorTo}
-																			classes="w-full"
-																		/>
-																	</div>
-																{/each}
-															{/each}
-														</div>
-													</div>
-												{:else}
-													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
-												{/if}
 											</div>
-										{:else if flipDirection === 'backward' && currentLeftPage}
-											<!-- Backward: left page flips to right -->
-											<div
-												class="page-container flex-1 flip-backward"
-												style="aspect-ratio: {PAGE_ASPECT};"
-											>
-												<!-- Front face: current left page -->
-												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0">
-													<div
-														class="h-full grid"
-														style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-													>
-														{#each currentLeftPage.rows as row}
-															{#each row.stickers as { sticker } (sticker.id)}
-																{@const rarity = getStickerRarity(sticker)}
-																{@const owned = getCachedCopyCount(sticker.id) > 0}
-																<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																	<StickerItem
-																		{sticker}
-																		bgColor={rarity?.colorFrom ?? '#6B7280'}
-																		borderColor={rarity?.colorTo}
-																		classes="w-full"
-																	/>
-																</div>
-															{/each}
-														{/each}
-													</div>
-												</div>
-												<!-- Back face: target right page -->
-												{#if targetRightPage}
-													<div class="page-back bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full">
-														<div
-															class="h-full grid"
-															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-														>
-															{#each targetRightPage.rows as row}
-																{#each row.stickers as { sticker } (sticker.id)}
-																	{@const rarity = getStickerRarity(sticker)}
-																	{@const owned = getCachedCopyCount(sticker.id) > 0}
-																	<div class={classNames('p-1 overflow-hidden', { 'grayscale opacity-50': !owned })}>
-																		<StickerItem
-																			{sticker}
-																			bgColor={rarity?.colorFrom ?? '#6B7280'}
-																			borderColor={rarity?.colorTo}
-																			classes="w-full"
-																		/>
-																	</div>
-																{/each}
-															{/each}
-														</div>
-													</div>
-												{:else}
-													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
-												{/if}
-											</div>
-											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
 										{/if}
 									</div>
-								{/if}
-							</div>
-						{/if}
 
-						<!-- Pagination Controls -->
-						{#if totalSpreads > 1}
-							<div class="mt-6">
-								<div class="flex justify-center items-center gap-2">
-									<button
-										class="btn btn-sm btn-outline"
-										onclick={prevSpread}
-										disabled={currentSpread === 0 || isFlipping}
-									>
-										Previous
-									</button>
-									<span class="text-sm text-base-content/60">
-										Spread {currentSpread + 1} of {totalSpreads}
-									</span>
-									<button
-										class="btn btn-sm btn-outline"
-										onclick={nextSpread}
-										disabled={currentSpread === totalSpreads - 1 || isFlipping}
-									>
-										Next
-									</button>
+									<!-- Flip Animation Overlay for Winners -->
+									{#if isFlipping && targetSpread !== null}
+										<div class="pointer-events-none absolute inset-0 flex w-full gap-1">
+											{#if flipDirection === 'forward'}
+												<!-- Forward: right page flips to left -->
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+												<div
+													class="page-container flip-forward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: simple winner page representation -->
+													<div
+														class="page-face absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl"
+													>
+														<span class="badge badge-warning">Winner</span>
+													</div>
+													<!-- Back face: paper texture -->
+													<div
+														class="page-back h-full w-full rounded-l-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+													></div>
+												</div>
+											{:else if flipDirection === 'backward'}
+												<!-- Backward: left page flips to right -->
+												<div
+													class="page-container flip-backward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: simple winner page representation -->
+													<div
+														class="page-face absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl"
+													>
+														<span class="badge badge-warning">Winner</span>
+													</div>
+													<!-- Back face: paper texture -->
+													<div
+														class="page-back h-full w-full rounded-r-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+													></div>
+												</div>
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											{/if}
+										</div>
+									{/if}
 								</div>
-							</div>
-						{/if}
+							{:else if isPokemonCollection}
+								<!-- Pokemon Book View (3x4 grid enforced) -->
+								<!-- During forward flip, show target right page; during backward flip, show target left page -->
+								{@const leftPokemonStickers =
+									isFlipping && flipDirection === 'backward' && targetSpread !== null
+										? getLeftPokemonPageForSpread(targetSpread)
+										: getLeftPokemonPage()}
+								{@const rightPokemonStickers =
+									isFlipping && flipDirection === 'forward' && targetSpread !== null
+										? getRightPokemonPageForSpread(targetSpread)
+										: getRightPokemonPage()}
+								{@const leftPageIndex = (currentSpread - 1) * 2}
+								{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
 
-						<!-- Place Icons and Stamps Row -->
-						<div class="mt-4 border-t border-base-300 pt-4">
-							<div class="flex items-start gap-4">
-								<!-- Icons -->
-								<div>
-									<h3 class="text-sm font-semibold mb-2 text-base-content/70">Icons</h3>
-									<IconRow onclick={handleIconRowClick} />
-								</div>
+								<div class="book-perspective relative">
+									<div class="flex w-full gap-1">
+										<!-- Left Page -->
+										{#if leftPokemonStickers}
+											{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
+											{@const leftPlacedIcons = getPlacedIconsForPage(leftPageIndex)}
+											<div
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+													if (isIconPlacementMode)
+														handleIconPageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+											>
+												<PlacedStampOverlay
+													placedStamps={leftPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={leftPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div
+													class="grid h-full"
+													style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+												>
+													{#each leftPokemonStickers as sticker (sticker.id)}
+														{@const copyCount = getCachedCopyCount(sticker.id)}
+														{@const owned = copyCount > 0}
+														{@const placed = placedStickerIds.has(String(sticker.id))}
+														{@const availableCopies = getAvailableCopies(sticker.id)}
+														{@const canPlace = owned && !placed && availableCopies > 0}
+														{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+														{@const rarity = getStickerRarity(sticker)}
+														<div
+															class={classNames(
+																'relative flex cursor-pointer flex-col overflow-hidden',
+																{ 'opacity-50 grayscale': !owned }
+															)}
+															onclick={() => handleStickerClick(sticker)}
+															onmouseenter={() => handleStickerMouseEnter(sticker)}
+															onmousemove={handleStickerMouseMove}
+															onmouseleave={handleStickerMouseLeave}
+															role="button"
+															tabindex="0"
+														>
+															{#if canPlace}
+																<button
+																	class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																	onclick={(e) => {
+																		e.stopPropagation();
+																		handleStickerClick(sticker);
+																	}}
+																>
+																	<span class="text-primary/60 text-[10px] font-medium">Stick</span>
+																</button>
+															{:else if placedElsewhere}
+																<div
+																	class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																>
+																	<span class="text-warning px-1 text-center text-[8px] font-medium"
+																		>In other album</span
+																	>
+																</div>
+															{/if}
+															<div
+																class={classNames('h-full w-full', {
+																	'opacity-70 transition-opacity hover:opacity-100': canPlace
+																})}
+															>
+																<StickerItem
+																	{sticker}
+																	bgColor={rarity?.colorFrom ?? '#6B7280'}
+																	borderColor={rarity?.colorTo}
+																	classes="w-full h-full object-contain"
+																/>
+															</div>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{/if}
 
-								<!-- Stamps -->
-								{#if stampPacks.length > 0}
-									<div class="flex-1">
-										<h3 class="text-sm font-semibold mb-2 text-base-content/70">Stamps</h3>
-										<StampPackRow
-											{stampPacks}
-											{stampsDataDir}
-											onpackhover={handlePackHover}
-											onpackleave={handlePackLeave}
-										/>
+										<!-- Right Page -->
+										{#if rightPokemonStickers}
+											{@const rightPlacedStamps = getPlacedStampsForPage(rightPageIndex)}
+											{@const rightPlacedIcons = getPlacedIconsForPage(rightPageIndex)}
+											<div
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+													if (isIconPlacementMode)
+														handleIconPageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+											>
+												<PlacedStampOverlay
+													placedStamps={rightPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={rightPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div
+													class="grid h-full"
+													style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+												>
+													{#each rightPokemonStickers as sticker (sticker.id)}
+														{@const copyCount = getCachedCopyCount(sticker.id)}
+														{@const owned = copyCount > 0}
+														{@const placed = placedStickerIds.has(String(sticker.id))}
+														{@const availableCopies = getAvailableCopies(sticker.id)}
+														{@const canPlace = owned && !placed && availableCopies > 0}
+														{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+														{@const rarity = getStickerRarity(sticker)}
+														<div
+															class={classNames(
+																'relative flex cursor-pointer flex-col overflow-hidden',
+																{ 'opacity-50 grayscale': !owned }
+															)}
+															onclick={() => handleStickerClick(sticker)}
+															onmouseenter={() => handleStickerMouseEnter(sticker)}
+															onmousemove={handleStickerMouseMove}
+															onmouseleave={handleStickerMouseLeave}
+															role="button"
+															tabindex="0"
+														>
+															{#if canPlace}
+																<button
+																	class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																	onclick={(e) => {
+																		e.stopPropagation();
+																		handleStickerClick(sticker);
+																	}}
+																>
+																	<span class="text-primary/60 text-[10px] font-medium">Stick</span>
+																</button>
+															{:else if placedElsewhere}
+																<div
+																	class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																>
+																	<span class="text-warning px-1 text-center text-[8px] font-medium"
+																		>In other album</span
+																	>
+																</div>
+															{/if}
+															<div
+																class={classNames('h-full w-full', {
+																	'opacity-70 transition-opacity hover:opacity-100': canPlace
+																})}
+															>
+																<StickerItem
+																	{sticker}
+																	bgColor={rarity?.colorFrom ?? '#6B7280'}
+																	borderColor={rarity?.colorTo}
+																	classes="w-full h-full object-contain"
+																/>
+															</div>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{:else}
+											<!-- Empty right page placeholder -->
+											<div
+												class="flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 opacity-30 shadow-xl"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<div class="flex h-full items-center justify-center p-4">
+													<span class="text-gray-300">End of album</span>
+												</div>
+											</div>
+										{/if}
 									</div>
-								{/if}
+
+									<!-- Flip Animation Overlay for Pokemon -->
+									{#if isFlipping && targetSpread !== null}
+										{@const currentRightStickers = getRightPokemonPage()}
+										{@const currentLeftStickers = getLeftPokemonPage()}
+										{@const targetLeftStickers = getLeftPokemonPageForSpread(targetSpread)}
+										{@const targetRightStickers = getRightPokemonPageForSpread(targetSpread)}
+										<div class="pointer-events-none absolute inset-0 flex w-full gap-1">
+											{#if flipDirection === 'forward' && currentRightStickers}
+												<!-- Forward: right page flips to left -->
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+												<div
+													class="page-container flip-forward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: current right page -->
+													<div
+														class="page-face absolute inset-0 h-full w-full overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl"
+													>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+														>
+															{#each currentRightStickers as sticker (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																{@const placed = placedStickerIds.has(String(sticker.id))}
+																{@const availableCopies = getAvailableCopies(sticker.id)}
+																{@const canPlace = owned && !placed && availableCopies > 0}
+																{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+																<div
+																	class={classNames('relative overflow-hidden', {
+																		'opacity-50 grayscale': !owned
+																	})}
+																>
+																	{#if canPlace}
+																		<div
+																			class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																		>
+																			<span class="text-primary/60 text-[10px] font-medium"
+																				>Stick</span
+																			>
+																		</div>
+																	{:else if placedElsewhere}
+																		<div
+																			class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																		>
+																			<span
+																				class="text-warning px-1 text-center text-[8px] font-medium"
+																				>In other album</span
+																			>
+																		</div>
+																	{/if}
+																	<div
+																		class={classNames('h-full w-full', { 'opacity-70': canPlace })}
+																	>
+																		<StickerItem
+																			{sticker}
+																			bgColor={rarity?.colorFrom ?? '#6B7280'}
+																			borderColor={rarity?.colorTo}
+																			classes="w-full h-full object-contain"
+																		/>
+																	</div>
+																</div>
+															{/each}
+														</div>
+													</div>
+													<!-- Back face: target left page -->
+													{#if targetLeftStickers}
+														<div
+															class="page-back h-full w-full overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl"
+														>
+															<div
+																class="grid h-full"
+																style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+															>
+																{#each targetLeftStickers as sticker (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const availableCopies = getAvailableCopies(sticker.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	<div
+																		class={classNames('relative overflow-hidden', {
+																			'opacity-50 grayscale': !owned
+																		})}
+																	>
+																		{#if canPlace}
+																			<div
+																				class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span class="text-primary/60 text-[10px] font-medium"
+																					>Stick</span
+																				>
+																			</div>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[8px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div
+																			class={classNames('h-full w-full', {
+																				'opacity-70': canPlace
+																			})}
+																		>
+																			<StickerItem
+																				{sticker}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full h-full object-contain"
+																			/>
+																		</div>
+																	</div>
+																{/each}
+															</div>
+														</div>
+													{:else}
+														<div
+															class="page-back h-full w-full rounded-l-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+														></div>
+													{/if}
+												</div>
+											{:else if flipDirection === 'backward' && currentLeftStickers}
+												<!-- Backward: left page flips to right -->
+												<div
+													class="page-container flip-backward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: current left page -->
+													<div
+														class="page-face absolute inset-0 h-full w-full overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl"
+													>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+														>
+															{#each currentLeftStickers as sticker (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																{@const owned = getCachedCopyCount(sticker.id) > 0}
+																{@const placed = placedStickerIds.has(String(sticker.id))}
+																{@const availableCopies = getAvailableCopies(sticker.id)}
+																{@const canPlace = owned && !placed && availableCopies > 0}
+																{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+																<div
+																	class={classNames('relative overflow-hidden', {
+																		'opacity-50 grayscale': !owned
+																	})}
+																>
+																	{#if canPlace}
+																		<div
+																			class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																		>
+																			<span class="text-primary/60 text-[10px] font-medium"
+																				>Stick</span
+																			>
+																		</div>
+																	{:else if placedElsewhere}
+																		<div
+																			class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																		>
+																			<span
+																				class="text-warning px-1 text-center text-[8px] font-medium"
+																				>In other album</span
+																			>
+																		</div>
+																	{/if}
+																	<div
+																		class={classNames('h-full w-full', { 'opacity-70': canPlace })}
+																	>
+																		<StickerItem
+																			{sticker}
+																			bgColor={rarity?.colorFrom ?? '#6B7280'}
+																			borderColor={rarity?.colorTo}
+																			classes="w-full h-full object-contain"
+																		/>
+																	</div>
+																</div>
+															{/each}
+														</div>
+													</div>
+													<!-- Back face: target right page -->
+													{#if targetRightStickers}
+														<div
+															class="page-back h-full w-full overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl"
+														>
+															<div
+																class="grid h-full"
+																style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+															>
+																{#each targetRightStickers as sticker (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const availableCopies = getAvailableCopies(sticker.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	<div
+																		class={classNames('relative overflow-hidden', {
+																			'opacity-50 grayscale': !owned
+																		})}
+																	>
+																		{#if canPlace}
+																			<div
+																				class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span class="text-primary/60 text-[10px] font-medium"
+																					>Stick</span
+																				>
+																			</div>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[8px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div
+																			class={classNames('h-full w-full', {
+																				'opacity-70': canPlace
+																			})}
+																		>
+																			<StickerItem
+																				{sticker}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full h-full object-contain"
+																			/>
+																		</div>
+																	</div>
+																{/each}
+															</div>
+														</div>
+													{:else}
+														<div
+															class="page-back h-full w-full rounded-r-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+														></div>
+													{/if}
+												</div>
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							{:else}
+								<!-- Regular Book View (two pages side by side) -->
+								<!-- During forward flip, show target right page; during backward flip, show target left page -->
+								{@const leftPage =
+									isFlipping && flipDirection === 'backward' && targetSpread !== null
+										? getLeftPageForSpread(targetSpread)
+										: getLeftPage()}
+								{@const rightPage =
+									isFlipping && flipDirection === 'forward' && targetSpread !== null
+										? getRightPageForSpread(targetSpread)
+										: getRightPage()}
+								{@const leftPageIndex = (currentSpread - 1) * 2}
+								{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
+
+								<div class="book-perspective relative">
+									<div class="flex w-full gap-1">
+										<!-- Left Page -->
+										{#if leftPage}
+											{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
+											{@const leftPlacedIcons = getPlacedIconsForPage(leftPageIndex)}
+											<div
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+													if (isIconPlacementMode)
+														handleIconPageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+											>
+												<PlacedStampOverlay
+													placedStamps={leftPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={leftPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div
+													class="grid h-full"
+													style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+												>
+													{#each leftPage.rows as row}
+														{#each row.stickers as { sticker } (sticker.id)}
+															{@const copyCount = getCachedCopyCount(sticker.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(sticker.id))}
+															{@const availableCopies = getAvailableCopies(sticker.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(sticker)}
+															<div
+																class={classNames(
+																	'relative flex cursor-pointer flex-col overflow-hidden p-1',
+																	{ 'opacity-50 grayscale': !owned }
+																)}
+																onclick={() => handleStickerClick(sticker)}
+																onmouseenter={() => handleStickerMouseEnter(sticker)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if !placed}
+																	<p
+																		class="absolute left-0 right-0 top-1 z-10 truncate bg-white/80 px-1 text-center text-[10px] text-gray-600"
+																	>
+																		{sticker.name}
+																	</p>
+																{/if}
+																{#if canPlace}
+																	<button
+																		class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																		onclick={(e) => {
+																			e.stopPropagation();
+																			handleStickerClick(sticker);
+																		}}
+																	>
+																		<span class="text-primary/60 text-xs font-medium"
+																			>Click to stick</span
+																		>
+																	</button>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[9px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames('w-full flex-1', {
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full"
+																	/>
+																</div>
+															</div>
+														{/each}
+													{/each}
+												</div>
+											</div>
+										{/if}
+
+										<!-- Right Page -->
+										{#if rightPage}
+											{@const rightPlacedStamps = getPlacedStampsForPage(rightPageIndex)}
+											{@const rightPlacedIcons = getPlacedIconsForPage(rightPageIndex)}
+											<div
+												class={classNames(
+													'relative flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT};"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+													if (isIconPlacementMode)
+														handleIconPageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+											>
+												<PlacedStampOverlay
+													placedStamps={rightPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={rightPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<div
+													class="grid h-full"
+													style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+												>
+													{#each rightPage.rows as row}
+														{#each row.stickers as { sticker } (sticker.id)}
+															{@const copyCount = getCachedCopyCount(sticker.id)}
+															{@const owned = copyCount > 0}
+															{@const placed = placedStickerIds.has(String(sticker.id))}
+															{@const availableCopies = getAvailableCopies(sticker.id)}
+															{@const canPlace = owned && !placed && availableCopies > 0}
+															{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+															{@const rarity = getStickerRarity(sticker)}
+															<div
+																class={classNames(
+																	'relative flex cursor-pointer flex-col overflow-hidden p-1',
+																	{ 'opacity-50 grayscale': !owned }
+																)}
+																onclick={() => handleStickerClick(sticker)}
+																onmouseenter={() => handleStickerMouseEnter(sticker)}
+																onmousemove={handleStickerMouseMove}
+																onmouseleave={handleStickerMouseLeave}
+																role="button"
+																tabindex="0"
+															>
+																{#if !placed}
+																	<p
+																		class="absolute left-0 right-0 top-1 z-10 truncate bg-white/80 px-1 text-center text-[10px] text-gray-600"
+																	>
+																		{sticker.name}
+																	</p>
+																{/if}
+																{#if canPlace}
+																	<button
+																		class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																		onclick={(e) => {
+																			e.stopPropagation();
+																			handleStickerClick(sticker);
+																		}}
+																	>
+																		<span class="text-primary/60 text-xs font-medium"
+																			>Click to stick</span
+																		>
+																	</button>
+																{:else if placedElsewhere}
+																	<div
+																		class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																	>
+																		<span
+																			class="text-warning px-1 text-center text-[9px] font-medium"
+																			>In other album</span
+																		>
+																	</div>
+																{/if}
+																<div
+																	class={classNames('w-full flex-1', {
+																		'opacity-70 transition-opacity hover:opacity-100': canPlace
+																	})}
+																>
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full"
+																	/>
+																</div>
+															</div>
+														{/each}
+													{/each}
+												</div>
+											</div>
+										{:else}
+											<!-- Empty right page placeholder -->
+											<div
+												class="flex-1 overflow-hidden rounded-r-lg bg-white text-gray-900 opacity-30 shadow-xl"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<div class="flex h-full flex-col p-4">
+													<div class="mb-2 text-center">
+														<p class="text-xs text-gray-500">--</p>
+													</div>
+													<div class="flex flex-1 items-center justify-center">
+														{#if totalWinnerPages > 0}
+															<span class="text-gray-300">Winners ahead →</span>
+														{:else}
+															<span class="text-gray-300">End of album</span>
+														{/if}
+													</div>
+												</div>
+											</div>
+										{/if}
+									</div>
+
+									<!-- Flip Animation Overlay for Regular -->
+									{#if isFlipping && targetSpread !== null}
+										{@const currentLeftPage = getLeftPage()}
+										{@const currentRightPage = getRightPage()}
+										{@const targetLeftPage = getLeftPageForSpread(targetSpread)}
+										{@const targetRightPage = getRightPageForSpread(targetSpread)}
+										<div class="pointer-events-none absolute inset-0 flex w-full gap-1">
+											{#if flipDirection === 'forward' && currentRightPage}
+												<!-- Forward: right page flips to left -->
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+												<div
+													class="page-container flip-forward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: current right page -->
+													<div
+														class="page-face absolute inset-0 h-full w-full overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl"
+													>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+														>
+															{#each currentRightPage.rows as row}
+																{#each row.stickers as { sticker } (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const availableCopies = getAvailableCopies(sticker.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	<div
+																		class={classNames('relative overflow-hidden p-1', {
+																			'opacity-50 grayscale': !owned
+																		})}
+																	>
+																		{#if canPlace}
+																			<div
+																				class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span class="text-primary/60 text-[10px] font-medium"
+																					>Stick</span
+																				>
+																			</div>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[8px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div class={classNames('w-full', { 'opacity-70': canPlace })}>
+																			<StickerItem
+																				{sticker}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full"
+																			/>
+																		</div>
+																	</div>
+																{/each}
+															{/each}
+														</div>
+													</div>
+													<!-- Back face: target left page -->
+													{#if targetLeftPage}
+														<div
+															class="page-back h-full w-full overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl"
+														>
+															<div
+																class="grid h-full"
+																style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+															>
+																{#each targetLeftPage.rows as row}
+																	{#each row.stickers as { sticker } (sticker.id)}
+																		{@const rarity = getStickerRarity(sticker)}
+																		{@const owned = getCachedCopyCount(sticker.id) > 0}
+																		{@const placed = placedStickerIds.has(String(sticker.id))}
+																		{@const availableCopies = getAvailableCopies(sticker.id)}
+																		{@const canPlace = owned && !placed && availableCopies > 0}
+																		{@const placedElsewhere =
+																			owned && !placed && availableCopies <= 0}
+																		<div
+																			class={classNames('relative overflow-hidden p-1', {
+																				'opacity-50 grayscale': !owned
+																			})}
+																		>
+																			{#if canPlace}
+																				<div
+																					class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																				>
+																					<span class="text-primary/60 text-[10px] font-medium"
+																						>Stick</span
+																					>
+																				</div>
+																			{:else if placedElsewhere}
+																				<div
+																					class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																				>
+																					<span
+																						class="text-warning px-1 text-center text-[8px] font-medium"
+																						>In other album</span
+																					>
+																				</div>
+																			{/if}
+																			<div class={classNames('w-full', { 'opacity-70': canPlace })}>
+																				<StickerItem
+																					{sticker}
+																					bgColor={rarity?.colorFrom ?? '#6B7280'}
+																					borderColor={rarity?.colorTo}
+																					classes="w-full"
+																				/>
+																			</div>
+																		</div>
+																	{/each}
+																{/each}
+															</div>
+														</div>
+													{:else}
+														<div
+															class="page-back h-full w-full rounded-l-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+														></div>
+													{/if}
+												</div>
+											{:else if flipDirection === 'backward' && currentLeftPage}
+												<!-- Backward: left page flips to right -->
+												<div
+													class="page-container flip-backward flex-1"
+													style="aspect-ratio: {PAGE_ASPECT};"
+												>
+													<!-- Front face: current left page -->
+													<div
+														class="page-face absolute inset-0 h-full w-full overflow-hidden rounded-l-lg bg-white text-gray-900 shadow-xl"
+													>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+														>
+															{#each currentLeftPage.rows as row}
+																{#each row.stickers as { sticker } (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	{@const owned = getCachedCopyCount(sticker.id) > 0}
+																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const availableCopies = getAvailableCopies(sticker.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	<div
+																		class={classNames('relative overflow-hidden p-1', {
+																			'opacity-50 grayscale': !owned
+																		})}
+																	>
+																		{#if canPlace}
+																			<div
+																				class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span class="text-primary/60 text-[10px] font-medium"
+																					>Stick</span
+																				>
+																			</div>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[8px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div class={classNames('w-full', { 'opacity-70': canPlace })}>
+																			<StickerItem
+																				{sticker}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full"
+																			/>
+																		</div>
+																	</div>
+																{/each}
+															{/each}
+														</div>
+													</div>
+													<!-- Back face: target right page -->
+													{#if targetRightPage}
+														<div
+															class="page-back h-full w-full overflow-hidden rounded-r-lg bg-white text-gray-900 shadow-xl"
+														>
+															<div
+																class="grid h-full"
+																style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+															>
+																{#each targetRightPage.rows as row}
+																	{#each row.stickers as { sticker } (sticker.id)}
+																		{@const rarity = getStickerRarity(sticker)}
+																		{@const owned = getCachedCopyCount(sticker.id) > 0}
+																		{@const placed = placedStickerIds.has(String(sticker.id))}
+																		{@const availableCopies = getAvailableCopies(sticker.id)}
+																		{@const canPlace = owned && !placed && availableCopies > 0}
+																		{@const placedElsewhere =
+																			owned && !placed && availableCopies <= 0}
+																		<div
+																			class={classNames('relative overflow-hidden p-1', {
+																				'opacity-50 grayscale': !owned
+																			})}
+																		>
+																			{#if canPlace}
+																				<div
+																					class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																				>
+																					<span class="text-primary/60 text-[10px] font-medium"
+																						>Stick</span
+																					>
+																				</div>
+																			{:else if placedElsewhere}
+																				<div
+																					class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																				>
+																					<span
+																						class="text-warning px-1 text-center text-[8px] font-medium"
+																						>In other album</span
+																					>
+																				</div>
+																			{/if}
+																			<div class={classNames('w-full', { 'opacity-70': canPlace })}>
+																				<StickerItem
+																					{sticker}
+																					bgColor={rarity?.colorFrom ?? '#6B7280'}
+																					borderColor={rarity?.colorTo}
+																					classes="w-full"
+																				/>
+																			</div>
+																		</div>
+																	{/each}
+																{/each}
+															</div>
+														</div>
+													{:else}
+														<div
+															class="page-back h-full w-full rounded-r-lg bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl"
+														></div>
+													{/if}
+												</div>
+												<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- Pagination Controls -->
+							{#if totalSpreads > 1}
+								<div class="mt-6">
+									<div class="flex items-center justify-center gap-2">
+										<button
+											class="btn btn-sm btn-outline"
+											onclick={prevSpread}
+											disabled={currentSpread === 0 || isFlipping}
+										>
+											Previous
+										</button>
+										<span class="text-base-content/60 text-sm">
+											Spread {currentSpread + 1} of {totalSpreads}
+										</span>
+										<button
+											class="btn btn-sm btn-outline"
+											onclick={nextSpread}
+											disabled={currentSpread === totalSpreads - 1 || isFlipping}
+										>
+											Next
+										</button>
+									</div>
+								</div>
+							{/if}
+
+							<!-- Place Icons and Stamps Row -->
+							<div class="border-base-300 mt-4 border-t pt-4">
+								<div class="flex items-start gap-4">
+									<!-- Icons -->
+									<div>
+										<h3 class="text-base-content/70 mb-2 text-sm font-semibold">Icons</h3>
+										<IconRow onclick={handleIconRowClick} />
+									</div>
+
+									<!-- Stamps -->
+									{#if stampPacks.length > 0}
+										<div class="flex-1">
+											<h3 class="text-base-content/70 mb-2 text-sm font-semibold">Stamps</h3>
+											<StampPackRow
+												{stampPacks}
+												{stampsDataDir}
+												onpackhover={handlePackHover}
+												onpackleave={handlePackLeave}
+											/>
+										</div>
+									{/if}
+								</div>
 							</div>
-						</div>
+						{/if}
 					{/if}
-				{/if}
 				</div>
 			</div>
 		</div>
@@ -2381,7 +3016,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 {#if hoveredSticker}
 	{@const rarity = getStickerRarity(hoveredSticker)}
 	<div
-		class="fixed z-50 pointer-events-none"
+		class="pointer-events-none fixed z-50"
 		style="left: {mousePosition.x + 16}px; top: {mousePosition.y + 16}px; max-width: 400px;"
 	>
 		<StickerPreview
@@ -2410,7 +3045,12 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 
 <!-- Cursor Stamp (follows cursor during placement) -->
 {#if isPlacementMode && selectedStamp}
-	<CursorStamp stamp={selectedStamp} {stampsDataDir} mousePosition={globalMousePosition} scale={placementScale} />
+	<CursorStamp
+		stamp={selectedStamp}
+		{stampsDataDir}
+		mousePosition={globalMousePosition}
+		scale={placementScale}
+	/>
 {/if}
 
 <!-- Icon Panel -->
@@ -2426,7 +3066,12 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 
 <!-- Cursor Icon (follows cursor during placement) -->
 {#if isIconPlacementMode && selectedIconPath}
-	<CursorIcon iconPath={selectedIconPath} color={selectedIconColor} mousePosition={globalMousePosition} scale={iconPlacementScale} />
+	<CursorIcon
+		iconPath={selectedIconPath}
+		color={selectedIconColor}
+		mousePosition={globalMousePosition}
+		scale={iconPlacementScale}
+	/>
 {/if}
 
 <style>
@@ -2462,12 +3107,24 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	}
 
 	@keyframes flipForward {
-		0% { transform: rotateY(0deg); z-index: 10; }
-		100% { transform: rotateY(-180deg); z-index: 10; }
+		0% {
+			transform: rotateY(0deg);
+			z-index: 10;
+		}
+		100% {
+			transform: rotateY(-180deg);
+			z-index: 10;
+		}
 	}
 
 	@keyframes flipBackward {
-		0% { transform: rotateY(0deg); z-index: 10; }
-		100% { transform: rotateY(180deg); z-index: 10; }
+		0% {
+			transform: rotateY(0deg);
+			z-index: 10;
+		}
+		100% {
+			transform: rotateY(180deg);
+			z-index: 10;
+		}
 	}
 </style>

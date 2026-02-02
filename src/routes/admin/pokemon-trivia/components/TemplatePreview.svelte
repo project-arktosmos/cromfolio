@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import classNames from 'classnames';
-	import { TEMPLATE_TYPE_INFO, POKEMON_ATTRIBUTES, type TemplateType } from '$types/pokemon-trivia-template.type';
+	import {
+		TEMPLATE_TYPE_INFO,
+		POKEMON_ATTRIBUTES,
+		type TemplateType
+	} from '$types/pokemon-trivia-template.type';
 	import {
 		getRandomPokemonWithTags,
 		getRandomPokemonByGeneration,
@@ -102,9 +106,7 @@
 
 	// Check if we should show stats
 	let shouldShowStats = $derived(
-		answerTemplate.trim() === '{name}' &&
-			primaryAttribute &&
-			shouldShowStatsForType(templateType)
+		answerTemplate.trim() === '{name}' && primaryAttribute && shouldShowStatsForType(templateType)
 	);
 
 	// Get the attribute label for display
@@ -126,8 +128,8 @@
 </script>
 
 <div class="bg-base-300 rounded-lg p-4">
-	<div class="flex items-center justify-between mb-3">
-		<h3 class="font-semibold text-sm">Live Preview</h3>
+	<div class="mb-3 flex items-center justify-between">
+		<h3 class="text-sm font-semibold">Live Preview</h3>
 		<div class="flex items-center gap-2">
 			{#if templateType && TEMPLATE_TYPE_INFO[templateType]}
 				<span class="badge badge-sm"
@@ -151,23 +153,23 @@
 			<span class="loading loading-spinner loading-sm"></span>
 		</div>
 	{:else if !correctPokemon}
-		<div class="text-center text-base-content/50 py-4">
+		<div class="text-base-content/50 py-4 text-center">
 			<p>No Pokemon data available.</p>
-			<p class="text-sm mt-1">Make sure Pokemon stickers are imported.</p>
+			<p class="mt-1 text-sm">Make sure Pokemon stickers are imported.</p>
 		</div>
 	{:else if questionTemplate || answerTemplate}
 		<div class="space-y-3">
 			<!-- Question -->
 			<div>
-				<div class="text-xs text-base-content/60 mb-1">Question</div>
-				<div class="font-medium text-sm bg-base-100 p-2 rounded">
+				<div class="text-base-content/60 mb-1 text-xs">Question</div>
+				<div class="bg-base-100 rounded p-2 text-sm font-medium">
 					{previewQuestion || 'No question template'}
 				</div>
 			</div>
 
 			<!-- Answer Options (multiple choice style) -->
 			<div>
-				<div class="text-xs text-base-content/60 mb-1">
+				<div class="text-base-content/60 mb-1 text-xs">
 					Options
 					{#if shouldShowStats && attributeLabel}
 						<span class="text-info ml-1">(showing {attributeLabel} for verification)</span>
@@ -177,14 +179,14 @@
 					{#each shuffledOptions as option, index}
 						{@const stat = getRelevantStat(option.pokemon)}
 						<div
-							class={classNames('p-2 rounded text-sm border-2 transition-colors', {
+							class={classNames('rounded border-2 p-2 text-sm transition-colors', {
 								'bg-success/20 border-success': option.isCorrect,
 								'bg-base-100 border-base-300': !option.isCorrect
 							})}
 						>
 							<div class="flex items-center justify-between">
 								<div>
-									<span class="font-mono text-xs text-base-content/50 mr-2"
+									<span class="text-base-content/50 mr-2 font-mono text-xs"
 										>{String.fromCharCode(65 + index)}.</span
 									>
 									<span class={option.isCorrect ? 'font-semibold' : ''}>
@@ -196,7 +198,7 @@
 								</div>
 								{#if shouldShowStats && stat}
 									<span
-										class={classNames('text-xs px-1.5 py-0.5 rounded', {
+										class={classNames('rounded px-1.5 py-0.5 text-xs', {
 											'bg-success/30 text-success-content font-semibold': option.isCorrect,
 											'bg-base-200 text-base-content/70': !option.isCorrect
 										})}
@@ -213,10 +215,11 @@
 			<!-- Validation Message -->
 			{#if validationMessage}
 				<div
-					class={classNames('text-xs p-2 rounded', {
+					class={classNames('rounded p-2 text-xs', {
 						'bg-success/10 text-success': validationMessage.startsWith('✓'),
 						'bg-warning/10 text-warning': validationMessage.startsWith('⚠️'),
-						'bg-error/10 text-error': !validationMessage.startsWith('✓') && !validationMessage.startsWith('⚠️')
+						'bg-error/10 text-error':
+							!validationMessage.startsWith('✓') && !validationMessage.startsWith('⚠️')
 					})}
 				>
 					{validationMessage}
@@ -225,29 +228,29 @@
 
 			<!-- Correct Answer (explicit) -->
 			<div>
-				<div class="text-xs text-base-content/60 mb-1">Correct Answer</div>
+				<div class="text-base-content/60 mb-1 text-xs">Correct Answer</div>
 				<div
-					class="font-medium text-sm text-success bg-base-100 p-2 rounded flex items-center justify-between"
+					class="text-success bg-base-100 flex items-center justify-between rounded p-2 text-sm font-medium"
 				>
 					<span>→ {previewAnswer || 'No answer template'}</span>
 					{#if shouldShowStats && correctPokemon}
 						{@const correctStat = getRelevantStat(correctPokemon)}
 						{#if correctStat}
-							<span class="text-xs bg-success/20 px-2 py-0.5 rounded">{correctStat}</span>
+							<span class="bg-success/20 rounded px-2 py-0.5 text-xs">{correctStat}</span>
 						{/if}
 					{/if}
 				</div>
 			</div>
 		</div>
 
-		<div class="mt-3 pt-3 border-t border-base-content/10">
-			<div class="text-xs text-base-content/50">
+		<div class="border-base-content/10 mt-3 border-t pt-3">
+			<div class="text-base-content/50 text-xs">
 				Preview uses: <strong>{correctPokemon.name}</strong>
 				(Gen {correctPokemon.tags['generation'] || '?'})
 			</div>
 		</div>
 	{:else}
-		<div class="text-center text-base-content/50 py-4">
+		<div class="text-base-content/50 py-4 text-center">
 			<p>Enter question and answer templates to see a preview</p>
 		</div>
 	{/if}

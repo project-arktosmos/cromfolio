@@ -17,7 +17,14 @@
 		onclose?: () => void;
 	}
 
-	let { position, classes = '', oniconselect, onpanelenter, onpanelleave, onclose }: Props = $props();
+	let {
+		position,
+		classes = '',
+		oniconselect,
+		onpanelenter,
+		onpanelleave,
+		onclose
+	}: Props = $props();
 
 	// State
 	let icons: IconInfo[] = $state([]);
@@ -104,19 +111,15 @@
 	onmouseleave={() => onpanelleave?.()}
 >
 	<!-- Header -->
-	<div class="flex items-center justify-between mb-3">
-		<h3 class="font-bold text-sm">Place Icons</h3>
-		<button
-			class="btn btn-xs btn-ghost btn-circle"
-			onclick={() => onclose?.()}
-			title="Close"
-		>
+	<div class="mb-3 flex items-center justify-between">
+		<h3 class="text-sm font-bold">Place Icons</h3>
+		<button class="btn btn-xs btn-ghost btn-circle" onclick={() => onclose?.()} title="Close">
 			×
 		</button>
 	</div>
 
 	<!-- Search and Color -->
-	<div class="space-y-2 mb-3">
+	<div class="mb-3 space-y-2">
 		<!-- Search -->
 		<input
 			type="text"
@@ -129,16 +132,16 @@
 		<div class="flex items-center gap-2">
 			<input
 				type="color"
-				class="w-8 h-8 cursor-pointer rounded border border-base-300 shrink-0"
+				class="border-base-300 h-8 w-8 shrink-0 cursor-pointer rounded border"
 				bind:value={selectedColor}
 			/>
-			<div class="flex gap-1 flex-wrap">
+			<div class="flex flex-wrap gap-1">
 				{#each presetColors as color (color)}
 					<button
 						class={classNames(
-							'w-6 h-6 rounded border transition-all shrink-0',
+							'h-6 w-6 shrink-0 rounded border transition-all',
 							selectedColor === color
-								? 'border-primary scale-110 ring-1 ring-primary'
+								? 'border-primary ring-primary scale-110 ring-1'
 								: 'border-base-300 hover:border-base-content/30'
 						)}
 						style="background-color: {color}"
@@ -151,7 +154,7 @@
 	</div>
 
 	<!-- Icon count -->
-	<div class="text-xs text-base-content/60 mb-2">
+	<div class="text-base-content/60 mb-2 text-xs">
 		{filteredIcons.length} icons
 	</div>
 
@@ -161,16 +164,16 @@
 		</div>
 	{:else}
 		<!-- Icon grid -->
-		<div class="overflow-y-auto max-h-64">
+		<div class="max-h-64 overflow-y-auto">
 			<div class="grid grid-cols-6 gap-1.5">
 				{#each displayedIcons as icon (icon.path)}
 					<button
-						class="aspect-square rounded-md p-1.5 transition-all cursor-pointer hover:bg-base-300 hover:scale-105 bg-base-100"
+						class="hover:bg-base-300 bg-base-100 aspect-square cursor-pointer rounded-md p-1.5 transition-all hover:scale-105"
 						onclick={() => handleIconClick(icon)}
 						title="{icon.subdir}/{icon.filename}"
 					>
 						<div
-							class="w-full h-full"
+							class="h-full w-full"
 							style="
 								background-color: {selectedColor};
 								-webkit-mask: url('{icon.path}') center/contain no-repeat;
@@ -183,7 +186,7 @@
 
 			<!-- Load more button -->
 			{#if displayedIcons.length < filteredIcons.length}
-				<div class="flex justify-center mt-3">
+				<div class="mt-3 flex justify-center">
 					<button class="btn btn-xs btn-outline" onclick={loadMore}>
 						Load More ({filteredIcons.length - displayedIcons.length} more)
 					</button>
@@ -192,7 +195,7 @@
 		</div>
 
 		{#if icons.length === 0}
-			<div class="text-sm text-base-content/50 py-4 text-center">No icons available</div>
+			<div class="text-base-content/50 py-4 text-center text-sm">No icons available</div>
 		{/if}
 	{/if}
 </div>

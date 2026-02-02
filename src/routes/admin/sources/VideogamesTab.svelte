@@ -1,10 +1,8 @@
 <script lang="ts">
 	import SourceTab from './SourceTab.svelte';
 	import { searchGames, type GameSearchResult } from '$services/fetch.service';
-	import type { SourceTabConfig } from './sources.types';
+	import type { SourceTabConfig, SourceType } from './sources.types';
 
-	// Source type props from parent
-	type SourceType = 'movies' | 'tv' | 'videogames' | 'anime' | 'sports' | 'animals' | 'awards';
 	let {
 		sourceType,
 		onSourceTypeChange
@@ -79,8 +77,7 @@
 			}
 			if (result.platforms && result.platforms.length > 0) {
 				const platformsStr =
-					result.platforms.slice(0, 3).join(', ') +
-					(result.platforms.length > 3 ? '...' : '');
+					result.platforms.slice(0, 3).join(', ') + (result.platforms.length > 3 ? '...' : '');
 				details.push({ label: 'Platforms', value: platformsStr });
 			}
 			if (result.genres && result.genres.length > 0) {

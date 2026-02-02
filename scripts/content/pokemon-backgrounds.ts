@@ -109,9 +109,7 @@ function hslToRgb(h: number, s: number, l: number): RGB {
  * Calculate Euclidean distance between two colors
  */
 function colorDistance(c1: RGB, c2: RGB): number {
-	return Math.sqrt(
-		Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2)
-	);
+	return Math.sqrt(Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2));
 }
 
 /**
@@ -151,10 +149,11 @@ function kMeansClustering(pixels: RGB[], k: number, iterations: number = 10): RG
 		centroids = clusters.map((cluster, idx) => {
 			if (cluster.length === 0) return centroids[idx];
 
-			const sum = cluster.reduce(
-				(acc, p) => ({ r: acc.r + p.r, g: acc.g + p.g, b: acc.b + p.b }),
-				{ r: 0, g: 0, b: 0 }
-			);
+			const sum = cluster.reduce((acc, p) => ({ r: acc.r + p.r, g: acc.g + p.g, b: acc.b + p.b }), {
+				r: 0,
+				g: 0,
+				b: 0
+			});
 
 			return {
 				r: Math.round(sum.r / cluster.length),
@@ -369,7 +368,9 @@ async function scanAndProcess(): Promise<{ processed: number; skipped: number }>
 
 async function main(): Promise<void> {
 	console.log('🎨 Pokemon Background Color Applier\n');
-	console.log('Strategy: Extract dominant colors → Find most vibrant → Apply soft background to PNG\n');
+	console.log(
+		'Strategy: Extract dominant colors → Find most vibrant → Apply soft background to PNG\n'
+	);
 	console.log('⚠️  WARNING: This will MODIFY the original PNG files!\n');
 
 	const startTime = Date.now();

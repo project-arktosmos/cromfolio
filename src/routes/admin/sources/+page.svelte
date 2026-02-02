@@ -32,8 +32,8 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">External Sources</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">External Sources</h1>
 
 	{#if sourceType === 'movies'}
 		<MoviesTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />

@@ -23,10 +23,7 @@ const DEFAULT_MAX_BACKDROPS = 5;
 /**
  * Extract TV show content and create database entries
  */
-export async function extractTv(
-	options: ExtractTvOptions,
-	db: DbAdapter
-): Promise<ExtractResult> {
+export async function extractTv(options: ExtractTvOptions, db: DbAdapter): Promise<ExtractResult> {
 	const {
 		imdbId: providedImdbId,
 		searchQuery,

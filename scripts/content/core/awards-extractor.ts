@@ -13,7 +13,12 @@ import type {
 	AwardEvent
 } from './types.js';
 import type { DbAdapter } from './db/db-adapter.js';
-import { findByImdbId, getMovieImages, getTvImages, getContentDetailsFromTmdb } from './api/tmdb.js';
+import {
+	findByImdbId,
+	getMovieImages,
+	getTvImages,
+	getContentDetailsFromTmdb
+} from './api/tmdb.js';
 
 type FragmentPosition = 1 | 2 | 3 | 4;
 
@@ -234,8 +239,7 @@ export async function extractAwards(
 					try {
 						const tmdbResult = await findByImdbId(apiKeys.tmdb, nominee.imdbId);
 						if (tmdbResult) {
-							const getImages =
-								tmdbResult.mediaType === 'tv' ? getTvImages : getMovieImages;
+							const getImages = tmdbResult.mediaType === 'tv' ? getTvImages : getMovieImages;
 							const images = await getImages(apiKeys.tmdb, tmdbResult.tmdbId);
 							const posters = images.filter((img) => img.imageType === 'poster');
 							if (posters.length > 0) {
@@ -254,9 +258,7 @@ export async function extractAwards(
 
 					if (dryRun) {
 						const stickerCount = nominee.isWinner ? 4 : 1;
-						console.log(
-							`  Would create ${stickerCount} sticker(s) for "${details.title}"`
-						);
+						console.log(`  Would create ${stickerCount} sticker(s) for "${details.title}"`);
 						stickersCreated += stickerCount;
 						continue;
 					}
@@ -408,11 +410,7 @@ export async function extractAwards(
 /**
  * Build source title for award list
  */
-function buildAwardSourceTitle(
-	eventName: string,
-	year?: string,
-	awardType?: string
-): string {
+function buildAwardSourceTitle(eventName: string, year?: string, awardType?: string): string {
 	const parts = [eventName];
 
 	if (year) {

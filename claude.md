@@ -568,12 +568,12 @@ export const gameScoresService = new ArrayServiceClass<GameScore>('game-scores',
 
 ### Why This Separation?
 
-| Aspect | `/admin` (SQLite) | `/game` (localStorage) |
-|--------|-------------------|------------------------|
-| **Persistence** | Server-side, survives app reinstall | Browser-only, cleared with browser data |
-| **Data sharing** | Can be synced/exported | Local to browser |
-| **Use case** | Content management | User game state |
-| **Performance** | Async queries | Synchronous access |
+| Aspect           | `/admin` (SQLite)                   | `/game` (localStorage)                  |
+| ---------------- | ----------------------------------- | --------------------------------------- |
+| **Persistence**  | Server-side, survives app reinstall | Browser-only, cleared with browser data |
+| **Data sharing** | Can be synced/exported              | Local to browser                        |
+| **Use case**     | Content management                  | User game state                         |
+| **Performance**  | Async queries                       | Synchronous access                      |
 
 ### Adding New Routes
 

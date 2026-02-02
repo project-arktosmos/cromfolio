@@ -8,19 +8,17 @@
 
 	let { classes = '', onclick }: Props = $props();
 
-	let computedClasses = $derived(
-		classNames('flex gap-2 py-2 px-1', classes)
-	);
+	let computedClasses = $derived(classNames('flex gap-2 py-2 px-1', classes));
 </script>
 
 <div class={computedClasses}>
 	<button
-		class="w-14 h-14 rounded-lg cursor-pointer transition-all shrink-0 bg-base-200 hover:ring-2 hover:ring-primary hover:scale-105 flex items-center justify-center"
-		onclick={onclick}
+		class="bg-base-200 hover:ring-primary flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all hover:scale-105 hover:ring-2"
+		{onclick}
 		title="Place Icons"
 	>
 		<div
-			class="w-8 h-8"
+			class="h-8 w-8"
 			style="
 				background-color: currentColor;
 				-webkit-mask: url('/stamp/lorc/rune-sword.svg') center/contain no-repeat;

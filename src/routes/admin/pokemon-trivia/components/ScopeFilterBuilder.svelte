@@ -28,15 +28,15 @@
 </script>
 
 <div class="bg-base-300 rounded-lg p-4">
-	<div class="flex items-center justify-between mb-3">
-		<h3 class="font-semibold text-sm">Scope Filters</h3>
-		<span class="text-xs text-base-content/60">Restrict Pokemon pool</span>
+	<div class="mb-3 flex items-center justify-between">
+		<h3 class="text-sm font-semibold">Scope Filters</h3>
+		<span class="text-base-content/60 text-xs">Restrict Pokemon pool</span>
 	</div>
 
 	<div class="space-y-2">
 		{#each scopeOptions as option}
-			<div class="flex gap-2 items-center">
-				<label class="w-24 text-sm text-base-content/80">{option.label}</label>
+			<div class="flex items-center gap-2">
+				<label class="text-base-content/80 w-24 text-sm">{option.label}</label>
 				<input
 					type="text"
 					class="input input-sm input-bordered flex-1"
@@ -49,7 +49,7 @@
 		{/each}
 	</div>
 
-	<p class="text-xs text-base-content/50 mt-3">
+	<p class="text-base-content/50 mt-3 text-xs">
 		Leave empty to include all Pokemon. Use these to limit questions to specific subsets.
 	</p>
 </div>

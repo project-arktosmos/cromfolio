@@ -221,7 +221,7 @@ async function scanPokemonDirectory(): Promise<GenerationData[]> {
 	// Read generation folders
 	const entries = await readdir(POKEMON_DIR, { withFileTypes: true });
 	const genFolders = entries
-		.filter(e => e.isDirectory() && e.name.startsWith('Generation'))
+		.filter((e) => e.isDirectory() && e.name.startsWith('Generation'))
 		.sort((a, b) => {
 			const aNum = parseGenerationFolder(a.name)?.number ?? 0;
 			const bNum = parseGenerationFolder(b.name)?.number ?? 0;
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
 			}
 
 			// Create stickers for each Pokemon in this generation
-			const stickers: Partial<Sticker>[] = gen.pokemon.map(pokemon => ({
+			const stickers: Partial<Sticker>[] = gen.pokemon.map((pokemon) => ({
 				sourceId: source!.id,
 				name: pokemon.name,
 				image: pokemon.imagePath,
@@ -381,7 +381,8 @@ async function main(): Promise<void> {
 			tagsToCreate.push({ key: 'speed', value: String(data.speed) });
 
 			// Base stat total
-			const bst = data.hp + data.attack + data.defense + data.spAttack + data.spDefense + data.speed;
+			const bst =
+				data.hp + data.attack + data.defense + data.spAttack + data.spDefense + data.speed;
 			tagsToCreate.push({ key: 'base-stat-total', value: String(bst) });
 
 			// Gender ratios
@@ -492,14 +493,15 @@ async function main(): Promise<void> {
 		console.log(`   Sources created: ${generations.length}`);
 		console.log(`   Stickers created: ${allStickers.length}`);
 		console.log(`   Tag associations: ${totalTagAssociations}`);
-		console.log(`   Collections created: ${generations.length + 1} (${generations.length} generations + 1 "All Pokemon")`);
-
+		console.log(
+			`   Collections created: ${generations.length + 1} (${generations.length} generations + 1 "All Pokemon")`
+		);
 	} finally {
 		db.close();
 	}
 }
 
-main().catch(err => {
+main().catch((err) => {
 	console.error('❌ Error:', err);
 	process.exit(1);
 });

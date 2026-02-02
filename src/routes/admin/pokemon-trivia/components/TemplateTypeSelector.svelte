@@ -24,30 +24,26 @@
 		{#each templateTypes as [type, info]}
 			<button
 				type="button"
-				class={classNames(
-					'p-3 rounded-lg text-left transition-all border-2',
-					'hover:bg-base-300',
-					{
-						'border-primary bg-primary/10': value === type,
-						'border-transparent bg-base-200': value !== type,
-						'opacity-50 cursor-not-allowed': disabled,
-						'cursor-pointer': !disabled
-					}
-				)}
+				class={classNames('rounded-lg border-2 p-3 text-left transition-all', 'hover:bg-base-300', {
+					'border-primary bg-primary/10': value === type,
+					'bg-base-200 border-transparent': value !== type,
+					'cursor-not-allowed opacity-50': disabled,
+					'cursor-pointer': !disabled
+				})}
 				onclick={() => !disabled && onchange(type)}
 				{disabled}
 			>
-				<div class="flex items-center gap-2 mb-1">
+				<div class="mb-1 flex items-center gap-2">
 					<span class="text-lg">{info.icon}</span>
-					<span class="font-medium text-sm">{info.label}</span>
+					<span class="text-sm font-medium">{info.label}</span>
 				</div>
-				<p class="text-xs text-base-content/60 line-clamp-2">{info.description}</p>
+				<p class="text-base-content/60 line-clamp-2 text-xs">{info.description}</p>
 			</button>
 		{/each}
 	</div>
 	{#if value && TEMPLATE_TYPE_INFO[value]}
-		<div class="bg-base-300 rounded-lg p-3 mt-2">
-			<div class="text-xs text-base-content/60 mb-1">Example</div>
+		<div class="bg-base-300 mt-2 rounded-lg p-3">
+			<div class="text-base-content/60 mb-1 text-xs">Example</div>
 			<div class="text-sm font-medium">{TEMPLATE_TYPE_INFO[value].example}</div>
 		</div>
 	{/if}

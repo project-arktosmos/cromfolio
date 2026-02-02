@@ -65,9 +65,7 @@ export async function searchMusicBrainz(
 	query: string,
 	entityType: GrammyEntityType,
 	limit: number = 10
-): Promise<
-	MusicBrainzArtistResult[] | MusicBrainzReleaseResult[] | MusicBrainzRecordingResult[]
-> {
+): Promise<MusicBrainzArtistResult[] | MusicBrainzReleaseResult[] | MusicBrainzRecordingResult[]> {
 	switch (entityType) {
 		case 'artist':
 			return searchMusicBrainzArtists(query, limit);

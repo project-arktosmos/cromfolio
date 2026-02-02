@@ -25,7 +25,8 @@ const config = {
 			$data: 'src/data/*',
 			$adapters: 'src/adapters/*',
 			$services: 'src/services/*',
-			$api: 'src/api/*'
+			$api: 'src/api/*',
+			$db: 'src/db/*'
 		}
 	}
 };

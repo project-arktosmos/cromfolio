@@ -38,27 +38,146 @@ interface ConsoleWikidata {
 
 const CONSOLES_POST_2000: ConsoleWikidata[] = [
 	// Sony
-	{ id: 'playstation-2', name: 'PlayStation 2', manufacturer: 'Sony', releaseYear: 2000, wikidataId: 'Q10680', type: 'home' },
-	{ id: 'playstation-portable', name: 'PlayStation Portable', manufacturer: 'Sony', releaseYear: 2004, wikidataId: 'Q170325', type: 'handheld' },
-	{ id: 'playstation-3', name: 'PlayStation 3', manufacturer: 'Sony', releaseYear: 2006, wikidataId: 'Q10683', type: 'home' },
-	{ id: 'playstation-vita', name: 'PlayStation Vita', manufacturer: 'Sony', releaseYear: 2011, wikidataId: 'Q188808', type: 'handheld' },
-	{ id: 'playstation-4', name: 'PlayStation 4', manufacturer: 'Sony', releaseYear: 2013, wikidataId: 'Q5014725', type: 'home' },
-	{ id: 'playstation-5', name: 'PlayStation 5', manufacturer: 'Sony', releaseYear: 2020, wikidataId: 'Q63184502', type: 'home' },
+	{
+		id: 'playstation-2',
+		name: 'PlayStation 2',
+		manufacturer: 'Sony',
+		releaseYear: 2000,
+		wikidataId: 'Q10680',
+		type: 'home'
+	},
+	{
+		id: 'playstation-portable',
+		name: 'PlayStation Portable',
+		manufacturer: 'Sony',
+		releaseYear: 2004,
+		wikidataId: 'Q170325',
+		type: 'handheld'
+	},
+	{
+		id: 'playstation-3',
+		name: 'PlayStation 3',
+		manufacturer: 'Sony',
+		releaseYear: 2006,
+		wikidataId: 'Q10683',
+		type: 'home'
+	},
+	{
+		id: 'playstation-vita',
+		name: 'PlayStation Vita',
+		manufacturer: 'Sony',
+		releaseYear: 2011,
+		wikidataId: 'Q188808',
+		type: 'handheld'
+	},
+	{
+		id: 'playstation-4',
+		name: 'PlayStation 4',
+		manufacturer: 'Sony',
+		releaseYear: 2013,
+		wikidataId: 'Q5014725',
+		type: 'home'
+	},
+	{
+		id: 'playstation-5',
+		name: 'PlayStation 5',
+		manufacturer: 'Sony',
+		releaseYear: 2020,
+		wikidataId: 'Q63184502',
+		type: 'home'
+	},
 
 	// Microsoft
-	{ id: 'xbox', name: 'Xbox', manufacturer: 'Microsoft', releaseYear: 2001, wikidataId: 'Q132020', type: 'home' },
-	{ id: 'xbox-360', name: 'Xbox 360', manufacturer: 'Microsoft', releaseYear: 2005, wikidataId: 'Q48263', type: 'home' },
-	{ id: 'xbox-one', name: 'Xbox One', manufacturer: 'Microsoft', releaseYear: 2013, wikidataId: 'Q13361286', type: 'home' },
-	{ id: 'xbox-series', name: 'Xbox Series X/S', manufacturer: 'Microsoft', releaseYear: 2020, wikidataId: 'Q64513817', type: 'home' },
+	{
+		id: 'xbox',
+		name: 'Xbox',
+		manufacturer: 'Microsoft',
+		releaseYear: 2001,
+		wikidataId: 'Q132020',
+		type: 'home'
+	},
+	{
+		id: 'xbox-360',
+		name: 'Xbox 360',
+		manufacturer: 'Microsoft',
+		releaseYear: 2005,
+		wikidataId: 'Q48263',
+		type: 'home'
+	},
+	{
+		id: 'xbox-one',
+		name: 'Xbox One',
+		manufacturer: 'Microsoft',
+		releaseYear: 2013,
+		wikidataId: 'Q13361286',
+		type: 'home'
+	},
+	{
+		id: 'xbox-series',
+		name: 'Xbox Series X/S',
+		manufacturer: 'Microsoft',
+		releaseYear: 2020,
+		wikidataId: 'Q64513817',
+		type: 'home'
+	},
 
 	// Nintendo
-	{ id: 'game-boy-advance', name: 'Game Boy Advance', manufacturer: 'Nintendo', releaseYear: 2001, wikidataId: 'Q188642', type: 'handheld' },
-	{ id: 'gamecube', name: 'GameCube', manufacturer: 'Nintendo', releaseYear: 2001, wikidataId: 'Q182172', type: 'home' },
-	{ id: 'nintendo-ds', name: 'Nintendo DS', manufacturer: 'Nintendo', releaseYear: 2004, wikidataId: 'Q170323', type: 'handheld' },
-	{ id: 'wii', name: 'Wii', manufacturer: 'Nintendo', releaseYear: 2006, wikidataId: 'Q8079', type: 'home' },
-	{ id: 'nintendo-3ds', name: 'Nintendo 3DS', manufacturer: 'Nintendo', releaseYear: 2011, wikidataId: 'Q203597', type: 'handheld' },
-	{ id: 'wii-u', name: 'Wii U', manufacturer: 'Nintendo', releaseYear: 2012, wikidataId: 'Q56942', type: 'home' },
-	{ id: 'nintendo-switch', name: 'Nintendo Switch', manufacturer: 'Nintendo', releaseYear: 2017, wikidataId: 'Q19610114', type: 'hybrid' }
+	{
+		id: 'game-boy-advance',
+		name: 'Game Boy Advance',
+		manufacturer: 'Nintendo',
+		releaseYear: 2001,
+		wikidataId: 'Q188642',
+		type: 'handheld'
+	},
+	{
+		id: 'gamecube',
+		name: 'GameCube',
+		manufacturer: 'Nintendo',
+		releaseYear: 2001,
+		wikidataId: 'Q182172',
+		type: 'home'
+	},
+	{
+		id: 'nintendo-ds',
+		name: 'Nintendo DS',
+		manufacturer: 'Nintendo',
+		releaseYear: 2004,
+		wikidataId: 'Q170323',
+		type: 'handheld'
+	},
+	{
+		id: 'wii',
+		name: 'Wii',
+		manufacturer: 'Nintendo',
+		releaseYear: 2006,
+		wikidataId: 'Q8079',
+		type: 'home'
+	},
+	{
+		id: 'nintendo-3ds',
+		name: 'Nintendo 3DS',
+		manufacturer: 'Nintendo',
+		releaseYear: 2011,
+		wikidataId: 'Q203597',
+		type: 'handheld'
+	},
+	{
+		id: 'wii-u',
+		name: 'Wii U',
+		manufacturer: 'Nintendo',
+		releaseYear: 2012,
+		wikidataId: 'Q56942',
+		type: 'home'
+	},
+	{
+		id: 'nintendo-switch',
+		name: 'Nintendo Switch',
+		manufacturer: 'Nintendo',
+		releaseYear: 2017,
+		wikidataId: 'Q19610114',
+		type: 'hybrid'
+	}
 ];
 
 interface WikidataGame {
@@ -113,7 +232,7 @@ async function sparqlQuery<T>(query: string): Promise<T[]> {
  * Sleep for rate limiting
  */
 function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -164,7 +283,7 @@ async function fetchConsoleGamesWikidata(
 		releaseDate?: { value: string };
 	}>(query);
 
-	return results.map(r => ({
+	return results.map((r) => ({
 		wikidataId: r.game.value.replace('http://www.wikidata.org/entity/', ''),
 		title: r.gameLabel.value,
 		copies: parseFloat(r.copies.value) / 1000000, // Convert to millions
@@ -212,7 +331,7 @@ async function fetchConsoleGamesAlternative(
 			copies: { value: string };
 		}>(query);
 
-		return results.map(r => ({
+		return results.map((r) => ({
 			wikidataId: r.game.value.replace('http://www.wikidata.org/entity/', ''),
 			title: r.gameLabel.value,
 			copies: parseFloat(r.copies.value) / 1000000
@@ -334,11 +453,13 @@ Examples:
 	let consolesToFetch = CONSOLES_POST_2000;
 
 	if (consoleFilter.length > 0) {
-		consolesToFetch = consolesToFetch.filter(c => consoleFilter.includes(c.id));
+		consolesToFetch = consolesToFetch.filter((c) => consoleFilter.includes(c.id));
 	}
 
 	if (manufacturerFilter) {
-		consolesToFetch = consolesToFetch.filter(c => c.manufacturer.toLowerCase() === manufacturerFilter);
+		consolesToFetch = consolesToFetch.filter(
+			(c) => c.manufacturer.toLowerCase() === manufacturerFilter
+		);
 	}
 
 	if (showCoverage) {
@@ -351,7 +472,9 @@ Examples:
 
 			const gamesWithSales = await fetchConsoleGamesWikidata(consoleDef, 1000);
 			console.log(`  Games with sales data: ${gamesWithSales.length}`);
-			console.log(`  Coverage: ${totalGames > 0 ? ((gamesWithSales.length / totalGames) * 100).toFixed(1) : 0}%`);
+			console.log(
+				`  Coverage: ${totalGames > 0 ? ((gamesWithSales.length / totalGames) * 100).toFixed(1) : 0}%`
+			);
 
 			await sleep(RATE_LIMIT_MS);
 		}

@@ -14,7 +14,16 @@
 		onpanelleave?: () => void;
 	}
 
-	let { pack, stamps, stampsDataDir, position, classes = '', onstampselect, onpanelenter, onpanelleave }: Props = $props();
+	let {
+		pack,
+		stamps,
+		stampsDataDir,
+		position,
+		classes = '',
+		onstampselect,
+		onpanelenter,
+		onpanelleave
+	}: Props = $props();
 
 	// Fallback image
 	const fallbackImage =
@@ -50,18 +59,18 @@
 	onmouseenter={() => onpanelenter?.()}
 	onmouseleave={() => onpanelleave?.()}
 >
-	<h3 class="font-bold text-sm mb-2 truncate" title={pack.name}>{pack.name}</h3>
-	<div class="grid grid-cols-4 gap-1.5 max-h-64 overflow-y-auto">
+	<h3 class="mb-2 truncate text-sm font-bold" title={pack.name}>{pack.name}</h3>
+	<div class="grid max-h-64 grid-cols-4 gap-1.5 overflow-y-auto">
 		{#each stamps as stamp (stamp.id)}
 			<button
-				class="w-14 h-14 cursor-pointer hover:scale-110 transition-transform bg-base-300 rounded-md overflow-hidden"
+				class="bg-base-300 h-14 w-14 cursor-pointer overflow-hidden rounded-md transition-transform hover:scale-110"
 				onclick={() => onstampselect?.(stamp)}
 				title={stamp.emojis || 'Stamp'}
 			>
 				{#if isVideoStamp(stamp)}
 					<video
 						src={getStampImagePath(stamp)}
-						class="w-full h-full object-contain"
+						class="h-full w-full object-contain"
 						autoplay
 						loop
 						muted
@@ -71,7 +80,7 @@
 					<img
 						src={getStampImagePath(stamp)}
 						alt={stamp.emojis || 'Stamp'}
-						class="w-full h-full object-contain"
+						class="h-full w-full object-contain"
 						onerror={handleImageError}
 					/>
 				{/if}
@@ -79,6 +88,6 @@
 		{/each}
 	</div>
 	{#if stamps.length === 0}
-		<div class="text-sm text-base-content/50 py-2 text-center">No stamps in this pack</div>
+		<div class="text-base-content/50 py-2 text-center text-sm">No stamps in this pack</div>
 	{/if}
 </div>

@@ -50,18 +50,20 @@
 	);
 </script>
 
-<div class={classNames('w-full h-full p-2', classes)} style={bgStyle}>
-	<div class="relative w-full h-full overflow-hidden">
-		<div class="absolute top-0 left-0 right-0 bg-white/90 z-10">
-			<span class="text-[10px] font-medium text-black truncate block text-center">{sticker.name}</span>
+<div class={classNames('h-full w-full p-2', classes)} style={bgStyle}>
+	<div class="relative h-full w-full overflow-hidden">
+		<div class="absolute left-0 right-0 top-0 z-10 bg-white/90">
+			<span class="block truncate text-center text-[10px] font-medium text-black"
+				>{sticker.name}</span
+			>
 		</div>
 		{#if isFragment}
 			<!-- Fragment sticker: show only one quadrant of the image -->
-			<div class="w-full h-full overflow-hidden">
+			<div class="h-full w-full overflow-hidden">
 				<img
 					src={sticker.image}
 					alt={sticker.name}
-					class="w-full h-full object-contain"
+					class="h-full w-full object-contain"
 					style={fragmentStyle}
 					onerror={handleImageError}
 				/>
@@ -71,13 +73,15 @@
 			<img
 				src={sticker.image}
 				alt={sticker.name}
-				class="w-full h-full object-contain"
+				class="h-full w-full object-contain"
 				onerror={handleImageError}
 			/>
 		{/if}
 		{#if sticker.sourceName}
-			<div class="absolute bottom-0 left-0 right-0 bg-white/90 z-10">
-				<span class="text-[8px] font-medium text-black truncate block text-center">{sticker.sourceName}</span>
+			<div class="absolute bottom-0 left-0 right-0 z-10 bg-white/90">
+				<span class="block truncate text-center text-[8px] font-medium text-black"
+					>{sticker.sourceName}</span
+				>
 			</div>
 		{/if}
 	</div>

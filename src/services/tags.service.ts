@@ -62,7 +62,9 @@ export async function getTagsByCard(cardId: ID): Promise<Tag[]> {
 /**
  * Create a new tag
  */
-export async function createTag(tag: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>): Promise<Tag | null> {
+export async function createTag(
+	tag: Omit<Tag, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Tag | null> {
 	try {
 		return await invoke<Tag>('create_tag', { tag });
 	} catch (e) {

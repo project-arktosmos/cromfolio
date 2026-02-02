@@ -148,14 +148,14 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Export Collections</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Export Collections</h1>
 
-	<div class="grid grid-cols-2 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-2 gap-4">
 		<!-- Column 1: Collections List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Collections</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Collections</h2>
 
 				<!-- Search -->
 				<div class="mb-3">
@@ -173,7 +173,7 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if filteredCollections.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No collections found.</p>
 						</div>
 					{:else}
@@ -181,11 +181,10 @@
 							{#each filteredCollections as collection (collection.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary':
-												selectedCollection?.id === collection.id,
+											'bg-primary/20 ring-primary ring-2': selectedCollection?.id === collection.id,
 											'bg-base-100': selectedCollection?.id !== collection.id
 										}
 									)}
@@ -199,19 +198,19 @@
 											<img
 												src={collection.coverImage}
 												alt={collection.title}
-												class="w-10 h-10 rounded object-cover"
+												class="h-10 w-10 rounded object-cover"
 											/>
 										{:else}
 											<div
-												class="w-10 h-10 rounded bg-base-300 flex items-center justify-center text-lg"
+												class="bg-base-300 flex h-10 w-10 items-center justify-center rounded text-lg"
 											>
 												?
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
-											<div class="font-medium truncate">{collection.title}</div>
+										<div class="min-w-0 flex-1">
+											<div class="truncate font-medium">{collection.title}</div>
 											{#if collection.description}
-												<div class="text-xs text-base-content/60 truncate">
+												<div class="text-base-content/60 truncate text-xs">
 													{collection.description}
 												</div>
 											{/if}
@@ -223,20 +222,20 @@
 					{/if}
 				</div>
 
-				<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+				<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 					{filteredCollections.length} collection{filteredCollections.length !== 1 ? 's' : ''}
 				</div>
 			</div>
 		</div>
 
 		<!-- Column 2: Export Panel -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">
 						Export Data
 						{#if selectedCollection}
-							<span class="text-sm font-normal text-base-content/60">
+							<span class="text-base-content/60 text-sm font-normal">
 								- {selectedCollection.title}
 							</span>
 						{/if}
@@ -248,27 +247,25 @@
 					{/if}
 				</div>
 
-				<div class="flex-1 overflow-hidden flex flex-col">
+				<div class="flex flex-1 flex-col overflow-hidden">
 					{#if !selectedCollection}
-						<div class="flex-1 flex items-center justify-center text-base-content/60">
+						<div class="text-base-content/60 flex flex-1 items-center justify-center">
 							<p>Select a collection to export its data.</p>
 						</div>
 					{:else if isLoadingExport}
-						<div class="flex-1 flex items-center justify-center">
+						<div class="flex flex-1 items-center justify-center">
 							<span class="loading loading-spinner loading-lg"></span>
 						</div>
 					{:else if exportData}
 						<!-- Stats -->
-						<div class="mb-3 flex gap-2 flex-wrap">
+						<div class="mb-3 flex flex-wrap gap-2">
 							<span class="badge badge-info">
-								{exportData.stickers.length} sticker{exportData.stickers.length !== 1
-									? 's'
-									: ''}
+								{exportData.stickers.length} sticker{exportData.stickers.length !== 1 ? 's' : ''}
 							</span>
 						</div>
 
 						<!-- Export Actions -->
-						<div class="mb-4 p-3 bg-base-100 rounded-lg space-y-3">
+						<div class="bg-base-100 mb-4 space-y-3 rounded-lg p-3">
 							<div class="flex items-center justify-between">
 								<span class="text-sm font-medium">Export to Filesystem</span>
 								<button
@@ -284,36 +281,34 @@
 							</div>
 
 							{#if prepareResult}
-								<div class="text-xs space-y-1 p-2 bg-success/10 rounded">
+								<div class="bg-success/10 space-y-1 rounded p-2 text-xs">
 									<div class="flex justify-between">
 										<span class="text-base-content/60">From cache:</span>
-										<span class="font-mono text-success">{prepareResult.stickersCopied}</span>
+										<span class="text-success font-mono">{prepareResult.stickersCopied}</span>
 									</div>
 									{#if prepareResult.stickersFetched > 0}
 										<div class="flex justify-between">
 											<span class="text-base-content/60">Fetched:</span>
-											<span class="font-mono text-info">{prepareResult.stickersFetched}</span>
+											<span class="text-info font-mono">{prepareResult.stickersFetched}</span>
 										</div>
 									{/if}
 									{#if prepareResult.stickersMissing > 0}
 										<div class="flex justify-between">
 											<span class="text-base-content/60">Failed:</span>
-											<span class="font-mono text-error">{prepareResult.stickersMissing}</span>
+											<span class="text-error font-mono">{prepareResult.stickersMissing}</span>
 										</div>
 									{/if}
-									<div class="pt-1 border-t border-base-300">
+									<div class="border-base-300 border-t pt-1">
 										<div class="flex items-center justify-between">
 											<span class="text-base-content/60">Export directory:</span>
-											<button class="btn btn-xs btn-ghost" onclick={openExportDir}>
-												Open
-											</button>
+											<button class="btn btn-xs btn-ghost" onclick={openExportDir}> Open </button>
 										</div>
-										<div class="font-mono text-xs break-all mt-1">{prepareResult.exportDir}</div>
+										<div class="mt-1 break-all font-mono text-xs">{prepareResult.exportDir}</div>
 									</div>
 								</div>
 
 								<!-- Create Torrent -->
-								<div class="flex items-center justify-between pt-2 border-t border-base-300">
+								<div class="border-base-300 flex items-center justify-between border-t pt-2">
 									<span class="text-sm font-medium">Create Torrent</span>
 									<button
 										class="btn btn-sm btn-accent"
@@ -328,14 +323,14 @@
 								</div>
 
 								{#if torrentResult}
-									<div class="text-xs space-y-1 p-2 bg-accent/10 rounded">
+									<div class="bg-accent/10 space-y-1 rounded p-2 text-xs">
 										<div>
 											<span class="text-base-content/60">Info Hash:</span>
-											<div class="font-mono text-xs break-all mt-1">{torrentResult.infoHash}</div>
+											<div class="mt-1 break-all font-mono text-xs">{torrentResult.infoHash}</div>
 										</div>
-										<div class="pt-1 border-t border-base-300">
+										<div class="border-base-300 border-t pt-1">
 											<span class="text-base-content/60">Torrent file:</span>
-											<div class="font-mono text-xs break-all mt-1">
+											<div class="mt-1 break-all font-mono text-xs">
 												{torrentResult.torrentPath}
 											</div>
 										</div>
@@ -344,18 +339,18 @@
 							{/if}
 
 							{#if exportError}
-								<div class="text-xs p-2 bg-error/10 text-error rounded">
+								<div class="bg-error/10 text-error rounded p-2 text-xs">
 									{exportError}
 								</div>
 							{/if}
 						</div>
 
 						<!-- JSON Preview -->
-						<div class="flex-1 overflow-auto bg-base-300 rounded-lg p-3">
-							<pre class="text-xs font-mono whitespace-pre-wrap break-all">{jsonString}</pre>
+						<div class="bg-base-300 flex-1 overflow-auto rounded-lg p-3">
+							<pre class="whitespace-pre-wrap break-all font-mono text-xs">{jsonString}</pre>
 						</div>
 					{:else}
-						<div class="flex-1 flex items-center justify-center text-error">
+						<div class="text-error flex flex-1 items-center justify-center">
 							<p>Failed to load collection data.</p>
 						</div>
 					{/if}

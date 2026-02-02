@@ -9,7 +9,12 @@
  * - Animechan: 20 requests/hour (free tier)
  */
 
-import type { Quote, QuoteSearchResult, AnimechanQuote, AnimechanResponse } from '$types/quotes.type';
+import type {
+	Quote,
+	QuoteSearchResult,
+	AnimechanQuote,
+	AnimechanResponse
+} from '$types/quotes.type';
 import { getQuotes as getWikiquotes } from './wikiquote.service';
 
 const ANIMECHAN_BASE_URL = 'https://api.animechan.io/v1';

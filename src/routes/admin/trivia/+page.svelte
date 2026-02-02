@@ -8,10 +8,7 @@
 		updateQuestion as updateQuestionService,
 		removeQuestion as removeQuestionService
 	} from '$services/questions.service';
-	import {
-		fetchTriviaForSource,
-		convertToQuestion
-	} from '$services/trivia-fetch.service';
+	import { fetchTriviaForSource, convertToQuestion } from '$services/trivia-fetch.service';
 	import type { Source, SourceType } from '$types/source.type';
 	import type { Question, Difficulty } from '$types/question.type';
 	import type { FetchedTrivia, TriviaSource } from '$types/trivia-api.type';
@@ -140,9 +137,10 @@
 			formQuestionText = question.questionText;
 			formCorrectAnswer = question.correctAnswer;
 			// Ensure we have at least 2 wrong answer slots
-			formWrongAnswers = question.wrongAnswers.length >= 2
-				? [...question.wrongAnswers]
-				: [...question.wrongAnswers, ...Array(2 - question.wrongAnswers.length).fill('')];
+			formWrongAnswers =
+				question.wrongAnswers.length >= 2
+					? [...question.wrongAnswers]
+					: [...question.wrongAnswers, ...Array(2 - question.wrongAnswers.length).fill('')];
 			formDifficulty = question.difficulty || '';
 			isEditing = true;
 		}
@@ -150,7 +148,8 @@
 
 	// Add a new question
 	async function addQuestion() {
-		if (!selectedSource || !formQuestionText.trim() || !formCorrectAnswer.trim() || isSaving) return;
+		if (!selectedSource || !formQuestionText.trim() || !formCorrectAnswer.trim() || isSaving)
+			return;
 
 		isSaving = true;
 		// Filter out empty wrong answers
@@ -175,7 +174,14 @@
 
 	// Update an existing question
 	async function updateQuestion() {
-		if (!selectedSource || !selectedQuestion || !formQuestionText.trim() || !formCorrectAnswer.trim() || isSaving) return;
+		if (
+			!selectedSource ||
+			!selectedQuestion ||
+			!formQuestionText.trim() ||
+			!formCorrectAnswer.trim() ||
+			isSaving
+		)
+			return;
 
 		isSaving = true;
 		// Filter out empty wrong answers
@@ -221,11 +227,7 @@
 	}
 
 	// Check if form is valid (need question text, correct answer, and at least source selected)
-	let isFormValid = $derived(
-		formQuestionText.trim() &&
-			formCorrectAnswer.trim() &&
-			selectedSource
-	);
+	let isFormValid = $derived(formQuestionText.trim() && formCorrectAnswer.trim() && selectedSource);
 
 	// Add a new wrong answer slot
 	function addWrongAnswer() {
@@ -279,14 +281,11 @@
 		fetchErrors = [];
 
 		try {
-			const result = await fetchTriviaForSource(
-				selectedSource,
-				{
-					sources: fetchSources,
-					difficulty: fetchDifficulty || undefined,
-					amount: fetchAmount
-				}
-			);
+			const result = await fetchTriviaForSource(selectedSource, {
+				sources: fetchSources,
+				difficulty: fetchDifficulty || undefined,
+				amount: fetchAmount
+			});
 
 			fetchedTrivia = result.trivia;
 			fetchErrors = result.errors;
@@ -342,27 +341,24 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Trivia Manager</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Trivia Manager</h1>
 
-	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4">
 		<!-- Column 1: Sources List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Sources</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Sources</h2>
 
 				<!-- Filters -->
-				<div class="space-y-2 mb-3">
+				<div class="mb-3 space-y-2">
 					<input
 						type="text"
 						placeholder="Search sources..."
 						class="input input-bordered input-sm w-full"
 						bind:value={searchQuery}
 					/>
-					<select
-						class="select select-bordered select-sm w-full"
-						bind:value={sourceTypeFilter}
-					>
+					<select class="select select-bordered select-sm w-full" bind:value={sourceTypeFilter}>
 						<option value="all">All Types</option>
 						{#each Object.entries(sourceTypeLabels) as [value, label]}
 							<option {value}>{label}</option>
@@ -376,7 +372,7 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if filteredSources.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No sources found.</p>
 						</div>
 					{:else}
@@ -384,10 +380,10 @@
 							{#each filteredSources as source (source.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedSource?.id === source.id,
+											'bg-primary/20 ring-primary ring-2': selectedSource?.id === source.id,
 											'bg-base-100': selectedSource?.id !== source.id
 										}
 									)}
@@ -401,16 +397,18 @@
 											<img
 												src={source.coverImage}
 												alt={source.title}
-												class="w-8 h-8 rounded object-cover"
+												class="h-8 w-8 rounded object-cover"
 											/>
 										{:else}
-											<div class="w-8 h-8 rounded bg-base-300 flex items-center justify-center text-xs">
+											<div
+												class="bg-base-300 flex h-8 w-8 items-center justify-center rounded text-xs"
+											>
 												?
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
-											<div class="font-medium text-sm truncate">{source.title}</div>
-											<div class="text-xs text-base-content/60">
+										<div class="min-w-0 flex-1">
+											<div class="truncate text-sm font-medium">{source.title}</div>
+											<div class="text-base-content/60 text-xs">
 												{sourceTypeLabels[source.sourceType]}
 											</div>
 										</div>
@@ -421,27 +419,25 @@
 					{/if}
 				</div>
 
-				<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+				<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 					{filteredSources.length} source{filteredSources.length !== 1 ? 's' : ''}
 				</div>
 			</div>
 		</div>
 
 		<!-- Column 2: Questions List / Fetch Preview -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
 				{#if showPreview}
 					<!-- Fetch Preview Mode -->
-					<div class="flex items-center justify-between mb-2">
+					<div class="mb-2 flex items-center justify-between">
 						<h2 class="card-title text-lg">
 							Fetched Trivia
-							<span class="text-sm font-normal text-base-content/60">
+							<span class="text-base-content/60 text-sm font-normal">
 								({fetchedTrivia.length} found)
 							</span>
 						</h2>
-						<button class="btn btn-ghost btn-sm" onclick={closeFetchPreview}>
-							Cancel
-						</button>
+						<button class="btn btn-ghost btn-sm" onclick={closeFetchPreview}> Cancel </button>
 					</div>
 
 					{#if fetchErrors.length > 0}
@@ -452,30 +448,26 @@
 						</div>
 					{/if}
 
-					<div class="flex gap-2 mb-2">
-						<button class="btn btn-xs btn-ghost" onclick={selectAllTrivia}>
-							Select All
-						</button>
-						<button class="btn btn-xs btn-ghost" onclick={deselectAllTrivia}>
-							Deselect All
-						</button>
+					<div class="mb-2 flex gap-2">
+						<button class="btn btn-xs btn-ghost" onclick={selectAllTrivia}> Select All </button>
+						<button class="btn btn-xs btn-ghost" onclick={deselectAllTrivia}> Deselect All </button>
 					</div>
 
 					<div class="flex-1 overflow-y-auto">
 						{#if fetchedTrivia.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>No trivia found.</p>
-								<p class="text-sm mt-1">Try different sources or search terms.</p>
+								<p class="mt-1 text-sm">Try different sources or search terms.</p>
 							</div>
 						{:else}
 							<div class="space-y-2">
 								{#each fetchedTrivia as trivia (trivia.id)}
 									<div
 										class={classNames(
-											'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+											'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 											'hover:bg-base-300',
 											{
-												'bg-success/20 ring-2 ring-success': trivia.selected,
+												'bg-success/20 ring-success ring-2': trivia.selected,
 												'bg-base-100': !trivia.selected
 											}
 										)}
@@ -492,9 +484,11 @@
 												onclick={(e) => e.stopPropagation()}
 												onchange={() => toggleTriviaSelection(trivia)}
 											/>
-											<div class="flex-1 min-w-0">
-												<div class="flex items-center gap-2 mb-1">
-													<span class={classNames('badge badge-xs', sourceBadgeClasses[trivia.source])}>
+											<div class="min-w-0 flex-1">
+												<div class="mb-1 flex items-center gap-2">
+													<span
+														class={classNames('badge badge-xs', sourceBadgeClasses[trivia.source])}
+													>
 														{sourceLabels[trivia.source]}
 													</span>
 													{#if trivia.difficulty}
@@ -509,10 +503,10 @@
 														</span>
 													{/if}
 												</div>
-												<div class="font-medium text-sm line-clamp-2">
+												<div class="line-clamp-2 text-sm font-medium">
 													{trivia.questionText}
 												</div>
-												<div class="text-xs text-base-content/60 mt-1">
+												<div class="text-base-content/60 mt-1 text-xs">
 													<span class="text-success">{trivia.correctAnswer}</span>
 													{#each trivia.incorrectAnswers as wrong}
 														<span class="mx-1">|</span>
@@ -527,7 +521,7 @@
 						{/if}
 					</div>
 
-					<div class="mt-2 pt-2 border-t border-base-300">
+					<div class="border-base-300 mt-2 border-t pt-2">
 						<button
 							class="btn btn-success w-full"
 							onclick={importSelectedTrivia}
@@ -543,11 +537,11 @@
 					</div>
 				{:else}
 					<!-- Normal Questions List Mode -->
-					<div class="flex items-center justify-between mb-2">
+					<div class="mb-2 flex items-center justify-between">
 						<h2 class="card-title text-lg">
 							Questions
 							{#if selectedSource}
-								<span class="text-sm font-normal text-base-content/60">
+								<span class="text-base-content/60 text-sm font-normal">
 									for {selectedSource.title}
 								</span>
 							{/if}
@@ -561,7 +555,7 @@
 
 					<div class="flex-1 overflow-y-auto">
 						{#if !selectedSource}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>Select a source to view its questions.</p>
 							</div>
 						{:else if isLoadingQuestions}
@@ -569,19 +563,19 @@
 								<span class="loading loading-spinner loading-md"></span>
 							</div>
 						{:else if questions.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>No questions yet.</p>
-								<p class="text-sm mt-1">Create questions using the form or fetch from APIs.</p>
+								<p class="mt-1 text-sm">Create questions using the form or fetch from APIs.</p>
 							</div>
 						{:else}
 							<div class="space-y-2">
 								{#each questions as question (question.id)}
 									<div
 										class={classNames(
-											'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+											'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 											'hover:bg-base-300',
 											{
-												'bg-primary/20 ring-2 ring-primary': selectedQuestion?.id === question.id,
+												'bg-primary/20 ring-primary ring-2': selectedQuestion?.id === question.id,
 												'bg-base-100': selectedQuestion?.id !== question.id
 											}
 										)}
@@ -591,15 +585,15 @@
 										tabindex="0"
 									>
 										<div class="flex items-start justify-between gap-2">
-											<div class="flex-1 min-w-0">
-												<div class="font-medium text-sm line-clamp-2">
+											<div class="min-w-0 flex-1">
+												<div class="line-clamp-2 text-sm font-medium">
 													{question.questionText}
 												</div>
-												<div class="text-xs mt-1">
+												<div class="mt-1 text-xs">
 													<span class="text-success">{question.correctAnswer}</span>
 													{#if question.wrongAnswers.length > 0}
 														{#each question.wrongAnswers as wrong}
-															<span class="mx-1 text-base-content/40">|</span>
+															<span class="text-base-content/40 mx-1">|</span>
 															<span class="text-base-content/60">{wrong}</span>
 														{/each}
 													{/if}
@@ -633,7 +627,7 @@
 					</div>
 
 					{#if selectedSource}
-						<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+						<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 							{questions.length} question{questions.length !== 1 ? 's' : ''}
 						</div>
 					{/if}
@@ -642,9 +636,9 @@
 		</div>
 
 		<!-- Column 3: Question Form -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">
 						{isEditing ? 'Edit Question' : 'Add Question'}
 					</h2>
@@ -654,7 +648,7 @@
 				</div>
 
 				{#if !selectedSource}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>Select a source to add questions.</p>
 					</div>
 				{:else}
@@ -668,7 +662,7 @@
 								<textarea
 									id="question-text"
 									placeholder="Enter your trivia question..."
-									class="textarea textarea-bordered w-full h-20"
+									class="textarea textarea-bordered h-20 w-full"
 									bind:value={formQuestionText}
 								></textarea>
 							</div>
@@ -689,15 +683,11 @@
 
 							<!-- Wrong Answers -->
 							<div class="form-control">
-								<div class="flex items-center justify-between mb-1">
+								<div class="mb-1 flex items-center justify-between">
 									<label class="label py-0">
 										<span class="label-text">Wrong Answers</span>
 									</label>
-									<button
-										type="button"
-										class="btn btn-ghost btn-xs"
-										onclick={addWrongAnswer}
-									>
+									<button type="button" class="btn btn-ghost btn-xs" onclick={addWrongAnswer}>
 										+ Add
 									</button>
 								</div>
@@ -767,7 +757,7 @@
 {#if showFetchModal}
 	<div class="modal modal-open">
 		<div class="modal-box">
-			<h3 class="font-bold text-lg mb-4">Fetch Trivia for "{selectedSource?.title}"</h3>
+			<h3 class="mb-4 text-lg font-bold">Fetch Trivia for "{selectedSource?.title}"</h3>
 
 			<!-- Sources -->
 			<div class="form-control mb-4">

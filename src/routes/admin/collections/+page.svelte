@@ -260,14 +260,14 @@
 	}
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-	<h1 class="text-2xl font-bold mb-4 flex-shrink-0">Collections</h1>
+<div class="flex h-full flex-col overflow-hidden">
+	<h1 class="mb-4 flex-shrink-0 text-2xl font-bold">Collections</h1>
 
-	<div class="grid grid-cols-5 gap-4 flex-1 min-h-0 overflow-hidden">
+	<div class="grid min-h-0 flex-1 grid-cols-5 gap-4 overflow-hidden">
 		<!-- Column 1: Sources List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">Sources</h2>
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Sources</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if isLoading}
@@ -275,7 +275,7 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if sources.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No sources found.</p>
 						</div>
 					{:else}
@@ -283,10 +283,10 @@
 							{#each sources as source (source.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedSource?.id === source.id,
+											'bg-primary/20 ring-primary ring-2': selectedSource?.id === source.id,
 											'bg-base-100': selectedSource?.id !== source.id
 										}
 									)}
@@ -300,17 +300,17 @@
 											<img
 												src={source.coverImage}
 												alt={source.title}
-												class="w-8 h-12 object-cover rounded"
+												class="h-12 w-8 rounded object-cover"
 											/>
 										{:else}
 											<div
-												class="w-8 h-12 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+												class="bg-base-300 text-base-content/30 flex h-12 w-8 items-center justify-center rounded"
 											>
 												<span class="text-xs">?</span>
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
-											<span class="font-medium text-sm truncate block">{source.title}</span>
+										<div class="min-w-0 flex-1">
+											<span class="block truncate text-sm font-medium">{source.title}</span>
 											<span
 												class={classNames(
 													'badge badge-xs mt-1',
@@ -330,14 +330,14 @@
 		</div>
 
 		<!-- Column 2: Collections + Actions -->
-		<div class="flex flex-col gap-4 min-h-0 overflow-hidden">
+		<div class="flex min-h-0 flex-col gap-4 overflow-hidden">
 			<!-- Collections Panel (50%) -->
-			<div class="card bg-base-200 overflow-hidden flex flex-col h-1/2">
-				<div class="card-body p-4 flex flex-col min-h-0">
-					<h2 class="card-title text-lg mb-2">Collections</h2>
+			<div class="card bg-base-200 flex h-1/2 flex-col overflow-hidden">
+				<div class="card-body flex min-h-0 flex-col p-4">
+					<h2 class="card-title mb-2 text-lg">Collections</h2>
 
 					<!-- Create Form -->
-					<div class="flex gap-2 mb-4">
+					<div class="mb-4 flex gap-2">
 						<input
 							type="text"
 							class="input input-bordered input-sm flex-1"
@@ -364,9 +364,9 @@
 								<span class="loading loading-spinner loading-md"></span>
 							</div>
 						{:else if collections.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>No collections yet.</p>
-								<p class="text-sm mt-1">Create one above.</p>
+								<p class="mt-1 text-sm">Create one above.</p>
 							</div>
 						{:else}
 							<div class="space-y-2">
@@ -374,10 +374,10 @@
 									{@const collectionType = getCollectionTypeById(collection.collectionTypeId)}
 									<div
 										class={classNames(
-											'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+											'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 											'hover:bg-base-300',
 											{
-												'bg-primary/20 ring-2 ring-primary':
+												'bg-primary/20 ring-primary ring-2':
 													selectedCollection?.id === collection.id,
 												'bg-base-100': selectedCollection?.id !== collection.id
 											}
@@ -388,7 +388,7 @@
 										tabindex="0"
 									>
 										<div class="flex items-center justify-between gap-1">
-											<span class="font-medium truncate flex-1">{collection.title}</span>
+											<span class="flex-1 truncate font-medium">{collection.title}</span>
 											<button
 												class="btn btn-ghost btn-xs text-error flex-shrink-0"
 												onclick={(e) => handleDeleteCollection(collection, e)}
@@ -425,9 +425,9 @@
 			</div>
 
 			<!-- Actions Panel (50%) -->
-			<div class="card bg-base-200 overflow-hidden flex flex-col h-1/2">
-				<div class="card-body p-4 flex flex-col min-h-0">
-					<h2 class="card-title text-lg mb-2">Actions</h2>
+			<div class="card bg-base-200 flex h-1/2 flex-col overflow-hidden">
+				<div class="card-body flex min-h-0 flex-col p-4">
+					<h2 class="card-title mb-2 text-lg">Actions</h2>
 
 					<div class="flex flex-col gap-2">
 						<button
@@ -447,11 +447,11 @@
 						</button>
 
 						{#if !selectedSource}
-							<p class="text-xs text-base-content/50 text-center">
+							<p class="text-base-content/50 text-center text-xs">
 								Select a source to enable auto-generate
 							</p>
 						{:else}
-							<p class="text-xs text-base-content/50 text-center">
+							<p class="text-base-content/50 text-center text-xs">
 								Create collection "{selectedSource.title}" with all its stickers
 							</p>
 						{/if}
@@ -461,9 +461,9 @@
 		</div>
 
 		<!-- Column 3: Source Stickers (source) -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">
 					{#if selectedSource}
 						Stickers in "{selectedSource.title}"
 					{:else}
@@ -473,7 +473,7 @@
 
 				<div class="flex-1 overflow-y-auto">
 					{#if !selectedSource}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Select an source to view its stickers.</p>
 						</div>
 					{:else if isLoadingAlbumTemplates}
@@ -481,7 +481,7 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if sourceStickers.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No stickers in this source.</p>
 						</div>
 					{:else}
@@ -491,12 +491,12 @@
 								{@const tags = getStickerTags(sticker.id)}
 								<button
 									class={classNames(
-										'flex gap-3 p-2 rounded-lg transition-all bg-base-100 text-left',
+										'bg-base-100 flex gap-3 rounded-lg p-2 text-left transition-all',
 										{
-											'ring-2 ring-success opacity-50': isStickerInCollection(sticker.id),
-											'hover:ring-2 hover:ring-primary cursor-pointer':
+											'ring-success opacity-50 ring-2': isStickerInCollection(sticker.id),
+											'hover:ring-primary cursor-pointer hover:ring-2':
 												!isStickerInCollection(sticker.id) && selectedCollection,
-											'opacity-50 cursor-not-allowed': !selectedCollection
+											'cursor-not-allowed opacity-50': !selectedCollection
 										}
 									)}
 									onclick={() => handleAddSticker(sticker)}
@@ -513,7 +513,7 @@
 									<img
 										src={sticker.image}
 										alt={sticker.name}
-										class="w-12 h-16 object-cover rounded flex-shrink-0"
+										class="h-16 w-12 flex-shrink-0 rounded object-cover"
 										loading="lazy"
 										onerror={(e) => {
 											(e.target as HTMLImageElement).src =
@@ -522,10 +522,10 @@
 									/>
 
 									<!-- Content -->
-									<div class="flex-1 min-w-0 flex flex-col gap-1">
+									<div class="flex min-w-0 flex-1 flex-col gap-1">
 										<!-- Name -->
 										<div class="flex items-center justify-between gap-2">
-											<span class="font-medium text-sm truncate">{sticker.name}</span>
+											<span class="truncate text-sm font-medium">{sticker.name}</span>
 											{#if isStickerInCollection(sticker.id)}
 												<span class="badge badge-success badge-xs flex-shrink-0">
 													<svg
@@ -547,7 +547,7 @@
 										<!-- Source -->
 										{#if stickerAlbum}
 											<div class="flex items-center gap-1">
-												<span class="text-xs text-base-content/60">Source:</span>
+												<span class="text-base-content/60 text-xs">Source:</span>
 												<span
 													class={classNames(
 														'badge badge-xs',
@@ -569,7 +569,7 @@
 												{/each}
 											</div>
 										{:else}
-											<span class="text-xs text-base-content/40 italic">No tags</span>
+											<span class="text-base-content/40 text-xs italic">No tags</span>
 										{/if}
 									</div>
 								</button>
@@ -580,16 +580,16 @@
 
 				{#if selectedSource && sourceStickers.length > 0 && !selectedCollection}
 					<div class="mt-2 text-center">
-						<span class="text-xs text-base-content/50">Select a collection to add stickers</span>
+						<span class="text-base-content/50 text-xs">Select a collection to add stickers</span>
 					</div>
 				{/if}
 			</div>
 		</div>
 
 		<!-- Column 4: Collection Stickers (target) -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">
 					{#if selectedCollection}
 						Stickers in "{selectedCollection.title}"
 					{:else}
@@ -599,7 +599,7 @@
 
 				<div class="flex-1 overflow-y-auto">
 					{#if !selectedCollection}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Select a collection to view its stickers.</p>
 						</div>
 					{:else if isLoadingCollectionTemplates}
@@ -607,17 +607,17 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if collectionStickers.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No stickers in this collection.</p>
-							<p class="text-sm mt-1">Click stickers from an source to add them.</p>
+							<p class="mt-1 text-sm">Click stickers from an source to add them.</p>
 						</div>
 					{:else}
 						<div class="flex gap-2">
 							<!-- Left column -->
-							<div class="flex-1 flex flex-col gap-2">
+							<div class="flex flex-1 flex-col gap-2">
 								{#each collectionStickers.filter((_, i) => i % 2 === 0) as sticker (sticker.id)}
 									<div
-										class="relative group cursor-pointer ring-2 ring-primary"
+										class="ring-primary group relative cursor-pointer ring-2"
 										title="Click to remove from collection"
 										onmouseenter={() => (hoveredSticker = sticker)}
 										onmouseleave={() => (hoveredSticker = null)}
@@ -627,11 +627,13 @@
 										tabindex="0"
 									>
 										<StickerItem {sticker} />
-										<div class="p-2 bg-base-200">
-											<h3 class="text-xs font-medium text-center leading-tight truncate">{sticker.name}</h3>
+										<div class="bg-base-200 p-2">
+											<h3 class="truncate text-center text-xs font-medium leading-tight">
+												{sticker.name}
+											</h3>
 										</div>
 										<div
-											class="absolute inset-0 bg-error/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none rounded"
+											class="bg-error/20 pointer-events-none absolute inset-0 flex items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100"
 										>
 											<span class="badge badge-error badge-sm">Remove</span>
 										</div>
@@ -639,10 +641,10 @@
 								{/each}
 							</div>
 							<!-- Right column -->
-							<div class="flex-1 flex flex-col gap-2">
+							<div class="flex flex-1 flex-col gap-2">
 								{#each collectionStickers.filter((_, i) => i % 2 === 1) as sticker (sticker.id)}
 									<div
-										class="relative group cursor-pointer ring-2 ring-primary"
+										class="ring-primary group relative cursor-pointer ring-2"
 										title="Click to remove from collection"
 										onmouseenter={() => (hoveredSticker = sticker)}
 										onmouseleave={() => (hoveredSticker = null)}
@@ -652,11 +654,13 @@
 										tabindex="0"
 									>
 										<StickerItem {sticker} />
-										<div class="p-2 bg-base-200">
-											<h3 class="text-xs font-medium text-center leading-tight truncate">{sticker.name}</h3>
+										<div class="bg-base-200 p-2">
+											<h3 class="truncate text-center text-xs font-medium leading-tight">
+												{sticker.name}
+											</h3>
 										</div>
 										<div
-											class="absolute inset-0 bg-error/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none rounded"
+											class="bg-error/20 pointer-events-none absolute inset-0 flex items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100"
 										>
 											<span class="badge badge-error badge-sm">Remove</span>
 										</div>
@@ -669,7 +673,7 @@
 
 				{#if selectedCollection && collectionStickers.length > 0}
 					<div class="mt-2 text-center">
-						<span class="text-xs text-base-content/50">
+						<span class="text-base-content/50 text-xs">
 							{collectionStickers.length} sticker{collectionStickers.length === 1 ? '' : 's'}
 						</span>
 					</div>
@@ -678,13 +682,13 @@
 		</div>
 
 		<!-- Column 5: Sticker Detail Preview -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">Sticker Details</h2>
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Sticker Details</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if !hoveredSticker}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Hover over a sticker to see details.</p>
 						</div>
 					{:else}
@@ -708,26 +712,26 @@
 							<div class="space-y-3">
 								<!-- Name -->
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide">Name</span>
-									<p class="font-semibold text-lg">{hoveredSticker.name}</p>
+									<span class="text-base-content/60 text-xs uppercase tracking-wide">Name</span>
+									<p class="text-lg font-semibold">{hoveredSticker.name}</p>
 								</div>
 
 								<!-- ID -->
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide">ID</span>
+									<span class="text-base-content/60 text-xs uppercase tracking-wide">ID</span>
 									<p class="font-mono text-sm">{hoveredSticker.id}</p>
 								</div>
 
 								<!-- Source -->
 								{#if stickerSource}
 									<div>
-										<span class="text-xs text-base-content/60 uppercase tracking-wide">Source</span>
-										<div class="flex items-center gap-2 mt-1">
+										<span class="text-base-content/60 text-xs uppercase tracking-wide">Source</span>
+										<div class="mt-1 flex items-center gap-2">
 											{#if stickerSource.coverImage}
 												<img
 													src={stickerSource.coverImage}
 													alt={stickerSource.title}
-													class="w-8 h-12 object-cover rounded"
+													class="h-12 w-8 rounded object-cover"
 												/>
 											{/if}
 											<div>
@@ -748,7 +752,9 @@
 								<!-- Image Source -->
 								{#if hoveredSticker.imageSource}
 									<div>
-										<span class="text-xs text-base-content/60 uppercase tracking-wide">Image Source</span>
+										<span class="text-base-content/60 text-xs uppercase tracking-wide"
+											>Image Source</span
+										>
 										<p class="badge badge-ghost badge-sm">{hoveredSticker.imageSource}</p>
 									</div>
 								{/if}
@@ -756,8 +762,8 @@
 								<!-- Tags -->
 								{#if stickerTags.length > 0}
 									<div>
-										<span class="text-xs text-base-content/60 uppercase tracking-wide">Tags</span>
-										<div class="flex flex-wrap gap-1 mt-1">
+										<span class="text-base-content/60 text-xs uppercase tracking-wide">Tags</span>
+										<div class="mt-1 flex flex-wrap gap-1">
 											{#each stickerTags as tag (tag.id)}
 												<span class="badge badge-outline badge-sm">
 													{tag.key}: {tag.value}
@@ -770,14 +776,15 @@
 								<!-- Dates -->
 								{#if hoveredSticker.createdAt}
 									<div>
-										<span class="text-xs text-base-content/60 uppercase tracking-wide">Created</span>
+										<span class="text-base-content/60 text-xs uppercase tracking-wide">Created</span
+										>
 										<p class="text-sm">{new Date(hoveredSticker.createdAt).toLocaleDateString()}</p>
 									</div>
 								{/if}
 
 								<!-- In Collection Status -->
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide">Status</span>
+									<span class="text-base-content/60 text-xs uppercase tracking-wide">Status</span>
 									<p class="mt-1">
 										{#if isStickerInCollection(hoveredSticker.id)}
 											<span class="badge badge-success badge-sm gap-1">

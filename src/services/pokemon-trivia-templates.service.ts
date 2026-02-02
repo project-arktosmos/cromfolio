@@ -4,7 +4,10 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import type { PokemonTriviaTemplate, PokemonTriviaTemplateV2 } from '$types/pokemon-trivia-template.type';
+import type {
+	PokemonTriviaTemplate,
+	PokemonTriviaTemplateV2
+} from '$types/pokemon-trivia-template.type';
 import type { ID } from '$types/core.type';
 
 /**
@@ -135,9 +138,7 @@ export async function getAllPokemonTriviaTemplatesV2(): Promise<PokemonTriviaTem
 /**
  * Get a single Pokemon trivia template v2 by ID
  */
-export async function getPokemonTriviaTemplateV2(
-	id: ID
-): Promise<PokemonTriviaTemplateV2 | null> {
+export async function getPokemonTriviaTemplateV2(id: ID): Promise<PokemonTriviaTemplateV2 | null> {
 	try {
 		return await invoke<PokemonTriviaTemplateV2 | null>('get_pokemon_trivia_template_v2', {
 			id: String(id)
@@ -174,10 +175,9 @@ export async function getPokemonTriviaTemplatesV2ByAttribute(
 	primaryAttribute: string
 ): Promise<PokemonTriviaTemplateV2[]> {
 	try {
-		return await invoke<PokemonTriviaTemplateV2[]>(
-			'get_pokemon_trivia_templates_v2_by_attribute',
-			{ primaryAttribute }
-		);
+		return await invoke<PokemonTriviaTemplateV2[]>('get_pokemon_trivia_templates_v2_by_attribute', {
+			primaryAttribute
+		});
 	} catch (e) {
 		console.error(
 			`[pokemon-trivia-templates.service] getPokemonTriviaTemplatesV2ByAttribute(${primaryAttribute}):`,

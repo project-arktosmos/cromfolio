@@ -6,7 +6,17 @@
 import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import type { DbAdapter } from './db-adapter.js';
-import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType, Collection, CollectionSticker } from '../types.js';
+import type {
+	ID,
+	Source,
+	Sticker,
+	Provider,
+	Tag,
+	ProviderType,
+	ExternalIdType,
+	Collection,
+	CollectionSticker
+} from '../types.js';
 
 function chrono_now(): string {
 	return new Date().toISOString();
@@ -130,16 +140,42 @@ function runMigrations(db: Database.Database): void {
 	`);
 
 	// Seed default collection types if empty
-	const typeCount = db.prepare('SELECT COUNT(*) as count FROM collection_types').get() as { count: number };
+	const typeCount = db.prepare('SELECT COUNT(*) as count FROM collection_types').get() as {
+		count: number;
+	};
 	if (typeCount.count === 0) {
 		const now = chrono_now();
 		const insertType = db.prepare(`
 			INSERT INTO collection_types (id, name, description, icon, sort_order, created_at, updated_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
 		`);
-		insertType.run('anime', 'Anime', 'Collections featuring anime series and movies', '🎌', 0, now, now);
-		insertType.run('awards', 'Awards', 'Collections featuring award shows and ceremonies', '🏆', 1, now, now);
-		insertType.run('pokemon', 'Pokemon', 'Collections featuring Pokemon from various generations', '⚡', 2, now, now);
+		insertType.run(
+			'anime',
+			'Anime',
+			'Collections featuring anime series and movies',
+			'🎌',
+			0,
+			now,
+			now
+		);
+		insertType.run(
+			'awards',
+			'Awards',
+			'Collections featuring award shows and ceremonies',
+			'🏆',
+			1,
+			now,
+			now
+		);
+		insertType.run(
+			'pokemon',
+			'Pokemon',
+			'Collections featuring Pokemon from various generations',
+			'⚡',
+			2,
+			now,
+			now
+		);
 	}
 
 	// Create collections table
@@ -169,8 +205,12 @@ function runMigrations(db: Database.Database): void {
 	`);
 
 	// Create collection indexes
-	db.exec(`CREATE INDEX IF NOT EXISTS idx_collection_stickers_collection_id ON collection_stickers(collection_id)`);
-	db.exec(`CREATE INDEX IF NOT EXISTS idx_collection_stickers_sticker_id ON collection_stickers(sticker_id)`);
+	db.exec(
+		`CREATE INDEX IF NOT EXISTS idx_collection_stickers_collection_id ON collection_stickers(collection_id)`
+	);
+	db.exec(
+		`CREATE INDEX IF NOT EXISTS idx_collection_stickers_sticker_id ON collection_stickers(sticker_id)`
+	);
 }
 
 export function createSqliteAdapter(dbPath: string): DbAdapter {
@@ -385,13 +425,15 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 				WHERE title = ?
 			`);
 
-			const row = stmt.get(title) as {
-				id: string;
-				source_type: string;
-				title: string;
-				description: string;
-				cover_image: string | null;
-			} | undefined;
+			const row = stmt.get(title) as
+				| {
+						id: string;
+						source_type: string;
+						title: string;
+						description: string;
+						cover_image: string | null;
+				  }
+				| undefined;
 
 			if (!row) return null;
 
@@ -411,15 +453,17 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 				WHERE title = ?
 			`);
 
-			const row = stmt.get(title) as {
-				id: string;
-				collection_type_id: string | null;
-				title: string;
-				description: string;
-				cover_image: string | null;
-				created_at: string;
-				updated_at: string;
-			} | undefined;
+			const row = stmt.get(title) as
+				| {
+						id: string;
+						collection_type_id: string | null;
+						title: string;
+						description: string;
+						cover_image: string | null;
+						created_at: string;
+						updated_at: string;
+				  }
+				| undefined;
 
 			if (!row) return null;
 
@@ -464,7 +508,11 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 			} as Collection;
 		},
 
-		async addStickerToCollection(collectionId: ID, stickerId: ID, sortOrder: number = 0): Promise<CollectionSticker> {
+		async addStickerToCollection(
+			collectionId: ID,
+			stickerId: ID,
+			sortOrder: number = 0
+		): Promise<CollectionSticker> {
 			const now = chrono_now();
 
 			const stmt = db.prepare(`

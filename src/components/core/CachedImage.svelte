@@ -110,7 +110,9 @@
 
 	const containerClasses = $derived(classNames('relative overflow-hidden', className));
 
-	const skeletonClasses = $derived(classNames('absolute inset-0 skeleton bg-base-300', skeletonClass));
+	const skeletonClasses = $derived(
+		classNames('absolute inset-0 skeleton bg-base-300', skeletonClass)
+	);
 </script>
 
 <div bind:this={containerRef} class={containerClasses} style="aspect-ratio: {aspectRatio};">
@@ -118,7 +120,7 @@
 		<div class={skeletonClasses}></div>
 	{/if}
 	{#if hasError}
-		<div class="absolute inset-0 flex items-center justify-center bg-base-300 text-base-content/40">
+		<div class="bg-base-300 text-base-content/40 absolute inset-0 flex items-center justify-center">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-8 w-8"

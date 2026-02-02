@@ -1,14 +1,21 @@
 <script lang="ts">
-	import classNames from 'classnames';
 	import { onMount } from 'svelte';
 	import { getAllCollections, getStickersForCollection } from '$services/collections.service';
-	import { acquireSticker, getOwnedStickerIds, getStickerCopyCount, getAllUserStickers } from '$services/user-stickers.service';
+	import {
+		acquireSticker,
+		getOwnedStickerIds,
+		getStickerCopyCount,
+		getAllUserStickers
+	} from '$services/user-stickers.service';
 	import { getRarityCollection } from '$services/rarities.service';
 	import type { Collection } from '$types/collection.type';
 	import type { Sticker } from '$types/sticker.type';
 	import type { Rarity } from '$types/rarity.type';
 	import { weightedRandomSelect, getRarityWeight } from '$utils/weighted-select';
-	import StickerItem from '$components/core/StickerItem.svelte';
+
+	// Child components
+	import OpenedPackDisplay from './components/OpenedPackDisplay.svelte';
+	import CollectionPackCard from './components/CollectionPackCard.svelte';
 
 	const BOOSTER_PACK_SIZE = 5;
 
@@ -16,7 +23,6 @@
 	let rarities: Rarity[] = $state([]);
 	let raritiesMap = $state<Map<string, Rarity>>(new Map());
 	let isLoading = $state(true);
-	let ownedStickerIds = $state<Set<string>>(new Set());
 
 	// Cached stickers per collection
 	let collectionStickers = $state<Map<string, Sticker[]>>(new Map());
@@ -40,10 +46,7 @@
 	let isOpeningPack = $state(false);
 
 	onMount(async () => {
-		[collections, rarities] = await Promise.all([
-			getAllCollections(),
-			getRarityCollection()
-		]);
+		[collections, rarities] = await Promise.all([getAllCollections(), getRarityCollection()]);
 		raritiesMap = new Map(rarities.map((r) => [String(r.id), r]));
 		await loadCollectionStats();
 		await refreshOwnedSet();
@@ -79,7 +82,6 @@
 		for (const collection of collections) {
 			const collectionStickersData = await getStickersForCollection(collection.id);
 			const collectionStickerIds = new Set(collectionStickersData.map((s) => String(s.id)));
-
 			const ownedInCollection = collectionStickersData.filter((s) => ownedSet.has(String(s.id)));
 
 			// Build rarity breakdown
@@ -104,16 +106,12 @@
 	}
 
 	async function refreshOwnedSet() {
-		const ids = await getOwnedStickerIds();
-		ownedStickerIds = new Set(ids);
-
 		const userStickers = await getAllUserStickers();
 		const rarityMap = new Map<string, string>();
 
 		for (const us of userStickers) {
 			const stickerId = String(us.stickerId);
 			const rarityId = us.rarityId ? String(us.rarityId) : '';
-
 			if (!rarityId) continue;
 
 			const existingRarityId = rarityMap.get(stickerId);
@@ -127,7 +125,6 @@
 				}
 			}
 		}
-
 		stickerRarityMap = rarityMap;
 	}
 
@@ -145,11 +142,13 @@
 	}
 
 	function getStats(collectionId: string | number): CollectionStats {
-		return collectionStats.get(String(collectionId)) ?? {
-			total: 0,
-			owned: 0,
-			rarityBreakdown: new Map()
-		};
+		return (
+			collectionStats.get(String(collectionId)) ?? {
+				total: 0,
+				owned: 0,
+				rarityBreakdown: new Map()
+			}
+		);
 	}
 
 	function getStickerRarity(sticker: Sticker): Rarity | null {
@@ -187,7 +186,8 @@
 		collectionStats = stats;
 	}
 
-	async function openBoosterPack(collection: Collection) {
+	async function handleOpenPack(event: CustomEvent<Collection>) {
+		const collection = event.detail;
 		const allStickers = getCollectionStickersData(collection.id);
 		if (allStickers.length === 0) return;
 
@@ -227,7 +227,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex h-full flex-col">
 	<div class="mb-6">
 		<h1 class="text-3xl font-bold">Booster Packs</h1>
 		<p class="text-base-content/70 mt-1">
@@ -246,139 +246,26 @@
 	{:else}
 		<!-- Opened Booster Pack Display -->
 		{#if showBoosterPack}
-			<div class="card bg-base-200 mb-6">
-				<div class="card-body">
-					<div class="flex items-center justify-between mb-4">
-						<div>
-							<h3 class="font-bold text-xl">Booster Pack Opened!</h3>
-							{#if boosterCollection}
-								<p class="text-base-content/70">{boosterCollection.title}</p>
-							{/if}
-						</div>
-						<button
-							class="btn btn-sm btn-ghost"
-							onclick={closeBoosterPack}
-							aria-label="Close booster pack"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-					</div>
-
-					<div class="grid grid-cols-5 gap-3 mb-4">
-						{#each boosterStickers as sticker, index (sticker.id + '-' + index)}
-							{@const rarity = getStickerRarity(sticker)}
-							{@const displaySticker = { ...sticker, sourceName: boosterCollection?.title }}
-							<div class="aspect-[3/4] rounded-lg ring-2 ring-primary">
-								<div class="h-full flex flex-col p-2">
-									<StickerItem
-										sticker={displaySticker}
-										bgColor={rarity?.colorFrom ?? '#6B7280'}
-										borderColor={rarity?.colorTo}
-										classes="w-full flex-1"
-									/>
-									<p class="text-xs text-center truncate mt-1" title={sticker.name}>{sticker.name}</p>
-								</div>
-							</div>
-						{/each}
-					</div>
-
-					<div class="flex justify-end">
-						<button class="btn btn-primary btn-sm" onclick={closeBoosterPack}>
-							Done
-						</button>
-					</div>
-				</div>
-			</div>
+			<OpenedPackDisplay
+				collection={boosterCollection}
+				stickers={boosterStickers}
+				{raritiesMap}
+				{stickerRarityMap}
+				on:close={closeBoosterPack}
+			/>
 		{/if}
 
 		<!-- Collections Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 			{#each collections as collection (collection.id)}
-				{@const stats = getStats(collection.id)}
-				{@const isComplete = stats.total > 0 && stats.owned === stats.total}
-				<div
-					class={classNames(
-						'card bg-base-200 shadow-md hover:shadow-lg transition-shadow',
-						{ 'ring-2 ring-success': isComplete }
-					)}
-				>
-					<figure class="px-4 pt-4">
-						{#if collection.coverImage}
-							<img
-								src={collection.coverImage}
-								alt={collection.title}
-								class="rounded-lg w-full h-32 object-cover"
-							/>
-						{:else}
-							<div class="w-full h-32 bg-base-300 rounded-lg flex items-center justify-center text-base-content/30">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-								</svg>
-							</div>
-						{/if}
-					</figure>
-					<div class="card-body">
-						<div class="flex items-center gap-2">
-							<h2 class="card-title text-base truncate">{collection.title}</h2>
-							{#if isComplete}
-								<span class="badge badge-success badge-sm">Complete</span>
-							{/if}
-						</div>
-
-						<!-- Rarity breakdown -->
-						{#if stats.rarityBreakdown.size > 0}
-							<div class="flex flex-wrap gap-1">
-								{#each rarities.toSorted((a, b) => b.sortOrder - a.sortOrder) as rarity (rarity.id)}
-									{@const count = stats.rarityBreakdown.get(String(rarity.id)) ?? 0}
-									{#if count > 0}
-										<span
-											class="text-xs px-1.5 py-0.5 rounded font-medium"
-											style="background: linear-gradient(135deg, {rarity.colorFrom}, {rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
-											title="{rarity.name}: {count}"
-										>
-											{count}
-										</span>
-									{/if}
-								{/each}
-							</div>
-						{:else if stats.owned === 0}
-							<div class="text-sm text-base-content/40">No stickers yet</div>
-						{/if}
-
-						<!-- Progress bar -->
-						{#if stats.total > 0}
-							{@const percent = Math.round((stats.owned / stats.total) * 100)}
-							<div class="flex items-center gap-2">
-								<progress
-									class={classNames('progress flex-1 h-2', {
-										'progress-success': percent === 100,
-										'progress-warning': percent >= 50 && percent < 100,
-										'progress-primary': percent < 50
-									})}
-									value={stats.owned}
-									max={stats.total}
-								></progress>
-								<span class="text-xs font-mono text-base-content/60 w-12 text-right">{stats.owned}/{stats.total}</span>
-							</div>
-						{/if}
-
-						<div class="card-actions justify-end mt-2">
-							<button
-								class="btn btn-primary btn-sm"
-								onclick={() => openBoosterPack(collection)}
-								disabled={!hasStickersInCollection(collection.id) || isOpeningPack}
-							>
-								{#if isOpeningPack && boosterCollection?.id === collection.id}
-									<span class="loading loading-spinner loading-xs"></span>
-								{:else}
-									Open Pack
-								{/if}
-							</button>
-						</div>
-					</div>
-				</div>
+				<CollectionPackCard
+					{collection}
+					stats={getStats(collection.id)}
+					{rarities}
+					hasStickers={hasStickersInCollection(collection.id)}
+					isOpening={isOpeningPack && boosterCollection?.id === collection.id}
+					on:openPack={handleOpenPack}
+				/>
 			{/each}
 		</div>
 	{/if}

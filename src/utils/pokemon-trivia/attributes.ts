@@ -66,10 +66,7 @@ export function groupAttributesByCategory(
  *
  * @returns Record of category name to array of numeric [key, info] tuples
  */
-export function getNumericAttributesByCategory(): Record<
-	string,
-	[string, PokemonAttributeInfo][]
-> {
+export function getNumericAttributesByCategory(): Record<string, [string, PokemonAttributeInfo][]> {
 	const numericAttrs: Record<string, PokemonAttributeInfo> = {};
 
 	for (const [key, info] of Object.entries(POKEMON_ATTRIBUTES)) {

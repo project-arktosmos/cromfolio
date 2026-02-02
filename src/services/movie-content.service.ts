@@ -9,10 +9,7 @@ import { extractTv as extractTvCore } from '../../scripts/content/core/tv-extrac
 import { extractAwards as extractAwardsCore } from '../../scripts/content/core/awards-extractor';
 import { extractAnime as extractAnimeCore } from '../../scripts/content/core/anime-extractor';
 import type { AwardsDataLoader } from '../../scripts/content/core/awards-extractor';
-import {
-	initTauriAdapter,
-	createTauriAdapter
-} from '../../scripts/content/core/db/tauri-adapter';
+import { initTauriAdapter, createTauriAdapter } from '../../scripts/content/core/db/tauri-adapter';
 import type {
 	ExtractMovieOptions,
 	ExtractTvOptions,
@@ -220,11 +217,7 @@ function createAwardsDataLoader(): AwardsDataLoader {
 			return awardsService.getAwardTypesForYear(event, year);
 		},
 
-		getCategoriesForAwardType(
-			event: AwardEvent,
-			year: string,
-			awardType: string
-		): string[] {
+		getCategoriesForAwardType(event: AwardEvent, year: string, awardType: string): string[] {
 			return awardsService.getCategoriesForAwardType(event, year, awardType);
 		},
 

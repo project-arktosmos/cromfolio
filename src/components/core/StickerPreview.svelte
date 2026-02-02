@@ -15,7 +15,14 @@
 		classes?: string;
 	}
 
-	let { sticker, rarity = null, stickerType = null, source = null, tags = [], classes = '' }: Props = $props();
+	let {
+		sticker,
+		rarity = null,
+		stickerType = null,
+		source = null,
+		tags = [],
+		classes = ''
+	}: Props = $props();
 
 	// Fallback image as data URI
 	const fallbackImage =
@@ -41,26 +48,26 @@
 			<!-- Image preview -->
 			<div class="shrink-0">
 				<div
-					class="w-32 h-44 rounded-lg overflow-hidden border border-base-300"
+					class="border-base-300 h-44 w-32 overflow-hidden rounded-lg border"
 					style={gradientStyle}
 				>
 					<img
 						src={sticker.image}
 						alt={sticker.name}
-						class="w-full h-full object-cover"
+						class="h-full w-full object-cover"
 						onerror={handleImageError}
 					/>
 				</div>
 			</div>
 
 			<!-- Basic info -->
-			<div class="flex-1 min-w-0">
-				<h3 class="card-title text-lg truncate" title={sticker.name}>
+			<div class="min-w-0 flex-1">
+				<h3 class="card-title truncate text-lg" title={sticker.name}>
 					{sticker.name}
 				</h3>
 
 				<!-- Badges row -->
-				<div class="flex flex-wrap gap-2 mt-2">
+				<div class="mt-2 flex flex-wrap gap-2">
 					{#if stickerType}
 						<span class={classNames('badge badge-sm', stickerType.badgeColor)}>
 							{stickerType.name}
@@ -85,7 +92,7 @@
 				{#if source}
 					<div class="mt-3 text-sm">
 						<span class="text-base-content/60">Source:</span>
-						<span class="font-medium ml-1">{source.title}</span>
+						<span class="ml-1 font-medium">{source.title}</span>
 						<span class="badge badge-xs badge-outline ml-2">{source.sourceType}</span>
 					</div>
 				{/if}
@@ -100,8 +107,10 @@
 			<!-- Sticker Type details table -->
 			{#if stickerType}
 				<div>
-					<h4 class="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Sticker Type</h4>
-					<table class="table table-xs table-zebra w-full">
+					<h4 class="text-base-content/60 mb-2 text-xs font-semibold uppercase tracking-wide">
+						Sticker Type
+					</h4>
+					<table class="table-xs table-zebra table w-full">
 						<tbody>
 							<tr>
 								<td class="text-base-content/50 w-32">Name</td>
@@ -131,8 +140,10 @@
 			<!-- Rarity details table -->
 			{#if rarity}
 				<div>
-					<h4 class="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Rarity</h4>
-					<table class="table table-xs table-zebra w-full">
+					<h4 class="text-base-content/60 mb-2 text-xs font-semibold uppercase tracking-wide">
+						Rarity
+					</h4>
+					<table class="table-xs table-zebra table w-full">
 						<tbody>
 							<tr>
 								<td class="text-base-content/50 w-32">Name</td>
@@ -147,14 +158,14 @@
 								<td>
 									<div class="flex items-center gap-2">
 										<div
-											class="w-4 h-4 rounded border border-base-300"
+											class="border-base-300 h-4 w-4 rounded border"
 											style="background-color: {rarity.colorFrom}"
 											title={rarity.colorFrom}
 										></div>
 										<span class="font-mono text-xs">{rarity.colorFrom}</span>
 										<span class="text-base-content/40">→</span>
 										<div
-											class="w-4 h-4 rounded border border-base-300"
+											class="border-base-300 h-4 w-4 rounded border"
 											style="background-color: {rarity.colorTo}"
 											title={rarity.colorTo}
 										></div>
@@ -170,8 +181,10 @@
 			<!-- Source details table -->
 			{#if source}
 				<div>
-					<h4 class="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Source</h4>
-					<table class="table table-xs table-zebra w-full">
+					<h4 class="text-base-content/60 mb-2 text-xs font-semibold uppercase tracking-wide">
+						Source
+					</h4>
+					<table class="table-xs table-zebra table w-full">
 						<tbody>
 							<tr>
 								<td class="text-base-content/50 w-32">Title</td>
@@ -225,8 +238,10 @@
 			<!-- Tags table -->
 			{#if tags.length > 0}
 				<div>
-					<h4 class="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Tags</h4>
-					<table class="table table-xs table-zebra w-full">
+					<h4 class="text-base-content/60 mb-2 text-xs font-semibold uppercase tracking-wide">
+						Tags
+					</h4>
+					<table class="table-xs table-zebra table w-full">
 						<thead>
 							<tr>
 								<th class="text-base-content/50 w-32">Key</th>

@@ -68,7 +68,9 @@
 	let selectedGames = $state<Set<string>>(new Set());
 
 	// Selected game for details
-	let selectedGameForDetails = $state<(GameEntry & { consoleId?: string; consoleName?: string }) | null>(null);
+	let selectedGameForDetails = $state<
+		(GameEntry & { consoleId?: string; consoleName?: string }) | null
+	>(null);
 
 	// IGDB search state
 	let igdbResults = $state<GameSearchResult[]>([]);
@@ -260,10 +262,10 @@
 	}
 </script>
 
-<div class="grid grid-cols-5 gap-4 flex-1 min-h-0">
+<div class="grid min-h-0 flex-1 grid-cols-5 gap-4">
 	<!-- Column 1: Console Selection -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
 			<div class="form-control mb-3">
 				<select
 					class="select select-bordered select-sm w-full"
@@ -301,10 +303,15 @@
 					{#if selectedConsoleId}
 						{@const consoleData = consoles.find((c) => c.id === selectedConsoleId)}
 						{#if consoleData}
-							<div class="text-xs space-y-1 p-2 bg-base-100 rounded">
+							<div class="bg-base-100 space-y-1 rounded p-2 text-xs">
 								<div class="flex justify-between">
 									<span class="text-base-content/60">Manufacturer:</span>
-									<span class={classNames('badge badge-xs', getManufacturerBadgeClass(consoleData.manufacturer))}>
+									<span
+										class={classNames(
+											'badge badge-xs',
+											getManufacturerBadgeClass(consoleData.manufacturer)
+										)}
+									>
 										{consoleData.manufacturer}
 									</span>
 								</div>
@@ -314,14 +321,16 @@
 								</div>
 								<div class="flex justify-between">
 									<span class="text-base-content/60">Type:</span>
-									<span class={classNames('badge badge-xs', getConsoleTypeBadgeClass(consoleData.type))}>
+									<span
+										class={classNames('badge badge-xs', getConsoleTypeBadgeClass(consoleData.type))}
+									>
 										{consoleData.type}
 									</span>
 								</div>
 							</div>
 						{/if}
 					{:else}
-						<div class="text-xs text-base-content/60 p-2 bg-base-100 rounded">
+						<div class="text-base-content/60 bg-base-100 rounded p-2 text-xs">
 							Showing best-selling games across all consoles, sorted by copies sold.
 						</div>
 					{/if}
@@ -331,9 +340,9 @@
 	</div>
 
 	<!-- Column 2: Games List -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<div class="flex items-center justify-between mb-2">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<div class="mb-2 flex items-center justify-between">
 				<h2 class="card-title text-lg">Games</h2>
 				{#if games.length > 0}
 					<span class="badge badge-primary">{getSelectedCount()}/{games.length}</span>
@@ -341,11 +350,11 @@
 			</div>
 
 			{#if games.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No games available.</p>
 				</div>
 			{:else}
-				<div class="flex gap-2 mb-2">
+				<div class="mb-2 flex gap-2">
 					<button class="btn btn-xs btn-ghost" onclick={() => toggleAllGames(true)}>
 						Select All
 					</button>
@@ -357,13 +366,14 @@
 				<div class="flex-1 overflow-y-auto">
 					<div class="space-y-2">
 						{#each games as game (getGameKey(game))}
-							{@const isSelected = selectedGameForDetails && getGameKey(selectedGameForDetails) === getGameKey(game)}
+							{@const isSelected =
+								selectedGameForDetails && getGameKey(selectedGameForDetails) === getGameKey(game)}
 							<div
 								class={classNames(
-									'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+									'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 									'hover:bg-base-300',
 									{
-										'bg-primary/20 ring-2 ring-primary': isSelected,
+										'bg-primary/20 ring-primary ring-2': isSelected,
 										'bg-base-100': !isSelected
 									}
 								)}
@@ -380,13 +390,13 @@
 										onclick={(e) => e.stopPropagation()}
 										onchange={() => toggleGame(game)}
 									/>
-									<div class="flex-1 min-w-0">
+									<div class="min-w-0 flex-1">
 										<div class="flex items-center gap-2">
 											<span class="badge badge-ghost badge-xs">#{game.rank}</span>
-											<span class="font-medium text-sm truncate">{game.title}</span>
+											<span class="truncate text-sm font-medium">{game.title}</span>
 										</div>
-										<div class="flex items-center gap-2 mt-1">
-											<span class="text-xs text-base-content/60">
+										<div class="mt-1 flex items-center gap-2">
+											<span class="text-base-content/60 text-xs">
 												{formatCopiesSold(game.copies)} copies
 											</span>
 											{#if game.consoleName && !selectedConsoleId}
@@ -394,7 +404,7 @@
 											{/if}
 										</div>
 										{#if game.genre}
-											<div class="text-xs text-base-content/50 mt-1">{game.genre}</div>
+											<div class="text-base-content/50 mt-1 text-xs">{game.genre}</div>
 										{/if}
 									</div>
 								</div>
@@ -407,28 +417,28 @@
 	</div>
 
 	<!-- Column 3: IGDB Match -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">IGDB Match</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">IGDB Match</h2>
 
 			{#if !selectedGameForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a game to search IGDB.</p>
 				</div>
 			{:else if isSearchingIgdb}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else}
-				<div class="flex-1 overflow-y-auto space-y-3">
+				<div class="flex-1 space-y-3 overflow-y-auto">
 					<div>
-						<span class="text-xs font-semibold text-base-content/60 uppercase">Search Query</span>
+						<span class="text-base-content/60 text-xs font-semibold uppercase">Search Query</span>
 						<p class="text-sm">{selectedGameForDetails.title}</p>
 					</div>
 
 					{#if igdbResults.length > 0}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">
+							<span class="text-base-content/60 text-xs font-semibold uppercase">
 								Results ({igdbResults.length})
 							</span>
 						</div>
@@ -437,13 +447,10 @@
 							{#each igdbResults as result (result.id)}
 								{@const isCurrentMatch = selectedIgdbMatch?.id === result.id}
 								<div
-									class={classNames(
-										'p-2 rounded-lg cursor-pointer transition-colors',
-										{
-											'bg-success/20 ring-2 ring-success': isCurrentMatch,
-											'bg-base-100 hover:bg-base-300': !isCurrentMatch
-										}
-									)}
+									class={classNames('cursor-pointer rounded-lg p-2 transition-colors', {
+										'bg-success/20 ring-success ring-2': isCurrentMatch,
+										'bg-base-100 hover:bg-base-300': !isCurrentMatch
+									})}
 									onclick={() => selectIgdbMatch(result)}
 									onkeydown={(e) => e.key === 'Enter' && selectIgdbMatch(result)}
 									role="button"
@@ -454,29 +461,29 @@
 											<img
 												src={result.coverThumbUrl}
 												alt={result.name}
-												class="w-12 h-16 object-cover rounded"
+												class="h-16 w-12 rounded object-cover"
 											/>
 										{:else}
-											<div class="w-12 h-16 bg-base-300 rounded flex items-center justify-center">
-												<span class="text-xs text-base-content/30">No img</span>
+											<div class="bg-base-300 flex h-16 w-12 items-center justify-center rounded">
+												<span class="text-base-content/30 text-xs">No img</span>
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
-											<div class="font-medium text-sm">{result.name}</div>
+										<div class="min-w-0 flex-1">
+											<div class="text-sm font-medium">{result.name}</div>
 											{#if result.firstReleaseDate}
-												<div class="text-xs text-base-content/60">
+												<div class="text-base-content/60 text-xs">
 													{new Date(result.firstReleaseDate * 1000).getFullYear()}
 												</div>
 											{/if}
 											{#if result.platforms && result.platforms.length > 0}
-												<div class="text-xs text-base-content/50">
+												<div class="text-base-content/50 text-xs">
 													{result.platforms.slice(0, 3).join(', ')}
 												</div>
 											{/if}
 										</div>
 									</div>
 									{#if isCurrentMatch}
-										<div class="flex justify-end mt-1">
+										<div class="mt-1 flex justify-end">
 											<span class="badge badge-success badge-xs">Selected</span>
 										</div>
 									{/if}
@@ -484,7 +491,7 @@
 							{/each}
 						</div>
 					{:else}
-						<div class="flex-1 flex items-center justify-center text-base-content/60">
+						<div class="text-base-content/60 flex flex-1 items-center justify-center">
 							<p class="text-sm">No IGDB results found.</p>
 						</div>
 					{/if}
@@ -494,12 +501,12 @@
 	</div>
 
 	<!-- Column 4: Preview -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Preview</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Preview</h2>
 
 			{#if !selectedGameForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a game to preview.</p>
 				</div>
 			{:else}
@@ -516,33 +523,35 @@
 					<div class="flex flex-col items-center gap-4">
 						<div class="w-48">
 							<StickerItem sticker={previewSticker} />
-							<div class="p-2 bg-base-200 rounded-b">
+							<div class="bg-base-200 rounded-b p-2">
 								{#if previewStickerType}
-									<div class="flex justify-center mb-1">
+									<div class="mb-1 flex justify-center">
 										<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>
 											{previewStickerType.name}
 										</span>
 									</div>
 								{/if}
-								<h3 class="text-xs font-medium text-center leading-tight">
+								<h3 class="text-center text-xs font-medium leading-tight">
 									{previewSticker.name}
 								</h3>
 							</div>
 						</div>
 
-						<div class="text-center space-y-1">
-							<p class="font-medium text-sm">{selectedGameForDetails.title}</p>
-							<p class="text-xs text-base-content/60">
+						<div class="space-y-1 text-center">
+							<p class="text-sm font-medium">{selectedGameForDetails.title}</p>
+							<p class="text-base-content/60 text-xs">
 								#{selectedGameForDetails.rank} - {formatCopiesSold(selectedGameForDetails.copies)} copies
 							</p>
 							{#if selectedGameForDetails.consoleName}
-								<span class="badge badge-outline badge-sm">{selectedGameForDetails.consoleName}</span>
+								<span class="badge badge-outline badge-sm"
+									>{selectedGameForDetails.consoleName}</span
+								>
 							{/if}
 							{#if selectedGameForDetails.developer}
-								<p class="text-xs text-base-content/50">Dev: {selectedGameForDetails.developer}</p>
+								<p class="text-base-content/50 text-xs">Dev: {selectedGameForDetails.developer}</p>
 							{/if}
 							{#if selectedGameForDetails.genre}
-								<p class="text-xs text-base-content/50">{selectedGameForDetails.genre}</p>
+								<p class="text-base-content/50 text-xs">{selectedGameForDetails.genre}</p>
 							{/if}
 						</div>
 					</div>
@@ -552,20 +561,20 @@
 	</div>
 
 	<!-- Column 5: Create Source -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Create Source</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Create Source</h2>
 
 			{#if games.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No games available.</p>
 				</div>
 			{:else}
 				<div class="flex-1 overflow-y-auto">
 					<div class="space-y-4">
 						<div>
-							<h3 class="font-bold text-sm">{getSourceTitle()}</h3>
-							<p class="text-xs text-base-content/60 mt-1">
+							<h3 class="text-sm font-bold">{getSourceTitle()}</h3>
+							<p class="text-base-content/60 mt-1 text-xs">
 								{selectedConsoleId
 									? consoles.find((c) => c.id === selectedConsoleId)?.name
 									: 'All consoles combined'}
@@ -615,7 +624,7 @@
 									/>
 								</svg>
 								<div>
-									<span class="text-sm block">Source created!</span>
+									<span class="block text-sm">Source created!</span>
 									<span class="text-xs">{stickersCreated} stickers imported</span>
 								</div>
 							</div>

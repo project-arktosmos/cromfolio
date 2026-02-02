@@ -58,8 +58,8 @@
 </script>
 
 <div class="bg-base-300 rounded-lg p-4">
-	<div class="flex items-center justify-between mb-3">
-		<h3 class="font-semibold text-sm">Conditions</h3>
+	<div class="mb-3 flex items-center justify-between">
+		<h3 class="text-sm font-semibold">Conditions</h3>
 		<div class="join">
 			<button
 				type="button"
@@ -88,10 +88,10 @@
 
 	<div class="space-y-2">
 		{#each conditions as condition, index (index)}
-			<div class="flex gap-2 items-start bg-base-100 p-2 rounded">
+			<div class="bg-base-100 flex items-start gap-2 rounded p-2">
 				<!-- Attribute selector -->
 				<select
-					class="select select-sm select-bordered flex-1 min-w-0"
+					class="select select-sm select-bordered min-w-0 flex-1"
 					value={condition.attribute}
 					onchange={(e) => updateCondition(index, { attribute: e.currentTarget.value })}
 					{disabled}
@@ -122,7 +122,7 @@
 				{#if needsValue(condition.operator)}
 					<input
 						type="text"
-						class="input input-sm input-bordered flex-1 min-w-0"
+						class="input input-sm input-bordered min-w-0 flex-1"
 						placeholder="Value"
 						value={condition.value ?? ''}
 						oninput={(e) => updateCondition(index, { value: e.currentTarget.value })}
@@ -156,7 +156,7 @@
 					{:else}
 						<input
 							type="text"
-							class="input input-sm input-bordered flex-1 min-w-0"
+							class="input input-sm input-bordered min-w-0 flex-1"
 							placeholder="value1, value2, ..."
 							value={condition.values?.join(', ') ?? ''}
 							oninput={(e) =>
@@ -186,7 +186,7 @@
 	</button>
 
 	{#if conditions.length === 0}
-		<p class="text-xs text-base-content/50 mt-2">
+		<p class="text-base-content/50 mt-2 text-xs">
 			No conditions added. Add conditions to filter which Pokemon match this template.
 		</p>
 	{/if}

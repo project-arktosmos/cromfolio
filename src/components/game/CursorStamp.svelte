@@ -36,13 +36,14 @@
 </script>
 
 <div
-	class="fixed z-[100] pointer-events-none"
-	style="left: {mousePosition.x - size / 2}px; top: {mousePosition.y - size / 2}px; width: {size}px; height: {size}px;"
+	class="pointer-events-none fixed z-[100]"
+	style="left: {mousePosition.x - size / 2}px; top: {mousePosition.y -
+		size / 2}px; width: {size}px; height: {size}px;"
 >
 	{#if isVideoStamp()}
 		<video
 			src={getStampImagePath()}
-			class="w-full h-full object-contain opacity-80 drop-shadow-lg"
+			class="h-full w-full object-contain opacity-80 drop-shadow-lg"
 			autoplay
 			loop
 			muted
@@ -52,11 +53,13 @@
 		<img
 			src={getStampImagePath()}
 			alt="Placing stamp"
-			class="w-full h-full object-contain opacity-80 drop-shadow-lg"
+			class="h-full w-full object-contain opacity-80 drop-shadow-lg"
 			onerror={handleImageError}
 		/>
 	{/if}
-	<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-base-content/70 whitespace-nowrap bg-base-200/80 px-2 py-0.5 rounded">
+	<div
+		class="text-base-content/70 bg-base-200/80 absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-2 py-0.5 text-xs"
+	>
 		Click to place • Scroll to resize • ESC to cancel
 	</div>
 </div>

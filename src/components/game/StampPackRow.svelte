@@ -28,14 +28,17 @@
 	}
 
 	let computedClasses = $derived(
-		classNames('flex gap-2 overflow-x-auto py-2 px-1 scrollbar-thin scrollbar-thumb-base-300', classes)
+		classNames(
+			'flex gap-2 overflow-x-auto py-2 px-1 scrollbar-thin scrollbar-thumb-base-300',
+			classes
+		)
 	);
 </script>
 
 <div class={computedClasses}>
 	{#each stampPacks as pack (pack.id)}
 		<div
-			class="w-14 h-14 rounded-lg cursor-pointer transition-all shrink-0 bg-base-200 hover:ring-2 hover:ring-primary hover:scale-105"
+			class="bg-base-200 hover:ring-primary h-14 w-14 shrink-0 cursor-pointer rounded-lg transition-all hover:scale-105 hover:ring-2"
 			onmouseenter={(e) => onpackhover?.(pack, e)}
 			onmouseleave={() => onpackleave?.()}
 			title={pack.name}
@@ -43,12 +46,12 @@
 			<img
 				src={getTrayImagePath(pack)}
 				alt={pack.name}
-				class="w-full h-full object-cover rounded-lg"
+				class="h-full w-full rounded-lg object-cover"
 				onerror={handleImageError}
 			/>
 		</div>
 	{/each}
 	{#if stampPacks.length === 0}
-		<div class="text-sm text-base-content/50 py-2">No stamp packs available</div>
+		<div class="text-base-content/50 py-2 text-sm">No stamp packs available</div>
 	{/if}
 </div>

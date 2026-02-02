@@ -77,10 +77,7 @@ interface TmdbCastMember {
 /**
  * Find TMDB ID from IMDb ID
  */
-export async function findByImdbId(
-	apiKey: string,
-	imdbId: string
-): Promise<TmdbIdResult | null> {
+export async function findByImdbId(apiKey: string, imdbId: string): Promise<TmdbIdResult | null> {
 	const url = `${TMDB_BASE_URL}/find/${imdbId}?api_key=${apiKey}&external_source=imdb_id`;
 	const response = await fetch(url);
 
@@ -112,10 +109,7 @@ export async function findByImdbId(
 /**
  * Get movie details by TMDB ID
  */
-export async function getMovieDetails(
-	apiKey: string,
-	tmdbId: number
-): Promise<TmdbMovieDetails> {
+export async function getMovieDetails(apiKey: string, tmdbId: number): Promise<TmdbMovieDetails> {
 	const url = `${TMDB_BASE_URL}/movie/${tmdbId}?api_key=${apiKey}`;
 	const response = await fetch(url);
 
@@ -129,10 +123,7 @@ export async function getMovieDetails(
 /**
  * Get TV show details by TMDB ID
  */
-export async function getTvDetails(
-	apiKey: string,
-	tmdbId: number
-): Promise<TmdbTvDetails> {
+export async function getTvDetails(apiKey: string, tmdbId: number): Promise<TmdbTvDetails> {
 	const url = `${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${apiKey}`;
 	const response = await fetch(url);
 
@@ -196,10 +187,7 @@ export async function getContentDetailsFromTmdb(
 /**
  * Get images for a movie
  */
-export async function getMovieImages(
-	apiKey: string,
-	tmdbId: number
-): Promise<ImageItem[]> {
+export async function getMovieImages(apiKey: string, tmdbId: number): Promise<ImageItem[]> {
 	const url = `${TMDB_BASE_URL}/movie/${tmdbId}/images?api_key=${apiKey}`;
 	const response = await fetch(url);
 
@@ -214,10 +202,7 @@ export async function getMovieImages(
 /**
  * Get images for a TV show
  */
-export async function getTvImages(
-	apiKey: string,
-	tmdbId: number
-): Promise<ImageItem[]> {
+export async function getTvImages(apiKey: string, tmdbId: number): Promise<ImageItem[]> {
 	const url = `${TMDB_BASE_URL}/tv/${tmdbId}/images?api_key=${apiKey}`;
 	const response = await fetch(url);
 
@@ -232,10 +217,7 @@ export async function getTvImages(
 /**
  * Get cast/credits for a movie
  */
-export async function getMovieCredits(
-	apiKey: string,
-	tmdbId: number
-): Promise<CharacterItem[]> {
+export async function getMovieCredits(apiKey: string, tmdbId: number): Promise<CharacterItem[]> {
 	const url = `${TMDB_BASE_URL}/movie/${tmdbId}/credits?api_key=${apiKey}`;
 	const response = await fetch(url);
 
@@ -250,10 +232,7 @@ export async function getMovieCredits(
 /**
  * Get cast/credits for a TV show
  */
-export async function getTvCredits(
-	apiKey: string,
-	tmdbId: number
-): Promise<CharacterItem[]> {
+export async function getTvCredits(apiKey: string, tmdbId: number): Promise<CharacterItem[]> {
 	const url = `${TMDB_BASE_URL}/tv/${tmdbId}/credits?api_key=${apiKey}`;
 	const response = await fetch(url);
 

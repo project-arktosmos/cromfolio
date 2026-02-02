@@ -58,9 +58,7 @@ export function getConsole(consoleId: string): ConsoleData | null {
  * Get consoles filtered by manufacturer
  */
 export function getConsolesByManufacturer(manufacturer: string): ConsoleData[] {
-	return getConsoles().filter(
-		(c) => c.manufacturer.toLowerCase() === manufacturer.toLowerCase()
-	);
+	return getConsoles().filter((c) => c.manufacturer.toLowerCase() === manufacturer.toLowerCase());
 }
 
 /**

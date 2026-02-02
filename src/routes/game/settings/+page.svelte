@@ -73,21 +73,17 @@
 
 			<div class="divider"></div>
 
-			<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+			<div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
 				<div>
 					<h3 class="font-semibold">Clear All User Data</h3>
-					<p class="text-sm text-base-content/60">
+					<p class="text-base-content/60 text-sm">
 						Delete all your stickers, collections, sources, and placements from the database.
 					</p>
 				</div>
 
 				{#if showConfirm}
 					<div class="flex gap-2">
-						<button
-							class="btn btn-error"
-							onclick={handleClearData}
-							disabled={isClearing}
-						>
+						<button class="btn btn-error" onclick={handleClearData} disabled={isClearing}>
 							{#if isClearing}
 								<span class="loading loading-spinner loading-sm"></span>
 								Clearing...
@@ -114,7 +110,7 @@
 				<div class="alert alert-error mt-4">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="stroke-current shrink-0 h-6 w-6"
+						class="h-6 w-6 shrink-0 stroke-current"
 						fill="none"
 						viewBox="0 0 24 24"
 					>
@@ -133,7 +129,7 @@
 				<div class="alert alert-success mt-4">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="stroke-current shrink-0 h-6 w-6"
+						class="h-6 w-6 shrink-0 stroke-current"
 						fill="none"
 						viewBox="0 0 24 24"
 					>

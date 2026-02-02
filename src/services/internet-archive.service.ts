@@ -57,7 +57,11 @@ export interface IASearchResponse {
 // Predefined collections for public domain music
 export const IA_MUSIC_COLLECTIONS = [
 	{ id: 'audio', label: 'All Audio', description: 'All audio content' },
-	{ id: 'opensource_audio', label: 'Open Source Audio', description: 'Community-contributed audio' },
+	{
+		id: 'opensource_audio',
+		label: 'Open Source Audio',
+		description: 'Community-contributed audio'
+	},
 	{ id: '78rpm', label: '78 RPM Records', description: 'Historical 78 RPM recordings' },
 	{ id: 'etree', label: 'Live Music Archive', description: 'Live concert recordings' },
 	{ id: 'netlabels', label: 'Netlabels', description: 'Free music from netlabels' },

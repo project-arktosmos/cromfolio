@@ -24,9 +24,7 @@ export async function initTauriAwardsLoader(): Promise<void> {
  */
 export function createTauriAwardsLoader(): AwardsDataLoader {
 	if (!uiAwardsService) {
-		throw new Error(
-			'Tauri awards loader not initialized. Call initTauriAwardsLoader() first.'
-		);
+		throw new Error('Tauri awards loader not initialized. Call initTauriAwardsLoader() first.');
 	}
 
 	const service = uiAwardsService;
@@ -48,11 +46,7 @@ export function createTauriAwardsLoader(): AwardsDataLoader {
 			return service.getAwardTypesForYear(event, year);
 		},
 
-		getCategoriesForAwardType(
-			event: AwardEvent,
-			year: string,
-			awardType: string
-		): string[] {
+		getCategoriesForAwardType(event: AwardEvent, year: string, awardType: string): string[] {
 			return service.getCategoriesForAwardType(event, year, awardType);
 		},
 

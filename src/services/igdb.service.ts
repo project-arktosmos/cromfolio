@@ -160,7 +160,10 @@ export interface IGDBGame {
 /**
  * Search IGDB for video games
  */
-export async function searchIgdb(query: string, limit = 20): Promise<IGDBGame[] | { error: string }> {
+export async function searchIgdb(
+	query: string,
+	limit = 20
+): Promise<IGDBGame[] | { error: string }> {
 	const body = `
 		search "${query}";
 		fields id, name, slug, summary, first_release_date, rating, aggregated_rating, url,
@@ -205,6 +208,9 @@ export async function getIgdbGameWithImages(gameId: number): Promise<IGDBGame | 
  * IGDB returns URLs like //images.igdb.com/igdb/image/upload/t_thumb/xxx.jpg
  * We can change the size by replacing t_thumb with other sizes
  */
-export function getIgdbImageUrl(imageId: string, size: 'thumb' | 'cover_big' | 'screenshot_big' | '1080p' | 'original' = 'cover_big'): string {
+export function getIgdbImageUrl(
+	imageId: string,
+	size: 'thumb' | 'cover_big' | 'screenshot_big' | '1080p' | 'original' = 'cover_big'
+): string {
 	return `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg`;
 }

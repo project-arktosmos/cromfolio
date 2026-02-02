@@ -46,7 +46,9 @@ export async function getStickerTypesByCategory(category: string): Promise<Stick
 /**
  * Get sticker types by source type
  */
-export async function getStickerTypesBySourceType(sourceType: string): Promise<StickerTypeEntity[]> {
+export async function getStickerTypesBySourceType(
+	sourceType: string
+): Promise<StickerTypeEntity[]> {
 	try {
 		return await invoke<StickerTypeEntity[]>('get_sticker_types_by_source_type', { sourceType });
 	} catch (e) {
@@ -58,7 +60,9 @@ export async function getStickerTypesBySourceType(sourceType: string): Promise<S
 /**
  * Add a sticker type to the collection
  */
-export async function addStickerType(stickerType: StickerTypeEntity): Promise<StickerTypeEntity | null> {
+export async function addStickerType(
+	stickerType: StickerTypeEntity
+): Promise<StickerTypeEntity | null> {
 	try {
 		return await invoke<StickerTypeEntity>('create_sticker_type', { stickerType });
 	} catch (e) {
@@ -70,7 +74,9 @@ export async function addStickerType(stickerType: StickerTypeEntity): Promise<St
 /**
  * Update a sticker type in the collection
  */
-export async function updateStickerType(stickerType: StickerTypeEntity): Promise<StickerTypeEntity | null> {
+export async function updateStickerType(
+	stickerType: StickerTypeEntity
+): Promise<StickerTypeEntity | null> {
 	try {
 		return await invoke<StickerTypeEntity>('update_sticker_type', { stickerType });
 	} catch (e) {

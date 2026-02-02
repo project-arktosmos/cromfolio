@@ -148,10 +148,7 @@ export async function searchTv(
 /**
  * Get detailed information for a movie or TV show by IMDb ID
  */
-export async function getContentDetails(
-	apiKey: string,
-	imdbId: string
-): Promise<ContentDetails> {
+export async function getContentDetails(apiKey: string, imdbId: string): Promise<ContentDetails> {
 	const params = new URLSearchParams({
 		apikey: apiKey,
 		i: imdbId,

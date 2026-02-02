@@ -381,7 +381,13 @@ export interface AnimalImageItem {
 // SHARED SOURCE TAB CONFIGURATION TYPES
 // ============================================================================
 
-import type { ContentType, ImageItem as FetchImageItem, CharacterItem as FetchCharacterItem, FetchProgressEvent, FetchStatus } from '$services/fetch.service';
+import type {
+	ContentType,
+	ImageItem as FetchImageItem,
+	CharacterItem as FetchCharacterItem,
+	FetchProgressEvent,
+	FetchStatus
+} from '$services/fetch.service';
 import type { Source } from '$types/source.type';
 import type { ExternalIdType, ProviderType } from '$types/provider.type';
 
@@ -447,3 +453,15 @@ export type { ExternalIdType, ProviderType };
 
 /** Re-export fetch types for convenience */
 export type { FetchProgressEvent, FetchStatus };
+
+/** Source type options for tab navigation */
+export type SourceType =
+	| 'movies'
+	| 'tv'
+	| 'videogames'
+	| 'anime'
+	| 'sports'
+	| 'animals'
+	| 'awards'
+	| 'grammy'
+	| 'game-consoles';

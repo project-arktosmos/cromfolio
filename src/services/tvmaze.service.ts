@@ -66,9 +66,7 @@ export interface TVMazeImageWithUrl {
  */
 export async function lookupByImdbId(imdbId: string): Promise<TVMazeShow | null> {
 	try {
-		const response = await fetch(
-			`${TVMAZE_BASE_URL}/lookup/shows?imdb=${imdbId}`
-		);
+		const response = await fetch(`${TVMAZE_BASE_URL}/lookup/shows?imdb=${imdbId}`);
 
 		if (response.status === 404) {
 			// Show not found
@@ -91,9 +89,7 @@ export async function lookupByImdbId(imdbId: string): Promise<TVMazeShow | null>
  */
 export async function getShowImages(showId: number): Promise<TVMazeImage[]> {
 	try {
-		const response = await fetch(
-			`${TVMAZE_BASE_URL}/shows/${showId}/images`
-		);
+		const response = await fetch(`${TVMAZE_BASE_URL}/shows/${showId}/images`);
 
 		if (!response.ok) {
 			throw new Error(`TVMaze API error: ${response.status}`);
@@ -111,9 +107,7 @@ export async function getShowImages(showId: number): Promise<TVMazeImage[]> {
  */
 export async function getShowCast(showId: number): Promise<TVMazeCastMember[]> {
 	try {
-		const response = await fetch(
-			`${TVMAZE_BASE_URL}/shows/${showId}/cast`
-		);
+		const response = await fetch(`${TVMAZE_BASE_URL}/shows/${showId}/cast`);
 
 		if (!response.ok) {
 			throw new Error(`TVMaze API error: ${response.status}`);
@@ -141,21 +135,20 @@ export async function getImagesByImdbId(imdbId: string): Promise<{
 	}
 
 	// Fetch images and cast in parallel
-	const [rawImages, cast] = await Promise.all([
-		getShowImages(show.id),
-		getShowCast(show.id)
-	]);
+	const [rawImages, cast] = await Promise.all([getShowImages(show.id), getShowCast(show.id)]);
 
 	// Transform show images
-	const images: TVMazeImageWithUrl[] = rawImages.map((img) => ({
-		id: img.id,
-		type: img.type,
-		main: img.main,
-		url: img.resolutions.original?.url || img.resolutions.medium?.url || '',
-		thumbUrl: img.resolutions.medium?.url || img.resolutions.original?.url || '',
-		width: img.resolutions.original?.width,
-		height: img.resolutions.original?.height
-	})).filter((img) => img.url);
+	const images: TVMazeImageWithUrl[] = rawImages
+		.map((img) => ({
+			id: img.id,
+			type: img.type,
+			main: img.main,
+			url: img.resolutions.original?.url || img.resolutions.medium?.url || '',
+			thumbUrl: img.resolutions.medium?.url || img.resolutions.original?.url || '',
+			width: img.resolutions.original?.width,
+			height: img.resolutions.original?.height
+		}))
+		.filter((img) => img.url);
 
 	// Extract cast images
 	const castImages: TVMazeImageWithUrl[] = [];
@@ -170,7 +163,7 @@ export async function getImagesByImdbId(imdbId: string): Promise<{
 				type: 'character',
 				main: false,
 				url: member.character.image.original,
-				thumbUrl: member.character.image.medium,
+				thumbUrl: member.character.image.medium
 			});
 		}
 		// Person images
@@ -181,7 +174,7 @@ export async function getImagesByImdbId(imdbId: string): Promise<{
 				type: 'person',
 				main: false,
 				url: member.person.image.original,
-				thumbUrl: member.person.image.medium,
+				thumbUrl: member.person.image.medium
 			});
 		}
 	}

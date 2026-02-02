@@ -19,7 +19,10 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	if (!query) {
-		return json({ error: 'Search query (s) parameter is required', Response: 'False' }, { status: 400 });
+		return json(
+			{ error: 'Search query (s) parameter is required', Response: 'False' },
+			{ status: 400 }
+		);
 	}
 
 	try {

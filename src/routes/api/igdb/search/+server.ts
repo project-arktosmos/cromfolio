@@ -8,7 +8,8 @@ export const GET: RequestHandler = async ({ url }) => {
 	if (!isIgdbConfigured()) {
 		return json(
 			{
-				error: 'IGDB not configured. Set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in your .env file.'
+				error:
+					'IGDB not configured. Set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in your .env file.'
 			},
 			{ status: 503 }
 		);

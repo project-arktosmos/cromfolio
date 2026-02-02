@@ -63,7 +63,7 @@
 			{
 				'cursor-pointer hover:shadow-lg hover:scale-[1.02]': interactive,
 				'ring-2 ring-primary': showCheckbox ? checked : owned,
-				'opacity-50 grayscale': showCheckbox ? !checked : (!owned && interactive)
+				'opacity-50 grayscale': showCheckbox ? !checked : !owned && interactive
 			},
 			classes
 		)
@@ -74,41 +74,38 @@
 	class={computedClasses}
 	role={interactive ? 'button' : undefined}
 	tabindex={interactive ? 0 : undefined}
-	onclick={onclick}
-	onkeydown={onkeydown}
+	{onclick}
+	{onkeydown}
 >
-	<div class="relative w-full flex flex-col" style={gradientStyle}>
+	<div class="relative flex w-full flex-col" style={gradientStyle}>
 		<!-- Image container with padding to show gradient border -->
 		<div class="relative p-2 pb-0">
-			<img
-				src={card.image}
-				alt={card.name}
-				class="w-full block"
-				onerror={handleImageError}
-			/>
+			<img src={card.image} alt={card.name} class="block w-full" onerror={handleImageError} />
 			{#if showCheckbox}
-				<div class="absolute top-3 left-3 z-10">
+				<div class="absolute left-3 top-3 z-10">
 					<input
 						type="checkbox"
 						class="checkbox checkbox-primary checkbox-sm bg-base-100"
-						checked={checked}
+						{checked}
 						onclick={handleCheckboxClick}
 					/>
 				</div>
 			{/if}
 			{#if owned && copyCount > 0}
-				<div class="absolute top-3 right-3 badge badge-primary badge-sm z-10">
+				<div class="badge badge-primary badge-sm absolute right-3 top-3 z-10">
 					x{copyCount}
 				</div>
 			{/if}
 		</div>
 		<div class="p-2">
 			{#if cardType}
-				<div class="flex justify-center mb-1">
+				<div class="mb-1 flex justify-center">
 					<span class={classNames('badge badge-xs', cardType.badgeColor)}>{cardType.name}</span>
 				</div>
 			{/if}
-			<h3 class="text-xs font-medium text-white drop-shadow-md text-center leading-tight">{card.name}</h3>
+			<h3 class="text-center text-xs font-medium leading-tight text-white drop-shadow-md">
+				{card.name}
+			</h3>
 		</div>
 	</div>
 </div>

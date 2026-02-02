@@ -10,13 +10,7 @@
 		oniconremove?: (placedIcon: UserPlacedIcon) => void;
 	}
 
-	let {
-		placedIcons,
-		editable = false,
-		classes = '',
-		oniconclick,
-		oniconremove
-	}: Props = $props();
+	let { placedIcons, editable = false, classes = '', oniconclick, oniconremove }: Props = $props();
 
 	function handleRemoveClick(e: MouseEvent, placedIcon: UserPlacedIcon) {
 		e.stopPropagation();
@@ -29,8 +23,8 @@
 <div class={computedClasses}>
 	{#each placedIcons as placedIcon (placedIcon.id)}
 		<div
-			class={classNames('absolute w-12 h-12 group', {
-				'pointer-events-auto cursor-pointer hover:ring-2 hover:ring-primary rounded': editable
+			class={classNames('group absolute h-12 w-12', {
+				'hover:ring-primary pointer-events-auto cursor-pointer rounded hover:ring-2': editable
 			})}
 			style="
 				left: {placedIcon.positionX}%;
@@ -42,7 +36,7 @@
 			tabindex={editable ? 0 : -1}
 		>
 			<div
-				class="w-full h-full drop-shadow-md"
+				class="h-full w-full drop-shadow-md"
 				style="
 					background-color: {placedIcon.color};
 					-webkit-mask: url('{placedIcon.iconPath}') center/contain no-repeat;
@@ -51,7 +45,7 @@
 			></div>
 			{#if editable}
 				<button
-					class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-error-content rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+					class="bg-error text-error-content absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold opacity-0 transition-opacity group-hover:opacity-100"
 					onclick={(e) => handleRemoveClick(e, placedIcon)}
 					title="Remove icon"
 				>

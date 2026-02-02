@@ -120,14 +120,14 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Rarity Manager</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Rarity Manager</h1>
 
-	<div class="grid grid-cols-2 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-2 gap-4">
 		<!-- Column 1: Rarities List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Rarities</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Rarities</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if isLoading}
@@ -135,19 +135,19 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if rarities.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No rarities defined yet.</p>
-							<p class="text-sm mt-1">Create rarities using the form on the right.</p>
+							<p class="mt-1 text-sm">Create rarities using the form on the right.</p>
 						</div>
 					{:else}
 						<div class="space-y-2">
 							{#each rarities as rarity (rarity.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedRarity?.id === rarity.id,
+											'bg-primary/20 ring-primary ring-2': selectedRarity?.id === rarity.id,
 											'bg-base-100': selectedRarity?.id !== rarity.id
 										}
 									)}
@@ -158,14 +158,14 @@
 								>
 									<div class="flex items-center gap-3">
 										<div
-											class="w-12 h-8 rounded shadow-sm"
+											class="h-8 w-12 rounded shadow-sm"
 											style={getGradientStyle(rarity.colorFrom, rarity.colorTo)}
 										></div>
-										<div class="flex-1 min-w-0">
+										<div class="min-w-0 flex-1">
 											<div class="flex items-center justify-between">
 												<span class="font-medium">{rarity.name}</span>
 												<div class="flex items-center gap-2">
-													<span class="text-xs text-base-content/60">
+													<span class="text-base-content/60 text-xs">
 														Order: {rarity.sortOrder}
 													</span>
 													<button
@@ -177,7 +177,7 @@
 													</button>
 												</div>
 											</div>
-											<div class="text-xs text-base-content/60 mt-1">
+											<div class="text-base-content/60 mt-1 text-xs">
 												{rarity.colorFrom} → {rarity.colorTo}
 											</div>
 										</div>
@@ -191,9 +191,9 @@
 		</div>
 
 		<!-- Column 2: Rarity Form -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">
 						{isEditing ? 'Edit Rarity' : 'Add Rarity'}
 					</h2>
@@ -228,7 +228,7 @@
 									<input
 										id="color-from"
 										type="color"
-										class="w-12 h-10 rounded cursor-pointer"
+										class="h-10 w-12 cursor-pointer rounded"
 										bind:value={formColorFrom}
 									/>
 									<input
@@ -247,7 +247,7 @@
 									<input
 										id="color-to"
 										type="color"
-										class="w-12 h-10 rounded cursor-pointer"
+										class="h-10 w-12 cursor-pointer rounded"
 										bind:value={formColorTo}
 									/>
 									<input
@@ -266,7 +266,7 @@
 								<span class="label-text">Gradient Preview</span>
 							</label>
 							<div
-								class="w-full h-16 rounded-lg shadow-inner"
+								class="h-16 w-full rounded-lg shadow-inner"
 								style={getGradientStyle(formColorFrom, formColorTo)}
 							></div>
 						</div>

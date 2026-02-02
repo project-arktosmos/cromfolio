@@ -144,9 +144,9 @@
 	<!-- Controls -->
 	<div class="card bg-base-200">
 		<div class="card-body">
-			<div class="flex flex-wrap gap-4 items-end">
+			<div class="flex flex-wrap items-end gap-4">
 				<!-- Search filter -->
-				<div class="form-control flex-1 min-w-64">
+				<div class="form-control min-w-64 flex-1">
 					<label class="label" for="filter-input">
 						<span class="label-text font-medium">Filter by filename or author</span>
 					</label>
@@ -168,7 +168,7 @@
 						<input
 							id="color-picker"
 							type="color"
-							class="w-12 h-10 cursor-pointer rounded border border-base-300"
+							class="border-base-300 h-10 w-12 cursor-pointer rounded border"
 							bind:value={selectedColor}
 						/>
 						<input
@@ -188,7 +188,7 @@
 						{#each presetColors as color (color)}
 							<button
 								class={classNames(
-									'w-8 h-8 rounded border-2 transition-all',
+									'h-8 w-8 rounded border-2 transition-all',
 									selectedColor === color
 										? 'border-primary scale-110'
 										: 'border-base-300 hover:border-base-content/30'
@@ -203,7 +203,7 @@
 			</div>
 
 			<!-- Stats -->
-			<div class="mt-4 flex gap-4 text-sm text-base-content/70">
+			<div class="text-base-content/70 mt-4 flex gap-4 text-sm">
 				<span>Total: {icons.length.toLocaleString()} icons</span>
 				<span>Filtered: {filteredIcons.length.toLocaleString()} icons</span>
 				<span>Showing: {displayedIcons.length.toLocaleString()} icons</span>
@@ -220,27 +220,30 @@
 			<div class="card-body">
 				<h2 class="card-title">No Icons Found</h2>
 				<p class="text-base-content/70">
-					The icon manifest file could not be loaded. Ensure <code>static/stamp/manifest.json</code> exists.
+					The icon manifest file could not be loaded. Ensure <code>static/stamp/manifest.json</code>
+					exists.
 				</p>
 			</div>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
 			<!-- Icon grid -->
 			<div class="lg:col-span-3">
-				<div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+				<div class="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
 					{#each displayedIcons as icon (icon.path)}
 						<button
 							class={classNames(
-								'aspect-square rounded-lg p-2 transition-all cursor-pointer',
+								'aspect-square cursor-pointer rounded-lg p-2 transition-all',
 								'hover:bg-base-200 hover:scale-105',
-								selectedIcon?.path === icon.path ? 'bg-primary/20 ring-2 ring-primary' : 'bg-base-100'
+								selectedIcon?.path === icon.path
+									? 'bg-primary/20 ring-primary ring-2'
+									: 'bg-base-100'
 							)}
 							onclick={() => selectIcon(icon)}
 							title="{icon.subdir}/{icon.filename}"
 						>
 							<div
-								class="w-full h-full"
+								class="h-full w-full"
 								style="
 									background-color: {selectedColor};
 									-webkit-mask: url('{icon.path}') center/contain no-repeat;
@@ -253,7 +256,7 @@
 
 				<!-- Load more button -->
 				{#if displayedIcons.length < filteredIcons.length}
-					<div class="flex justify-center mt-6">
+					<div class="mt-6 flex justify-center">
 						<button class="btn btn-outline" onclick={loadMore}>
 							Load More ({filteredIcons.length - displayedIcons.length} remaining)
 						</button>
@@ -269,9 +272,9 @@
 
 						{#if selectedIcon}
 							<!-- Large preview -->
-							<div class="flex justify-center p-4 bg-base-100 rounded-lg">
+							<div class="bg-base-100 flex justify-center rounded-lg p-4">
 								<div
-									class="w-24 h-24"
+									class="h-24 w-24"
 									style="
 										background-color: {selectedColor};
 										-webkit-mask: url('{selectedIcon.path}') center/contain no-repeat;
@@ -284,7 +287,7 @@
 							<div class="space-y-2 text-sm">
 								<div>
 									<span class="text-base-content/60">Filename:</span>
-									<div class="font-mono text-xs break-all">{selectedIcon.filename}</div>
+									<div class="break-all font-mono text-xs">{selectedIcon.filename}</div>
 								</div>
 								<div>
 									<span class="text-base-content/60">Author:</span>
@@ -292,13 +295,16 @@
 								</div>
 								<div>
 									<span class="text-base-content/60">Path:</span>
-									<div class="font-mono text-xs break-all">{selectedIcon.path}</div>
+									<div class="break-all font-mono text-xs">{selectedIcon.path}</div>
 								</div>
 							</div>
 
 							<!-- Actions -->
-							<div class="space-y-2 mt-4">
-								<button class="btn btn-sm btn-outline w-full" onclick={() => copyPath(selectedIcon!)}>
+							<div class="mt-4 space-y-2">
+								<button
+									class="btn btn-sm btn-outline w-full"
+									onclick={() => copyPath(selectedIcon!)}
+								>
 									Copy Path
 								</button>
 								<a
@@ -313,8 +319,8 @@
 
 							<!-- Color preview sizes -->
 							<div class="mt-4">
-								<span class="text-xs text-base-content/60">Size Preview</span>
-								<div class="flex items-end gap-2 mt-2">
+								<span class="text-base-content/60 text-xs">Size Preview</span>
+								<div class="mt-2 flex items-end gap-2">
 									{#each [16, 24, 32, 48] as size (size)}
 										<div class="flex flex-col items-center gap-1">
 											<div
@@ -326,15 +332,13 @@
 													mask: url('{selectedIcon.path}') center/contain no-repeat;
 												"
 											></div>
-											<span class="text-xs text-base-content/50">{size}</span>
+											<span class="text-base-content/50 text-xs">{size}</span>
 										</div>
 									{/each}
 								</div>
 							</div>
 						{:else}
-							<p class="text-sm text-base-content/60">
-								Click an icon to see details
-							</p>
+							<p class="text-base-content/60 text-sm">Click an icon to see details</p>
 						{/if}
 					</div>
 				</div>

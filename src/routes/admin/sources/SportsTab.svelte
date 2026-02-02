@@ -1,10 +1,8 @@
 <script lang="ts">
 	import SourceTab from './SourceTab.svelte';
 	import { searchSportsTeams, type SportsTeamSearchResult } from '$services/fetch.service';
-	import type { SourceTabConfig } from './sources.types';
+	import type { SourceTabConfig, SourceType } from './sources.types';
 
-	// Source type props from parent
-	type SourceType = 'movies' | 'tv' | 'videogames' | 'anime' | 'sports' | 'animals' | 'awards';
 	let {
 		sourceType,
 		onSourceTypeChange
@@ -35,12 +33,13 @@
 		progressSources: ['team'],
 
 		// Source creation configuration
-		sourceType: 'sports_team',
+		sourceType: 'sports_league',
 		sourceBadgeText: 'Sports Team',
 		sourceBadgeClass: 'badge-success',
 		providerType: 'sports_team',
 		buildSource: (result: SportsTeamSearchResult, coverImage: string | undefined) => ({
-			sourceType: 'sports_team',
+			sourceType: 'sports_league',
+			sportsType: 'team',
 			title: result.name,
 			description: `${result.sport} team - ${result.league}${result.country ? ` (${result.country})` : ''}`,
 			coverImage,

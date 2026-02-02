@@ -272,8 +272,8 @@
 	});
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-	<h1 class="text-2xl font-bold mb-4 flex-shrink-0">Torrent Manifests</h1>
+<div class="flex h-full flex-col overflow-hidden">
+	<h1 class="mb-4 flex-shrink-0 text-2xl font-bold">Torrent Manifests</h1>
 
 	<!-- Feedback messages -->
 	{#if successMessage}
@@ -292,11 +292,11 @@
 		</div>
 	{/if}
 
-	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4 overflow-hidden">
 		<!-- Column 1: Collections List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">Collections</h2>
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Collections</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if isLoading}
@@ -304,20 +304,19 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if collections.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No collections found.</p>
-							<p class="text-sm mt-1">Create collections in the Collections page.</p>
+							<p class="mt-1 text-sm">Create collections in the Collections page.</p>
 						</div>
 					{:else}
 						<div class="space-y-2">
 							{#each collections as collection (collection.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-3 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-3 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary':
-												selectedCollection?.id === collection.id,
+											'bg-primary/20 ring-primary ring-2': selectedCollection?.id === collection.id,
 											'bg-base-100': selectedCollection?.id !== collection.id
 										}
 									)}
@@ -331,19 +330,19 @@
 											<img
 												src={collection.coverImage}
 												alt={collection.title}
-												class="w-8 h-12 object-cover rounded"
+												class="h-12 w-8 rounded object-cover"
 											/>
 										{:else}
 											<div
-												class="w-8 h-12 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+												class="bg-base-300 text-base-content/30 flex h-12 w-8 items-center justify-center rounded"
 											>
 												<span class="text-xs">?</span>
 											</div>
 										{/if}
-										<div class="flex-1 min-w-0">
-											<span class="font-medium text-sm truncate block">{collection.title}</span>
+										<div class="min-w-0 flex-1">
+											<span class="block truncate text-sm font-medium">{collection.title}</span>
 											{#if collection.description}
-												<span class="text-xs text-base-content/60 truncate block">
+												<span class="text-base-content/60 block truncate text-xs">
 													{collection.description}
 												</span>
 											{/if}
@@ -358,13 +357,13 @@
 		</div>
 
 		<!-- Column 2: Collection Details -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">Collection Details</h2>
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Collection Details</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if !selectedCollection}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>Select a collection to view details.</p>
 						</div>
 					{:else if isLoadingStickers}
@@ -375,14 +374,14 @@
 						<div class="space-y-4">
 							<!-- Title -->
 							<div>
-								<span class="text-xs text-base-content/60 uppercase tracking-wide">Title</span>
-								<p class="font-semibold text-lg">{selectedCollection.title}</p>
+								<span class="text-base-content/60 text-xs uppercase tracking-wide">Title</span>
+								<p class="text-lg font-semibold">{selectedCollection.title}</p>
 							</div>
 
 							<!-- Description -->
 							{#if selectedCollection.description}
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide"
+									<span class="text-base-content/60 text-xs uppercase tracking-wide"
 										>Description</span
 									>
 									<p class="text-sm">{selectedCollection.description}</p>
@@ -392,20 +391,20 @@
 							<!-- Cover Image -->
 							{#if selectedCollection.coverImage}
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide"
+									<span class="text-base-content/60 text-xs uppercase tracking-wide"
 										>Cover Image</span
 									>
 									<img
 										src={selectedCollection.coverImage}
 										alt={selectedCollection.title}
-										class="w-full max-w-xs rounded-lg mt-1"
+										class="mt-1 w-full max-w-xs rounded-lg"
 									/>
 								</div>
 							{/if}
 
 							<!-- Sticker Count -->
 							<div>
-								<span class="text-xs text-base-content/60 uppercase tracking-wide"
+								<span class="text-base-content/60 text-xs uppercase tracking-wide"
 									>Sticker Count</span
 								>
 								<p class="text-lg">
@@ -423,13 +422,13 @@
 
 							<!-- Image Cache Status -->
 							<div>
-								<span class="text-xs text-base-content/60 uppercase tracking-wide"
+								<span class="text-base-content/60 text-xs uppercase tracking-wide"
 									>Images Cached Locally</span
 								>
 								{#if isCheckingCache}
-									<div class="flex items-center gap-2 mt-1">
+									<div class="mt-1 flex items-center gap-2">
 										<span class="loading loading-spinner loading-xs"></span>
-										<span class="text-sm text-base-content/60">Checking cache...</span>
+										<span class="text-base-content/60 text-sm">Checking cache...</span>
 									</div>
 								{:else if cacheStatus}
 									<div class="mt-1 space-y-1">
@@ -447,28 +446,27 @@
 											</div>
 											<div class="text-sm">
 												<p>
-													<span class="font-semibold text-success">{cacheStatus.cached}</span>
+													<span class="text-success font-semibold">{cacheStatus.cached}</span>
 													<span class="text-base-content/60">/ {cacheStatus.total} cached</span>
 												</p>
 												{#if cacheStatus.missing > 0}
 													<p class="text-warning text-xs">
-														{cacheStatus.missing} image{cacheStatus.missing === 1 ? '' : 's'} not
-														cached
+														{cacheStatus.missing} image{cacheStatus.missing === 1 ? '' : 's'} not cached
 													</p>
 												{/if}
 											</div>
 										</div>
 									</div>
 								{:else if collectionStickers.length === 0}
-									<p class="text-sm text-base-content/60 mt-1">No images to check</p>
+									<p class="text-base-content/60 mt-1 text-sm">No images to check</p>
 								{/if}
 							</div>
 
 							<!-- Background Download Progress -->
 							{#if downloadProgress && downloadProgress.status !== 'idle'}
-								<div class="p-3 bg-base-100 rounded-lg">
-									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs text-base-content/60 uppercase tracking-wide"
+								<div class="bg-base-100 rounded-lg p-3">
+									<div class="mb-2 flex items-center justify-between">
+										<span class="text-base-content/60 text-xs uppercase tracking-wide"
 											>Background Download</span
 										>
 										{#if downloadProgress.status === 'running'}
@@ -486,7 +484,7 @@
 									</div>
 
 									<!-- Status badge -->
-									<div class="flex items-center gap-2 mb-2">
+									<div class="mb-2 flex items-center gap-2">
 										<span
 											class={classNames('badge badge-sm', {
 												'badge-info': downloadProgress.status === 'running',
@@ -498,7 +496,7 @@
 											{downloadProgress.status}
 										</span>
 										{#if downloadProgress.collection_title}
-											<span class="text-xs text-base-content/60 truncate">
+											<span class="text-base-content/60 truncate text-xs">
 												{downloadProgress.collection_title}
 											</span>
 										{/if}
@@ -511,7 +509,7 @@
 											value={downloadProgress.completed}
 											max={downloadProgress.total}
 										></progress>
-										<div class="flex justify-between text-xs mt-1">
+										<div class="mt-1 flex justify-between text-xs">
 											<span>
 												{downloadProgress.completed} / {downloadProgress.total}
 											</span>
@@ -522,7 +520,7 @@
 									{/if}
 
 									<!-- Stats -->
-									<div class="grid grid-cols-3 gap-1 text-xs mt-2">
+									<div class="mt-2 grid grid-cols-3 gap-1 text-xs">
 										<div class="text-success">Cached: {downloadProgress.cached}</div>
 										<div class="text-base-content/60">Skipped: {downloadProgress.skipped}</div>
 										<div class="text-error">Failed: {downloadProgress.failed}</div>
@@ -530,7 +528,7 @@
 
 									<!-- Current URL -->
 									{#if downloadProgress.status === 'running' && downloadProgress.current_url}
-										<div class="mt-2 text-xs text-base-content/50 truncate">
+										<div class="text-base-content/50 mt-2 truncate text-xs">
 											{downloadProgress.current_url}
 										</div>
 									{/if}
@@ -538,14 +536,14 @@
 									<!-- Errors -->
 									{#if downloadProgress.errors.length > 0}
 										<details class="mt-2">
-											<summary class="text-xs text-error cursor-pointer">
+											<summary class="text-error cursor-pointer text-xs">
 												{downloadProgress.errors.length} error{downloadProgress.errors.length === 1
 													? ''
 													: 's'}
 											</summary>
-											<ul class="text-xs mt-1 max-h-20 overflow-y-auto">
+											<ul class="mt-1 max-h-20 overflow-y-auto text-xs">
 												{#each downloadProgress.errors.slice(0, 10) as error}
-													<li class="truncate text-error/80">{error}</li>
+													<li class="text-error/80 truncate">{error}</li>
 												{/each}
 												{#if downloadProgress.errors.length > 10}
 													<li class="text-base-content/50">
@@ -565,16 +563,14 @@
 									onclick={handleStartDownload}
 									disabled={downloadProgress?.status === 'running'}
 								>
-									Download {cacheStatus.missing} Missing Image{cacheStatus.missing === 1
-										? ''
-										: 's'}
+									Download {cacheStatus.missing} Missing Image{cacheStatus.missing === 1 ? '' : 's'}
 								</button>
 							{/if}
 
 							<!-- Dates -->
 							{#if selectedCollection.createdAt}
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide">Created</span>
+									<span class="text-base-content/60 text-xs uppercase tracking-wide">Created</span>
 									<p class="text-sm">
 										{new Date(selectedCollection.createdAt).toLocaleDateString()}
 									</p>
@@ -583,7 +579,7 @@
 
 							{#if selectedCollection.updatedAt}
 								<div>
-									<span class="text-xs text-base-content/60 uppercase tracking-wide">Updated</span>
+									<span class="text-base-content/60 text-xs uppercase tracking-wide">Updated</span>
 									<p class="text-sm">
 										{new Date(selectedCollection.updatedAt).toLocaleDateString()}
 									</p>
@@ -619,7 +615,7 @@
 							</button>
 
 							{#if collectionStickers.length === 0}
-								<p class="text-xs text-warning text-center">
+								<p class="text-warning text-center text-xs">
 									Add stickers to this collection before downloading.
 								</p>
 							{/if}
@@ -630,11 +626,11 @@
 		</div>
 
 		<!-- Column 3: Cached Images + JSON Preview -->
-		<div class="flex flex-col gap-4 min-h-0 overflow-hidden">
+		<div class="flex min-h-0 flex-col gap-4 overflow-hidden">
 			<!-- Cached Images Panel -->
-			<div class="card bg-base-200 overflow-hidden flex flex-col h-1/2 min-h-0">
-				<div class="card-body p-4 flex flex-col min-h-0">
-					<div class="flex items-center justify-between mb-2">
+			<div class="card bg-base-200 flex h-1/2 min-h-0 flex-col overflow-hidden">
+				<div class="card-body flex min-h-0 flex-col p-4">
+					<div class="mb-2 flex items-center justify-between">
 						<h2 class="card-title text-lg">Cached Images</h2>
 						{#if cachedImages.length > 0}
 							<span class="badge badge-success badge-sm">{cachedImages.length} files</span>
@@ -643,7 +639,7 @@
 
 					<div class="flex-1 overflow-y-auto">
 						{#if !selectedCollection}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>Select a collection to view cached images.</p>
 							</div>
 						{:else if isCheckingCache}
@@ -651,27 +647,27 @@
 								<span class="loading loading-spinner loading-md"></span>
 							</div>
 						{:else if cachedImages.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>No images cached locally yet.</p>
-								<p class="text-sm mt-1">Download missing images to see them here.</p>
+								<p class="mt-1 text-sm">Download missing images to see them here.</p>
 							</div>
 						{:else}
 							<div class="grid grid-cols-4 gap-2">
 								{#each cachedImages as cached (cached.sticker.id)}
 									<div
-										class="relative group aspect-[2/3] rounded overflow-hidden bg-base-300"
+										class="bg-base-300 group relative aspect-[2/3] overflow-hidden rounded"
 										title={cached.sticker.name}
 									>
 										<img
 											src={cached.assetUrl}
 											alt={cached.sticker.name}
-											class="w-full h-full object-cover"
+											class="h-full w-full object-cover"
 											loading="lazy"
 										/>
 										<div
-											class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+											class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-1 opacity-0 transition-opacity group-hover:opacity-100"
 										>
-											<p class="text-white text-xs truncate">{cached.sticker.name}</p>
+											<p class="truncate text-xs text-white">{cached.sticker.name}</p>
 										</div>
 									</div>
 								{/each}
@@ -682,9 +678,9 @@
 			</div>
 
 			<!-- JSON Preview Panel -->
-			<div class="card bg-base-200 overflow-hidden flex flex-col h-1/2 min-h-0">
-				<div class="card-body p-4 flex flex-col min-h-0">
-					<div class="flex items-center justify-between mb-2">
+			<div class="card bg-base-200 flex h-1/2 min-h-0 flex-col overflow-hidden">
+				<div class="card-body flex min-h-0 flex-col p-4">
+					<div class="mb-2 flex items-center justify-between">
 						<h2 class="card-title text-lg">JSON Preview</h2>
 						{#if previewManifest}
 							<button
@@ -699,46 +695,46 @@
 
 					<div class="flex-1 overflow-y-auto">
 						{#if !previewManifest}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p>Select a collection and click "Preview JSON" to see the manifest.</p>
 							</div>
 						{:else}
-						<!-- Metadata summary -->
-						<div class="mb-4 p-3 bg-base-100 rounded-lg">
-							<div class="grid grid-cols-2 gap-2 text-sm">
-								<div>
-									<span class="text-base-content/60">Version:</span>
-									<span class="ml-1 font-mono">{previewManifest.version}</span>
-								</div>
-								<div>
-									<span class="text-base-content/60">Stickers:</span>
-									<span class="ml-1 font-mono">{previewManifest.metadata.totalCount}</span>
-								</div>
-								<div>
-									<span class="text-base-content/60">Has Images:</span>
-									<span
-										class={classNames('ml-1 badge badge-xs', {
-											'badge-success': previewManifest.metadata.hasImages,
-											'badge-warning': !previewManifest.metadata.hasImages
-										})}
-									>
-										{previewManifest.metadata.hasImages ? 'Yes' : 'No'}
-									</span>
-								</div>
-								<div>
-									<span class="text-base-content/60">Sources:</span>
-									<span class="ml-1 font-mono"
-										>{previewManifest.metadata.sources.length > 0
-											? previewManifest.metadata.sources.join(', ')
-											: 'none'}</span
-									>
+							<!-- Metadata summary -->
+							<div class="bg-base-100 mb-4 rounded-lg p-3">
+								<div class="grid grid-cols-2 gap-2 text-sm">
+									<div>
+										<span class="text-base-content/60">Version:</span>
+										<span class="ml-1 font-mono">{previewManifest.version}</span>
+									</div>
+									<div>
+										<span class="text-base-content/60">Stickers:</span>
+										<span class="ml-1 font-mono">{previewManifest.metadata.totalCount}</span>
+									</div>
+									<div>
+										<span class="text-base-content/60">Has Images:</span>
+										<span
+											class={classNames('badge badge-xs ml-1', {
+												'badge-success': previewManifest.metadata.hasImages,
+												'badge-warning': !previewManifest.metadata.hasImages
+											})}
+										>
+											{previewManifest.metadata.hasImages ? 'Yes' : 'No'}
+										</span>
+									</div>
+									<div>
+										<span class="text-base-content/60">Sources:</span>
+										<span class="ml-1 font-mono"
+											>{previewManifest.metadata.sources.length > 0
+												? previewManifest.metadata.sources.join(', ')
+												: 'none'}</span
+										>
+									</div>
 								</div>
 							</div>
-						</div>
 
-						<!-- JSON output -->
+							<!-- JSON output -->
 							<pre
-								class="bg-base-300 p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">{manifestToJson(
+								class="bg-base-300 overflow-x-auto whitespace-pre-wrap break-all rounded-lg p-3 font-mono text-xs">{manifestToJson(
 									previewManifest
 								)}</pre>
 						{/if}

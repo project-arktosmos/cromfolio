@@ -55,40 +55,26 @@
 	}
 
 	function getLinkClasses(itemPath: string): string {
-		return classNames(
-			'px-4',
-			'py-3',
-			'text-sm',
-			'transition-colors',
-			'hover:bg-base-300',
-			{
-				'bg-primary text-primary-content hover:bg-primary': isActive(itemPath),
-				'text-base-content': !isActive(itemPath)
-			}
-		);
+		return classNames('px-4', 'py-3', 'text-sm', 'transition-colors', 'hover:bg-base-300', {
+			'bg-primary text-primary-content hover:bg-primary': isActive(itemPath),
+			'text-base-content': !isActive(itemPath)
+		});
 	}
 
 	function getGroupLinkClasses(itemPath: string): string {
-		return classNames(
-			'px-4',
-			'py-2',
-			'text-sm',
-			'transition-colors',
-			'hover:bg-base-300',
-			{
-				'bg-primary text-primary-content hover:bg-primary': isActive(itemPath),
-				'text-base-content': !isActive(itemPath)
-			}
-		);
+		return classNames('px-4', 'py-2', 'text-sm', 'transition-colors', 'hover:bg-base-300', {
+			'bg-primary text-primary-content hover:bg-primary': isActive(itemPath),
+			'text-base-content': !isActive(itemPath)
+		});
 	}
 </script>
 
 <aside class={wrapperClasses}>
-	<div class="p-4 border-b border-base-300">
-		<a href="/admin" class="text-xl font-bold text-base-content">Admin</a>
+	<div class="border-base-300 border-b p-4">
+		<a href="/admin" class="text-base-content text-xl font-bold">Admin</a>
 	</div>
 
-	<nav class="flex-1 py-2 overflow-y-auto">
+	<nav class="flex-1 overflow-y-auto py-2">
 		<ul class="menu p-0">
 			{#each groupedItems as group}
 				{#if group.name === null}
@@ -101,7 +87,9 @@
 					{/each}
 				{:else}
 					<li class="mt-2">
-						<span class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-base-content/60">
+						<span
+							class="text-base-content/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider"
+						>
 							{group.name}
 						</span>
 						<ul class="pl-2">

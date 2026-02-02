@@ -144,9 +144,7 @@ export async function getTeamById(
 	const apiKey = getApiKey();
 
 	try {
-		const response = await fetch(
-			`${THESPORTSDB_BASE_URL}/${apiKey}/lookupteam.php?id=${teamId}`
-		);
+		const response = await fetch(`${THESPORTSDB_BASE_URL}/${apiKey}/lookupteam.php?id=${teamId}`);
 
 		if (!response.ok) {
 			throw new Error(`TheSportsDB API error: ${response.status}`);

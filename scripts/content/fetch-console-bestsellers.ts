@@ -202,7 +202,7 @@ interface OutputData {
  * Sleep for rate limiting
  */
 function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -323,7 +323,10 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 		// Parse header row to find column indices
 		let headerRowIdx = -1;
 		for (let i = 0; i < rows.length; i++) {
-			if (rows[i].includes('! scope="col"') || (rows[i].includes('!') && rows[i].match(/title|copies|sold/i))) {
+			if (
+				rows[i].includes('! scope="col"') ||
+				(rows[i].includes('!') && rows[i].match(/title|copies|sold/i))
+			) {
 				headerRowIdx = i;
 				break;
 			}
@@ -333,7 +336,7 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 
 		// Parse headers to find column positions
 		const headerRow = rows[headerRowIdx];
-		const headerCells = headerRow.split(/\n!/).map(h => h.toLowerCase().trim());
+		const headerCells = headerRow.split(/\n!/).map((h) => h.toLowerCase().trim());
 
 		let titleCol = -1;
 		let copiesCol = -1;
@@ -414,7 +417,11 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 				const cleanedCell = cleanWikitext(cell);
 
 				// Try to identify developer/publisher by context
-				if (!game.developer && cleanedCell.match(/studios?|games?|software|entertainment|interactive/i) && !cleanedCell.match(/million|copies|\d{4}/i)) {
+				if (
+					!game.developer &&
+					cleanedCell.match(/studios?|games?|software|entertainment|interactive/i) &&
+					!cleanedCell.match(/million|copies|\d{4}/i)
+				) {
 					if (!game.developer) {
 						game.developer = cleanedCell;
 					} else if (!game.publisher) {
@@ -423,12 +430,23 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 				}
 
 				// Try to identify genre
-				if (!game.genre && cleanedCell.match(/action|adventure|rpg|racing|sports|shooter|fighting|simulation|strategy|puzzle|platformer|party/i)) {
+				if (
+					!game.genre &&
+					cleanedCell.match(
+						/action|adventure|rpg|racing|sports|shooter|fighting|simulation|strategy|puzzle|platformer|party/i
+					)
+				) {
 					game.genre = cleanedCell;
 				}
 
 				// Try to identify release date (format: Month DD, YYYY or YYYY-MM-DD)
-				if (!game.releaseDate && cleanedCell.match(/\b(19|20)\d{2}\b/) && cleanedCell.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2})\b/i)) {
+				if (
+					!game.releaseDate &&
+					cleanedCell.match(/\b(19|20)\d{2}\b/) &&
+					cleanedCell.match(
+						/\b(january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2})\b/i
+					)
+				) {
 					game.releaseDate = cleanedCell;
 				}
 			}
@@ -448,7 +466,10 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 /**
  * Fetch best-selling games for a specific console
  */
-async function fetchConsoleGames(consoleDef: ConsoleDefinition, maxGames: number = 100): Promise<ConsoleData | null> {
+async function fetchConsoleGames(
+	consoleDef: ConsoleDefinition,
+	maxGames: number = 100
+): Promise<ConsoleData | null> {
 	console.log(`\nFetching: ${consoleDef.name} (${consoleDef.wikipediaSlug})`);
 
 	const content = await fetchWikipediaPage(consoleDef.wikipediaSlug);
@@ -530,7 +551,7 @@ Options:
   -h, --help              Show this help
 
 Available consoles (post-2000):
-${CONSOLES_POST_2000.map(c => `  ${c.id.padEnd(20)} ${c.name} (${c.manufacturer}, ${c.releaseYear})`).join('\n')}
+${CONSOLES_POST_2000.map((c) => `  ${c.id.padEnd(20)} ${c.name} (${c.manufacturer}, ${c.releaseYear})`).join('\n')}
 
 Examples:
   npx tsx scripts/content/fetch-console-bestsellers.ts
@@ -550,7 +571,9 @@ Examples:
 		console.log('\nAvailable consoles (released after 2000):');
 		console.log('-'.repeat(60));
 		for (const c of CONSOLES_POST_2000) {
-			console.log(`  ${c.id.padEnd(20)} ${c.name.padEnd(20)} ${c.manufacturer.padEnd(10)} ${c.releaseYear} (${c.type})`);
+			console.log(
+				`  ${c.id.padEnd(20)} ${c.name.padEnd(20)} ${c.manufacturer.padEnd(10)} ${c.releaseYear} (${c.type})`
+			);
 		}
 		return;
 	}
@@ -559,15 +582,17 @@ Examples:
 	let consolesToFetch = CONSOLES_POST_2000;
 
 	if (consoleFilter.length > 0) {
-		consolesToFetch = consolesToFetch.filter(c => consoleFilter.includes(c.id));
+		consolesToFetch = consolesToFetch.filter((c) => consoleFilter.includes(c.id));
 	}
 
 	if (manufacturerFilter) {
-		consolesToFetch = consolesToFetch.filter(c => c.manufacturer.toLowerCase() === manufacturerFilter);
+		consolesToFetch = consolesToFetch.filter(
+			(c) => c.manufacturer.toLowerCase() === manufacturerFilter
+		);
 	}
 
 	if (typeFilter) {
-		consolesToFetch = consolesToFetch.filter(c => c.type === typeFilter);
+		consolesToFetch = consolesToFetch.filter((c) => c.type === typeFilter);
 	}
 
 	console.log(`\nConsoles to fetch: ${consolesToFetch.length}`);

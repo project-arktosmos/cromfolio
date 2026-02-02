@@ -92,9 +92,7 @@
 
 	// Filtered nominees based on selected category
 	let filteredNominees = $derived(
-		selectedCategory
-			? nominees.filter((n) => n.category === selectedCategory)
-			: nominees
+		selectedCategory ? nominees.filter((n) => n.category === selectedCategory) : nominees
 	);
 
 	// Event handlers for cascading dropdowns
@@ -159,7 +157,14 @@
 							// (more reliable than type guards since we know what was searched)
 							if (nominee.entityType === 'album') {
 								const release = bestMatch as MusicBrainzReleaseResult;
-								console.log('[Grammy] Album entity - fetching cover art for:', release.title, 'mbid:', release.mbid, 'release-group:', release.releaseGroupMbid);
+								console.log(
+									'[Grammy] Album entity - fetching cover art for:',
+									release.title,
+									'mbid:',
+									release.mbid,
+									'release-group:',
+									release.releaseGroupMbid
+								);
 								try {
 									const coverArt = await getMusicBrainzCoverArt(
 										release.mbid,
@@ -172,7 +177,12 @@
 								}
 							} else if (nominee.entityType === 'recording') {
 								const recording = bestMatch as MusicBrainzRecordingResult;
-								console.log('[Grammy] Recording entity:', recording.title, 'releaseMbid:', recording.releaseMbid);
+								console.log(
+									'[Grammy] Recording entity:',
+									recording.title,
+									'releaseMbid:',
+									recording.releaseMbid
+								);
 								if (recording.releaseMbid) {
 									try {
 										const coverArt = await getMusicBrainzCoverArt(recording.releaseMbid);
@@ -226,13 +236,9 @@
 
 	function toggleAllNominees(selected: boolean) {
 		// Only toggle filtered nominees
-		const filteredArticles = new Set(
-			filteredNominees.map((n) => n.wikipediaArticle + n.category)
-		);
+		const filteredArticles = new Set(filteredNominees.map((n) => n.wikipediaArticle + n.category));
 		nominees = nominees.map((n) =>
-			filteredArticles.has(n.wikipediaArticle + n.category)
-				? { ...n, selected }
-				: n
+			filteredArticles.has(n.wikipediaArticle + n.category) ? { ...n, selected } : n
 		);
 	}
 
@@ -391,10 +397,10 @@
 	}
 </script>
 
-<div class="grid grid-cols-5 gap-4 flex-1 min-h-0">
+<div class="grid min-h-0 flex-1 grid-cols-5 gap-4">
 	<!-- Column 1: Grammy Selection -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
 			<div class="form-control mb-3">
 				<select
 					class="select select-bordered select-sm w-full"
@@ -448,12 +454,15 @@
 
 					<!-- Stats -->
 					{#if nominees.length > 0 && !isLoadingNominees}
-						<div class="text-xs text-base-content/60 mt-2 space-y-1">
+						<div class="text-base-content/60 mt-2 space-y-1 text-xs">
 							<div>Total nominees: {nominees.length}</div>
 							{#if selectedCategory}
 								{@const entityType = filteredNominees[0]?.entityType || 'album'}
 								<div>
-									Entity type: <span class={classNames('badge badge-xs', getEntityTypeBadgeClass(entityType))}>{getEntityTypeLabel(entityType)}</span>
+									Entity type: <span
+										class={classNames('badge badge-xs', getEntityTypeBadgeClass(entityType))}
+										>{getEntityTypeLabel(entityType)}</span
+									>
 								</div>
 							{/if}
 						</div>
@@ -464,9 +473,9 @@
 	</div>
 
 	<!-- Column 2: Nominees List -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<div class="flex items-center justify-between mb-2">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<div class="mb-2 flex items-center justify-between">
 				<h2 class="card-title text-lg">Nominees</h2>
 				{#if filteredNominees.length > 0}
 					<span class="badge badge-primary">{getSelectedCount()}/{filteredNominees.length}</span>
@@ -474,19 +483,19 @@
 			</div>
 
 			{#if !selectedYear}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a year to view nominees.</p>
 				</div>
 			{:else if isLoadingNominees}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else if filteredNominees.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No nominees found.</p>
 				</div>
 			{:else}
-				<div class="flex gap-2 mb-2">
+				<div class="mb-2 flex gap-2">
 					<button class="btn btn-xs btn-ghost" onclick={() => toggleAllNominees(true)}>
 						Select All
 					</button>
@@ -498,13 +507,14 @@
 				<div class="flex-1 overflow-y-auto">
 					<div class="space-y-2">
 						{#each filteredNominees as nominee (nominee.wikipediaArticle + nominee.category)}
-							{@const isSelected = selectedNomineeForDetails?.wikipediaArticle === nominee.wikipediaArticle}
+							{@const isSelected =
+								selectedNomineeForDetails?.wikipediaArticle === nominee.wikipediaArticle}
 							<div
 								class={classNames(
-									'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+									'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 									'hover:bg-base-300',
 									{
-										'bg-primary/20 ring-2 ring-primary': isSelected,
+										'bg-primary/20 ring-primary ring-2': isSelected,
 										'bg-base-100': !isSelected
 									}
 								)}
@@ -522,18 +532,18 @@
 										onchange={() => toggleNominee(nominee)}
 									/>
 									{#if nominee.isLoading}
-										<div class="w-10 h-10 bg-base-300 rounded flex items-center justify-center">
+										<div class="bg-base-300 flex h-10 w-10 items-center justify-center rounded">
 											<span class="loading loading-spinner loading-xs"></span>
 										</div>
 									{:else if nominee.coverArtUrl}
 										<img
 											src={nominee.coverArtUrl}
 											alt={nominee.wikipediaArticle}
-											class="w-10 h-10 object-cover rounded"
+											class="h-10 w-10 rounded object-cover"
 										/>
 									{:else}
 										<div
-											class="w-10 h-10 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+											class="bg-base-300 text-base-content/30 flex h-10 w-10 items-center justify-center rounded"
 										>
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
@@ -551,28 +561,36 @@
 											</svg>
 										</div>
 									{/if}
-									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm truncate">
+									<div class="min-w-0 flex-1">
+										<div class="truncate text-sm font-medium">
 											{normalizeWikipediaName(nominee.wikipediaArticle)}
 										</div>
 										{#if nominee.mbMatch}
-											<div class="text-xs text-base-content/60 truncate">
+											<div class="text-base-content/60 truncate text-xs">
 												{getMusicBrainzResultName(nominee.mbMatch)}
 											</div>
 										{:else if nominee.error}
-											<div class="text-xs text-error">{nominee.error}</div>
+											<div class="text-error text-xs">{nominee.error}</div>
 										{:else if !nominee.isLoading}
-											<div class="text-xs text-warning">No match found</div>
+											<div class="text-warning text-xs">No match found</div>
 										{/if}
-										<div class="flex flex-wrap gap-1 mt-1">
+										<div class="mt-1 flex flex-wrap gap-1">
 											{#if nominee.isWinner}
 												<span class="badge badge-warning badge-xs">Winner</span>
 											{/if}
-											<span class={classNames('badge badge-xs', getEntityTypeBadgeClass(nominee.entityType))}>
+											<span
+												class={classNames(
+													'badge badge-xs',
+													getEntityTypeBadgeClass(nominee.entityType)
+												)}
+											>
 												{getEntityTypeLabel(nominee.entityType)}
 											</span>
 											{#if !selectedCategory}
-												<span class="badge badge-ghost badge-xs truncate max-w-24" title={formatGrammyCategoryName(nominee.category)}>
+												<span
+													class="badge badge-ghost badge-xs max-w-24 truncate"
+													title={formatGrammyCategoryName(nominee.category)}
+												>
 													{formatGrammyCategoryName(nominee.category)}
 												</span>
 											{/if}
@@ -588,58 +606,63 @@
 	</div>
 
 	<!-- Column 3: MusicBrainz Match -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">MusicBrainz Match</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">MusicBrainz Match</h2>
 
 			{#if !selectedNomineeForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a nominee to view matches.</p>
 				</div>
 			{:else if selectedNomineeForDetails.isLoading}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else}
-				<div class="flex-1 overflow-y-auto space-y-3">
+				<div class="flex-1 space-y-3 overflow-y-auto">
 					<div>
-						<span class="text-xs font-semibold text-base-content/60 uppercase">Search Query</span>
-						<p class="text-sm">{normalizeWikipediaName(selectedNomineeForDetails.wikipediaArticle)}</p>
+						<span class="text-base-content/60 text-xs font-semibold uppercase">Search Query</span>
+						<p class="text-sm">
+							{normalizeWikipediaName(selectedNomineeForDetails.wikipediaArticle)}
+						</p>
 					</div>
 
 					{#if selectedNomineeForDetails.mbSearchResults && selectedNomineeForDetails.mbSearchResults.length > 0}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Results ({selectedNomineeForDetails.mbSearchResults.length})</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase"
+								>Results ({selectedNomineeForDetails.mbSearchResults.length})</span
+							>
 						</div>
 
 						<div class="space-y-2">
 							{#each selectedNomineeForDetails.mbSearchResults as result (getMusicBrainzResultMbid(result))}
-								{@const isCurrentMatch = selectedNomineeForDetails.mbMatch && getMusicBrainzResultMbid(selectedNomineeForDetails.mbMatch) === getMusicBrainzResultMbid(result)}
+								{@const isCurrentMatch =
+									selectedNomineeForDetails.mbMatch &&
+									getMusicBrainzResultMbid(selectedNomineeForDetails.mbMatch) ===
+										getMusicBrainzResultMbid(result)}
 								<div
-									class={classNames(
-										'p-2 rounded-lg cursor-pointer transition-colors',
-										{
-											'bg-success/20 ring-2 ring-success': isCurrentMatch,
-											'bg-base-100 hover:bg-base-300': !isCurrentMatch
-										}
-									)}
+									class={classNames('cursor-pointer rounded-lg p-2 transition-colors', {
+										'bg-success/20 ring-success ring-2': isCurrentMatch,
+										'bg-base-100 hover:bg-base-300': !isCurrentMatch
+									})}
 									onclick={() => selectMbMatch(selectedNomineeForDetails!, result)}
-									onkeydown={(e) => e.key === 'Enter' && selectMbMatch(selectedNomineeForDetails!, result)}
+									onkeydown={(e) =>
+										e.key === 'Enter' && selectMbMatch(selectedNomineeForDetails!, result)}
 									role="button"
 									tabindex="0"
 								>
-									<div class="font-medium text-sm">{getMusicBrainzResultName(result)}</div>
+									<div class="text-sm font-medium">{getMusicBrainzResultName(result)}</div>
 									{#if 'artistCredit' in result && result.artistCredit}
-										<div class="text-xs text-base-content/60">{result.artistCredit}</div>
+										<div class="text-base-content/60 text-xs">{result.artistCredit}</div>
 									{/if}
 									{#if 'date' in result && result.date}
-										<div class="text-xs text-base-content/60">{result.date}</div>
+										<div class="text-base-content/60 text-xs">{result.date}</div>
 									{/if}
 									{#if 'disambiguation' in result && result.disambiguation}
-										<div class="text-xs text-base-content/50 italic">{result.disambiguation}</div>
+										<div class="text-base-content/50 text-xs italic">{result.disambiguation}</div>
 									{/if}
-									<div class="flex justify-between items-center mt-1">
-										<span class="text-xs text-base-content/40">Score: {result.score}</span>
+									<div class="mt-1 flex items-center justify-between">
+										<span class="text-base-content/40 text-xs">Score: {result.score}</span>
 										{#if isCurrentMatch}
 											<span class="badge badge-success badge-xs">Selected</span>
 										{/if}
@@ -648,7 +671,7 @@
 							{/each}
 						</div>
 					{:else}
-						<div class="flex-1 flex items-center justify-center text-base-content/60">
+						<div class="text-base-content/60 flex flex-1 items-center justify-center">
 							<p class="text-sm">No MusicBrainz results found.</p>
 						</div>
 					{/if}
@@ -658,12 +681,12 @@
 	</div>
 
 	<!-- Column 4: Preview -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Sticker Preview</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Sticker Preview</h2>
 
 			{#if !selectedNomineeForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a nominee to preview sticker.</p>
 				</div>
 			{:else if selectedNomineeForDetails.mbMatch}
@@ -682,20 +705,24 @@
 					<div class="flex flex-col items-center gap-4">
 						<div class="w-48">
 							<StickerItem sticker={previewSticker} />
-							<div class="p-2 bg-base-200 rounded-b">
+							<div class="bg-base-200 rounded-b p-2">
 								{#if previewStickerType}
-									<div class="flex justify-center mb-1">
-										<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>{previewStickerType.name}</span>
+									<div class="mb-1 flex justify-center">
+										<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}
+											>{previewStickerType.name}</span
+										>
 									</div>
 								{/if}
-								<h3 class="text-xs font-medium text-center leading-tight">{previewSticker.name}</h3>
+								<h3 class="text-center text-xs font-medium leading-tight">{previewSticker.name}</h3>
 							</div>
 						</div>
 
 						<div class="text-center">
-							<p class="font-medium text-sm">{name}</p>
+							<p class="text-sm font-medium">{name}</p>
 							{#if 'artistCredit' in selectedNomineeForDetails.mbMatch && selectedNomineeForDetails.mbMatch.artistCredit}
-								<p class="text-xs text-base-content/60">{selectedNomineeForDetails.mbMatch.artistCredit}</p>
+								<p class="text-base-content/60 text-xs">
+									{selectedNomineeForDetails.mbMatch.artistCredit}
+								</p>
 							{/if}
 							{#if selectedNomineeForDetails.isWinner}
 								<span class="badge badge-warning badge-sm mt-1">Winner</span>
@@ -706,7 +733,7 @@
 					</div>
 				</div>
 			{:else}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No MusicBrainz match selected.</p>
 				</div>
 			{/if}
@@ -714,24 +741,24 @@
 	</div>
 
 	<!-- Column 5: Create Source -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Create Source</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Create Source</h2>
 
 			{#if !selectedYear}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a year to create a Grammy source.</p>
 				</div>
 			{:else if filteredNominees.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No nominees loaded yet.</p>
 				</div>
 			{:else}
 				<div class="flex-1 overflow-y-auto">
 					<div class="space-y-4">
 						<div>
-							<h3 class="font-bold text-sm">{getSourceTitle()}</h3>
-							<p class="text-xs text-base-content/60 mt-1">
+							<h3 class="text-sm font-bold">{getSourceTitle()}</h3>
+							<p class="text-base-content/60 mt-1 text-xs">
 								{#if selectedCategory}
 									{formatGrammyCategoryName(selectedCategory)}
 								{:else}
@@ -749,7 +776,9 @@
 							</div>
 							<div class="flex justify-between">
 								<span class="text-base-content/60">With match:</span>
-								<span class="font-mono text-xs">{filteredNominees.filter((n) => n.mbMatch).length}</span>
+								<span class="font-mono text-xs"
+									>{filteredNominees.filter((n) => n.mbMatch).length}</span
+								>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-base-content/60">Selected:</span>
@@ -779,7 +808,7 @@
 									/>
 								</svg>
 								<div>
-									<span class="text-sm block">Source created!</span>
+									<span class="block text-sm">Source created!</span>
 									<span class="text-xs">{stickersCreated} stickers imported</span>
 								</div>
 							</div>

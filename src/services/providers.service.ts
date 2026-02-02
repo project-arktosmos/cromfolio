@@ -38,7 +38,10 @@ export async function getProviderByExternalId(
 			externalId
 		});
 	} catch (e) {
-		console.error(`[providers.service] getProviderByExternalId(${externalIdType}, ${externalId}):`, e);
+		console.error(
+			`[providers.service] getProviderByExternalId(${externalIdType}, ${externalId}):`,
+			e
+		);
 		return null;
 	}
 }

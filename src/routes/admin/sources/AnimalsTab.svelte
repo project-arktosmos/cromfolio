@@ -1,10 +1,8 @@
 <script lang="ts">
 	import SourceTab from './SourceTab.svelte';
 	import { searchAnimals, type AnimalSearchResult } from '$services/fetch.service';
-	import type { SourceTabConfig } from './sources.types';
+	import type { SourceTabConfig, SourceType } from './sources.types';
 
-	// Source type props from parent
-	type SourceType = 'movies' | 'tv' | 'videogames' | 'anime' | 'sports' | 'animals' | 'awards';
 	let {
 		sourceType,
 		onSourceTypeChange
@@ -45,7 +43,9 @@
 		buildSource: (result: AnimalSearchResult, coverImage: string | undefined) => ({
 			sourceType: 'animal',
 			title: result.genusName,
-			description: result.description || `Genus ${result.genusName}${result.taxonomicFamily ? ` (${result.taxonomicFamily})` : ''}`,
+			description:
+				result.description ||
+				`Genus ${result.genusName}${result.taxonomicFamily ? ` (${result.taxonomicFamily})` : ''}`,
 			coverImage,
 			wikidataId: result.wikidataId,
 			scientificName: result.genusName,
@@ -66,7 +66,11 @@
 				details.push({ label: 'Common Name', value: result.commonName });
 			}
 			if (result.description) {
-				details.push({ label: 'Description', value: result.description.substring(0, 100) + (result.description.length > 100 ? '...' : '') });
+				details.push({
+					label: 'Description',
+					value:
+						result.description.substring(0, 100) + (result.description.length > 100 ? '...' : '')
+				});
 			}
 			return details;
 		}

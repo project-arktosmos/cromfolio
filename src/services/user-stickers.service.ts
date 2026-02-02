@@ -65,7 +65,11 @@ export async function getOwnedStickerIds(): Promise<string[]> {
  * Acquire a sticker (add to user's collection)
  * Duplicates are allowed - each acquisition creates a new record
  */
-export async function acquireSticker(stickerId: ID, sourceId: ID, rarityId?: ID): Promise<UserSticker> {
+export async function acquireSticker(
+	stickerId: ID,
+	sourceId: ID,
+	rarityId?: ID
+): Promise<UserSticker> {
 	const userSticker: Partial<UserSticker> = {
 		id: '',
 		stickerId: String(stickerId),

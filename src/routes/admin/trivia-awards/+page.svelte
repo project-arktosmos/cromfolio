@@ -59,12 +59,14 @@
 	});
 
 	let filteredGeneratedQuestions = $derived.by(() => {
-		const validQuestions = categoryFilter === 'all'
-			? generatedQuestions
-			: generatedQuestions.filter((q) => q.category === categoryFilter);
-		const filteredSkipped = categoryFilter === 'all'
-			? skippedQuestions
-			: skippedQuestions.filter((q) => q.category === categoryFilter);
+		const validQuestions =
+			categoryFilter === 'all'
+				? generatedQuestions
+				: generatedQuestions.filter((q) => q.category === categoryFilter);
+		const filteredSkipped =
+			categoryFilter === 'all'
+				? skippedQuestions
+				: skippedQuestions.filter((q) => q.category === categoryFilter);
 		return [...validQuestions, ...filteredSkipped];
 	});
 
@@ -286,25 +288,25 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Trivia Questions</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Trivia Questions</h1>
 
-	<div class="grid grid-cols-4 gap-4 flex-1 min-h-0">
+	<div class="grid min-h-0 flex-1 grid-cols-4 gap-4">
 		<!-- Column 1: Collections List -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Collections</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Collections</h2>
 
 				<input
 					type="text"
 					placeholder="Search collections..."
-					class="input input-bordered input-sm w-full mb-3"
+					class="input input-bordered input-sm mb-3 w-full"
 					bind:value={searchQuery}
 				/>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if filteredCollections.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No collections found.</p>
 						</div>
 					{:else}
@@ -312,10 +314,10 @@
 							{#each filteredCollections as collection (collection.id)}
 								<div
 									class={classNames(
-										'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+										'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 										'hover:bg-base-300',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedCollection?.id === collection.id,
+											'bg-primary/20 ring-primary ring-2': selectedCollection?.id === collection.id,
 											'bg-base-100': selectedCollection?.id !== collection.id
 										}
 									)}
@@ -324,35 +326,31 @@
 									role="button"
 									tabindex="0"
 								>
-									<div class="font-medium text-sm">{collection.title}</div>
-									<div class="text-xs text-base-content/60">{collection.id}</div>
+									<div class="text-sm font-medium">{collection.title}</div>
+									<div class="text-base-content/60 text-xs">{collection.id}</div>
 								</div>
 							{/each}
 						</div>
 					{/if}
 				</div>
 
-				<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+				<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 					{filteredCollections.length} collection{filteredCollections.length !== 1 ? 's' : ''}
 				</div>
 			</div>
 		</div>
 
 		<!-- Column 2: Generated Preview -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col col-span-2">
-			<div class="card-body p-4 flex flex-col h-full">
-				<div class="flex items-center justify-between mb-2">
+		<div class="card bg-base-200 col-span-2 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<div class="mb-2 flex items-center justify-between">
 					<h2 class="card-title text-lg">Generated Preview</h2>
 					{#if generatedQuestions.length > 0}
 						<div class="flex gap-2">
 							<button class="btn btn-outline btn-sm" onclick={copyGeneratedToClipboard}>
 								Copy
 							</button>
-							<button
-								class="btn btn-primary btn-sm"
-								onclick={saveToDb}
-								disabled={isSaving}
-							>
+							<button class="btn btn-primary btn-sm" onclick={saveToDb} disabled={isSaving}>
 								{#if isSaving}
 									<span class="loading loading-spinner loading-xs"></span>
 								{:else}
@@ -370,22 +368,22 @@
 							Generating... {generationProgress.current} / {generationProgress.total}
 						</p>
 						<progress
-							class="progress progress-primary w-64 mt-2"
+							class="progress progress-primary mt-2 w-64"
 							value={generationProgress.current}
 							max={generationProgress.total}
 						></progress>
 					</div>
 				{:else if !selectedCollection}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>Select a collection to generate preview.</p>
 					</div>
 				{:else if generatedQuestions.length === 0 && skippedQuestions.length === 0}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>No award data for this collection.</p>
 					</div>
 				{:else}
 					<!-- Filters -->
-					<div class="flex items-center gap-2 mb-3 flex-wrap">
+					<div class="mb-3 flex flex-wrap items-center gap-2">
 						<div class="badge badge-success">{generatedQuestions.length} generated</div>
 						{#if skippedQuestions.length > 0}
 							<div class="badge badge-warning">{skippedQuestions.length} skipped</div>
@@ -402,20 +400,30 @@
 					<div class="flex-1 overflow-y-auto">
 						<div class="space-y-2">
 							{#each filteredGeneratedQuestions as question (question.id)}
-								<div class={classNames('bg-base-100 p-2 rounded-lg', { 'opacity-50': question.skipped })}>
+								<div
+									class={classNames('bg-base-100 rounded-lg p-2', {
+										'opacity-50': question.skipped
+									})}
+								>
 									<div class="mb-1 flex items-center gap-1">
-										<span class="badge badge-xs badge-ghost">{formatCategoryName(question.category)}</span>
+										<span class="badge badge-xs badge-ghost"
+											>{formatCategoryName(question.category)}</span
+										>
 										{#if question.skipped}
 											<span class="badge badge-xs badge-warning">{question.skipReason}</span>
 										{/if}
 									</div>
-									<div class="text-sm line-clamp-2">{question.questionText}</div>
+									<div class="line-clamp-2 text-sm">{question.questionText}</div>
 									<div class="mt-2">
-										<div class="text-xs text-success font-semibold mb-1">Correct:</div>
-										<div class="bg-success/20 text-success p-1 rounded text-xs">{question.correctAnswer}</div>
+										<div class="text-success mb-1 text-xs font-semibold">Correct:</div>
+										<div class="bg-success/20 text-success rounded p-1 text-xs">
+											{question.correctAnswer}
+										</div>
 									</div>
 									<div class="mt-2">
-										<div class="text-xs text-base-content/60 mb-1">Wrong answers ({question.wrongAnswers.length}):</div>
+										<div class="text-base-content/60 mb-1 text-xs">
+											Wrong answers ({question.wrongAnswers.length}):
+										</div>
 										<div class="flex flex-wrap gap-1">
 											{#each question.wrongAnswers as wrong}
 												<span class="badge badge-xs badge-outline">{wrong}</span>
@@ -427,7 +435,7 @@
 						</div>
 					</div>
 
-					<div class="text-xs text-base-content/60 mt-2 pt-2 border-t border-base-300">
+					<div class="text-base-content/60 border-base-300 mt-2 border-t pt-2 text-xs">
 						Showing {filteredGeneratedQuestions.length} of {generatedQuestions.length}
 					</div>
 				{/if}
@@ -435,31 +443,33 @@
 		</div>
 
 		<!-- Column 3: DB Questions -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">DB Questions</h2>
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">DB Questions</h2>
 
 				{#if isLoadingDb}
-					<div class="flex-1 flex items-center justify-center">
+					<div class="flex flex-1 items-center justify-center">
 						<span class="loading loading-spinner"></span>
 					</div>
 				{:else if !selectedCollection}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
-						<p class="text-sm text-center">Select a collection.</p>
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
+						<p class="text-center text-sm">Select a collection.</p>
 					</div>
 				{:else if dbQuestions.length === 0}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
-						<p class="text-sm text-center">No questions in DB.</p>
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
+						<p class="text-center text-sm">No questions in DB.</p>
 					</div>
 				{:else}
 					<div class="badge badge-info mb-2">{dbQuestions.length} in DB</div>
 					<div class="flex-1 overflow-y-auto">
 						<div class="space-y-2">
 							{#each dbQuestions as question (question.id)}
-								<div class="bg-base-100 p-2 rounded-lg">
-									<div class="text-sm line-clamp-2">{question.questionText}</div>
+								<div class="bg-base-100 rounded-lg p-2">
+									<div class="line-clamp-2 text-sm">{question.questionText}</div>
 									<div class="mt-1">
-										<div class="bg-success/20 text-success p-1 rounded text-xs">{question.correctAnswer}</div>
+										<div class="bg-success/20 text-success rounded p-1 text-xs">
+											{question.correctAnswer}
+										</div>
 									</div>
 									{#if question.wrongAnswers && question.wrongAnswers.length > 0}
 										<div class="mt-1 flex flex-wrap gap-1">

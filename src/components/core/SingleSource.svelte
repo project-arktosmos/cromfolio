@@ -469,7 +469,11 @@
 		const pageBlockDepth = BOOK_DEPTH - COVER_THICKNESS * 2;
 
 		// Create page block (the inner pages)
-		const pageBlockGeometry = new THREE.BoxGeometry(pageBlockWidth, BOOK_HEIGHT - 0.02, pageBlockDepth);
+		const pageBlockGeometry = new THREE.BoxGeometry(
+			pageBlockWidth,
+			BOOK_HEIGHT - 0.02,
+			pageBlockDepth
+		);
 		const pageBlockMaterials = [
 			new THREE.MeshStandardMaterial({ map: pageTexture, roughness: 0.9 }), // +X: right edge
 			new THREE.MeshStandardMaterial({ map: pageTexture, roughness: 0.9 }), // -X: left edge (spine side)
@@ -644,7 +648,6 @@
 			});
 		}
 	});
-
 </script>
 
 <div class={classNames('relative', classes)}>
@@ -671,12 +674,30 @@
 		title={isOpen ? 'Close book' : 'Open book'}
 	>
 		{#if isOpen}
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<path d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+				/>
 			</svg>
 		{:else}
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<path d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+				/>
 			</svg>
 		{/if}
 	</button>

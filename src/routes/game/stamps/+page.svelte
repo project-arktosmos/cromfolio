@@ -328,7 +328,10 @@
 				} catch (err) {
 					console.error('Failed to download sticker:', err);
 				}
-				telegramImportProgress = { current: telegramImportProgress.current + 1, total: telegramImportProgress.total };
+				telegramImportProgress = {
+					current: telegramImportProgress.current + 1,
+					total: telegramImportProgress.total
+				};
 			}
 
 			if (downloadedStickers.length === 0) {
@@ -405,7 +408,11 @@
 			filename = `${telegramSticker.file_unique_id}.tgs`;
 		} else if (telegramSticker.is_video && !filename.endsWith('.webm')) {
 			filename = `${telegramSticker.file_unique_id}.webm`;
-		} else if (!telegramSticker.is_animated && !telegramSticker.is_video && !filename.endsWith('.webp')) {
+		} else if (
+			!telegramSticker.is_animated &&
+			!telegramSticker.is_video &&
+			!filename.endsWith('.webp')
+		) {
 			filename = `${telegramSticker.file_unique_id}.webp`;
 		}
 
@@ -540,7 +547,10 @@
 	 * Generate common pack name variations to try
 	 */
 	function generatePackNameVariations(query: string): string[] {
-		const base = query.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+		const base = query
+			.toLowerCase()
+			.replace(/\s+/g, '_')
+			.replace(/[^a-z0-9_]/g, '');
 		const variations = new Set<string>();
 
 		// Add base variations
@@ -814,13 +824,13 @@
 	}
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-	<h1 class="text-2xl font-bold mb-4 flex-shrink-0">Stamp Collections</h1>
+<div class="flex h-full flex-col overflow-hidden">
+	<h1 class="mb-4 flex-shrink-0 text-2xl font-bold">Stamp Collections</h1>
 
-	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4 overflow-hidden">
 		<!-- Column 1: Packs List with Import Panels -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0 gap-3">
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col gap-3 p-4">
 				<h2 class="card-title text-lg">Stamp Packs</h2>
 
 				<!-- Filter tabs -->
@@ -846,11 +856,11 @@
 				</div>
 
 				<!-- Import Panels -->
-				<div class="space-y-1 flex-shrink-0">
+				<div class="flex-shrink-0 space-y-1">
 					<!-- Search Telegram Panel -->
-					<div class="collapse collapse-arrow bg-base-300 rounded-lg">
+					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
 						<input type="radio" name="import-panel" />
-						<div class="collapse-title text-sm font-medium py-2 min-h-0">
+						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
 							<div class="flex items-center gap-2">
 								<span>Search Telegram</span>
 								{#if isSearching}
@@ -858,7 +868,7 @@
 								{/if}
 							</div>
 						</div>
-						<div class="collapse-content px-2 pb-2 space-y-2">
+						<div class="collapse-content space-y-2 px-2 pb-2">
 							<!-- Search Input -->
 							<div class="join w-full">
 								<input
@@ -887,16 +897,16 @@
 
 							<!-- Search Results -->
 							{#if searchResults.length > 0}
-								<div class="space-y-1 max-h-40 overflow-y-auto">
+								<div class="max-h-40 space-y-1 overflow-y-auto">
 									{#each searchResults as result (result.name)}
 										<div
 											class={classNames(
-												'flex items-center justify-between p-2 rounded bg-base-100 text-xs',
+												'bg-base-100 flex items-center justify-between rounded p-2 text-xs',
 												{ 'opacity-50': isPackImported(result.name) }
 											)}
 										>
-											<div class="flex-1 min-w-0 mr-2">
-												<div class="font-medium truncate" title={result.title}>
+											<div class="mr-2 min-w-0 flex-1">
+												<div class="truncate font-medium" title={result.title}>
 													{result.title}
 												</div>
 												<div class="text-base-content/60 truncate">
@@ -923,7 +933,7 @@
 									{/each}
 								</div>
 							{:else if !isSearching && !searchError}
-								<div class="text-xs text-base-content/60 text-center py-2">
+								<div class="text-base-content/60 py-2 text-center text-xs">
 									Enter a keyword or exact pack name
 								</div>
 							{/if}
@@ -931,9 +941,9 @@
 					</div>
 
 					<!-- Telegram Import Panel -->
-					<div class="collapse collapse-arrow bg-base-300 rounded-lg">
+					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
 						<input type="radio" name="import-panel" />
-						<div class="collapse-title text-sm font-medium py-2 min-h-0">
+						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
 							<div class="flex items-center gap-2">
 								<span>Import from Telegram</span>
 								{#if isTelegramImporting}
@@ -941,7 +951,7 @@
 								{/if}
 							</div>
 						</div>
-						<div class="collapse-content px-2 pb-2 space-y-2">
+						<div class="collapse-content space-y-2 px-2 pb-2">
 							<!-- URL Input -->
 							<input
 								type="text"
@@ -967,7 +977,7 @@
 							<!-- Drag-drop zone -->
 							<div
 								class={classNames(
-									'border border-dashed rounded p-2 text-center text-xs cursor-pointer transition-colors',
+									'cursor-pointer rounded border border-dashed p-2 text-center text-xs transition-colors',
 									{
 										'border-primary bg-primary/10': telegramDragOver,
 										'border-base-content/20 hover:border-primary/50': !telegramDragOver
@@ -999,9 +1009,9 @@
 					</div>
 
 					<!-- WhatsApp Import Panel -->
-					<div class="collapse collapse-arrow bg-base-300 rounded-lg">
+					<div class="collapse-arrow bg-base-300 collapse rounded-lg">
 						<input type="radio" name="import-panel" />
-						<div class="collapse-title text-sm font-medium py-2 min-h-0">
+						<div class="collapse-title min-h-0 py-2 text-sm font-medium">
 							<div class="flex items-center gap-2">
 								<span>Import from WhatsApp</span>
 								{#if isWhatsappImporting}
@@ -1022,30 +1032,30 @@
 								{/if}
 							</button>
 							{#if whatsappError}
-								<div class="text-error text-xs mt-2">{whatsappError}</div>
+								<div class="text-error mt-2 text-xs">{whatsappError}</div>
 							{/if}
 						</div>
 					</div>
 				</div>
 
 				<!-- Packs List -->
-				<div class="flex-1 overflow-y-auto space-y-2 min-h-0">
+				<div class="min-h-0 flex-1 space-y-2 overflow-y-auto">
 					{#if isLoading}
 						<div class="flex justify-center p-4">
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if filteredPacks.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p class="text-sm">No packs found.</p>
-							<p class="text-xs mt-2">Use the import panels above to add sticker packs.</p>
+							<p class="mt-2 text-xs">Use the import panels above to add sticker packs.</p>
 						</div>
 					{:else}
 						{#each filteredPacks as pack (pack.id)}
 							<div
 								class={classNames(
-									'p-3 rounded-lg transition-colors cursor-pointer hover:bg-base-300',
+									'hover:bg-base-300 cursor-pointer rounded-lg p-3 transition-colors',
 									{
-										'bg-primary/20 ring-2 ring-primary': selectedPack?.id === pack.id,
+										'bg-primary/20 ring-primary ring-2': selectedPack?.id === pack.id,
 										'bg-base-100': selectedPack?.id !== pack.id
 									}
 								)}
@@ -1055,14 +1065,14 @@
 								tabindex="0"
 							>
 								<div class="flex items-center justify-between">
-									<div class="flex-1 min-w-0">
+									<div class="min-w-0 flex-1">
 										<div class="flex items-center gap-2">
-											<span class="font-medium text-sm truncate">{pack.name}</span>
+											<span class="truncate text-sm font-medium">{pack.name}</span>
 											<span class={classNames('badge badge-xs', getSourceBadgeClass(pack.source))}>
 												{pack.source}
 											</span>
 										</div>
-										<div class="text-xs text-base-content/60 mt-1">
+										<div class="text-base-content/60 mt-1 text-xs">
 											{pack.stickerCount} sticker{pack.stickerCount !== 1 ? 's' : ''}
 											{#if pack.author}
 												<span class="mx-1">·</span>
@@ -1083,7 +1093,7 @@
 					{/if}
 				</div>
 
-				<div class="text-xs text-base-content/60 pt-2 border-t border-base-300 flex-shrink-0">
+				<div class="text-base-content/60 border-base-300 flex-shrink-0 border-t pt-2 text-xs">
 					{filteredPacks.length} pack{filteredPacks.length !== 1 ? 's' : ''}
 					{#if sourceFilter !== 'all'}
 						({sourceFilter})
@@ -1093,9 +1103,9 @@
 		</div>
 
 		<!-- Column 2: Stickers Grid -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">
 					{#if selectedPack}
 						Stickers ({selectedPack.stickerCount})
 					{:else}
@@ -1104,15 +1114,15 @@
 				</h2>
 
 				{#if !selectedPack}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>Select a pack to view stickers</p>
 					</div>
 				{:else if isLoadingStamps}
-					<div class="flex-1 flex justify-center items-center">
+					<div class="flex flex-1 items-center justify-center">
 						<span class="loading loading-spinner loading-md"></span>
 					</div>
 				{:else if packStamps.length === 0}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>No stickers loaded</p>
 					</div>
 				{:else}
@@ -1121,9 +1131,9 @@
 							{#each packStamps as sticker (sticker.id)}
 								<div
 									class={classNames(
-										'relative group cursor-pointer rounded-lg overflow-hidden aspect-square bg-base-300',
+										'bg-base-300 group relative aspect-square cursor-pointer overflow-hidden rounded-lg',
 										{
-											'ring-2 ring-primary': selectedSticker?.id === sticker.id
+											'ring-primary ring-2': selectedSticker?.id === sticker.id
 										}
 									)}
 									onclick={() => (selectedSticker = sticker)}
@@ -1135,24 +1145,24 @@
 										<img
 											src={sticker.dataUrl}
 											alt={sticker.imagePath}
-											class="w-full h-full object-contain"
+											class="h-full w-full object-contain"
 											loading="lazy"
 										/>
 									{:else if sticker.format === 'video' && sticker.dataUrl}
 										<video
 											src={sticker.dataUrl}
-											class="w-full h-full object-contain"
+											class="h-full w-full object-contain"
 											autoplay
 											loop
 											muted
 											playsinline
 										></video>
 									{:else if sticker.format === 'animated' && sticker.lottieData}
-										<div class="w-full h-full" use:lottieThumbAction={sticker}></div>
+										<div class="h-full w-full" use:lottieThumbAction={sticker}></div>
 									{/if}
 									{#if sticker.emojis}
 										<div
-											class="absolute top-0.5 right-0.5 text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+											class="absolute right-0.5 top-0.5 text-sm opacity-0 transition-opacity group-hover:opacity-100"
 										>
 											{sticker.emojis}
 										</div>
@@ -1161,7 +1171,7 @@
 										class={classNames(
 											'absolute bottom-0 left-0 right-0 px-1 py-0.5',
 											getFormatBadgeClass(sticker.format),
-											'text-[10px] text-center opacity-0 group-hover:opacity-100 transition-opacity'
+											'text-center text-[10px] opacity-0 transition-opacity group-hover:opacity-100'
 										)}
 									>
 										{sticker.format}
@@ -1175,26 +1185,28 @@
 		</div>
 
 		<!-- Column 3: Pack Details & Sticker Preview -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col min-h-0">
-			<div class="card-body p-4 flex flex-col min-h-0">
-				<h2 class="card-title text-lg mb-2">Details</h2>
+		<div class="card bg-base-200 flex min-h-0 flex-col overflow-hidden">
+			<div class="card-body flex min-h-0 flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Details</h2>
 
 				{#if !selectedPack}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>Select a pack to view details</p>
 					</div>
 				{:else}
-					<div class="flex-1 overflow-y-auto space-y-4">
+					<div class="flex-1 space-y-4 overflow-y-auto">
 						<!-- Pack Details -->
 						<div class="space-y-2 text-sm">
-							<h3 class="font-bold text-lg">{selectedPack.name}</h3>
+							<h3 class="text-lg font-bold">{selectedPack.name}</h3>
 							{#if selectedPack.author}
 								<p class="text-base-content/60">{selectedPack.author}</p>
 							{/if}
 							<div class="divider my-2"></div>
 							<div class="flex justify-between">
 								<span class="text-base-content/60">Source:</span>
-								<span class={classNames('badge badge-sm', getSourceBadgeClass(selectedPack.source))}>
+								<span
+									class={classNames('badge badge-sm', getSourceBadgeClass(selectedPack.source))}
+								>
 									{selectedPack.source}
 								</span>
 							</div>
@@ -1214,17 +1226,17 @@
 							<div class="divider my-2"></div>
 
 							<!-- Sticker Preview Area -->
-							<div class="flex justify-center items-center bg-base-300 rounded-lg p-4 min-h-48">
+							<div class="bg-base-300 flex min-h-48 items-center justify-center rounded-lg p-4">
 								{#if selectedSticker.format === 'static' && selectedSticker.dataUrl}
 									<img
 										src={selectedSticker.dataUrl}
 										alt={selectedSticker.imagePath}
-										class="max-w-full max-h-64 object-contain"
+										class="max-h-64 max-w-full object-contain"
 									/>
 								{:else if selectedSticker.format === 'video' && selectedSticker.dataUrl}
 									<video
 										src={selectedSticker.dataUrl}
-										class="max-w-full max-h-64 object-contain"
+										class="max-h-64 max-w-full object-contain"
 										autoplay
 										loop
 										muted
@@ -1232,7 +1244,7 @@
 										controls
 									></video>
 								{:else if selectedSticker.format === 'animated' && selectedSticker.lottieData}
-									<div bind:this={lottiePreviewContainer} class="w-64 h-64"></div>
+									<div bind:this={lottiePreviewContainer} class="h-64 w-64"></div>
 								{/if}
 							</div>
 
@@ -1241,7 +1253,7 @@
 								<div class="flex justify-between">
 									<span class="text-base-content/60">File:</span>
 									<span
-										class="font-mono text-xs truncate max-w-48"
+										class="max-w-48 truncate font-mono text-xs"
 										title={selectedSticker.imagePath}
 									>
 										{selectedSticker.imagePath.split('/').pop()}
@@ -1250,7 +1262,10 @@
 								<div class="flex justify-between">
 									<span class="text-base-content/60">Format:</span>
 									<span
-										class={classNames('badge badge-sm', getFormatBadgeClass(selectedSticker.format))}
+										class={classNames(
+											'badge badge-sm',
+											getFormatBadgeClass(selectedSticker.format)
+										)}
 									>
 										{selectedSticker.format}
 									</span>
@@ -1265,11 +1280,11 @@
 
 							<!-- Lottie JSON Preview for TGS -->
 							{#if selectedSticker.format === 'animated' && selectedSticker.lottieData}
-								<div class="collapse collapse-arrow bg-base-300">
+								<div class="collapse-arrow bg-base-300 collapse">
 									<input type="checkbox" />
 									<div class="collapse-title text-sm font-medium">Lottie JSON Data</div>
 									<div class="collapse-content">
-										<pre class="text-xs overflow-x-auto max-h-48 overflow-y-auto">{JSON.stringify(
+										<pre class="max-h-48 overflow-x-auto overflow-y-auto text-xs">{JSON.stringify(
 												selectedSticker.lottieData,
 												null,
 												2

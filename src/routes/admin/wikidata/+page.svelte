@@ -119,7 +119,7 @@
 
 	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4">
 		<!-- Search Panel -->
-		<div class="card flex flex-col overflow-hidden bg-base-200">
+		<div class="card bg-base-200 flex flex-col overflow-hidden">
 			<div class="card-body flex h-full flex-col p-4">
 				<h2 class="card-title text-lg">Search Wikipedia</h2>
 
@@ -134,7 +134,7 @@
 							oninput={handleSearchInput}
 						/>
 						{#if isSearching}
-							<span class="loading loading-spinner loading-sm absolute top-3 right-3"></span>
+							<span class="loading loading-spinner loading-sm absolute right-3 top-3"></span>
 						{/if}
 					</div>
 				</div>
@@ -156,8 +156,7 @@
 									'cursor-pointer rounded-lg p-3 transition-colors',
 									'hover:bg-base-300',
 									{
-										'ring-primary bg-primary/20 ring-2':
-											selectedResult?.pageid === result.pageid,
+										'ring-primary bg-primary/20 ring-2': selectedResult?.pageid === result.pageid,
 										'bg-base-100': selectedResult?.pageid !== result.pageid
 									}
 								)}
@@ -183,7 +182,7 @@
 		</div>
 
 		<!-- Wikidata Panel -->
-		<div class="card col-span-2 flex flex-col overflow-hidden bg-base-200">
+		<div class="card bg-base-200 col-span-2 flex flex-col overflow-hidden">
 			<div class="card-body flex h-full flex-col p-4">
 				{#if !selectedResult}
 					<div class="flex flex-1 items-center justify-center">
@@ -228,7 +227,9 @@
 								<p class="text-base-content/70 mt-1">{wikidataItem.description}</p>
 								<div class="mt-2 flex flex-wrap gap-2">
 									<a
-										href="https://en.wikipedia.org/wiki/{encodeURIComponent(wikidataItem.wikipediaTitle)}"
+										href="https://en.wikipedia.org/wiki/{encodeURIComponent(
+											wikidataItem.wikipediaTitle
+										)}"
 										target="_blank"
 										rel="noopener noreferrer"
 										class="badge badge-outline"
@@ -268,7 +269,9 @@
 												{#if prop.valueType === 'image'}
 													<div class="flex flex-col gap-2">
 														<a
-															href="https://commons.wikimedia.org/wiki/File:{encodeURIComponent(prop.value)}"
+															href="https://commons.wikimedia.org/wiki/File:{encodeURIComponent(
+																prop.value
+															)}"
 															target="_blank"
 															rel="noopener noreferrer"
 															class="block"

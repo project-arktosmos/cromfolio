@@ -1,10 +1,8 @@
 <script lang="ts">
 	import SourceTab from './SourceTab.svelte';
 	import { searchAnime, type AnimeSearchResult } from '$services/fetch.service';
-	import type { SourceTabConfig } from './sources.types';
+	import type { SourceTabConfig, SourceType } from './sources.types';
 
-	// Source type props from parent
-	type SourceType = 'movies' | 'tv' | 'videogames' | 'anime' | 'sports' | 'animals' | 'awards';
 	let {
 		sourceType,
 		onSourceTypeChange

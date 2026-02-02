@@ -31,7 +31,7 @@ const SOURCE_TYPE_TO_TRIVIA_CATEGORY: Record<SourceType, string> = {
 	sports_league: 'sport_and_leisure',
 	award_list: 'film_and_tv',
 	grammy: 'music',
-	'game_console': 'general_knowledge'
+	game_console: 'general_knowledge'
 };
 
 // Wikipedia title suffix by source type
@@ -44,7 +44,7 @@ const SOURCE_TYPE_TO_WIKI_SUFFIX: Record<SourceType, string> = {
 	sports_league: '',
 	award_list: '',
 	grammy: '',
-	'game_console': '(video game)'
+	game_console: '(video game)'
 };
 
 /**
@@ -218,9 +218,7 @@ function generateTriviaFromWikipedia(
 	);
 	if (nameMatches && nameMatches.length > 0) {
 		const match = nameMatches[0];
-		const nameMatch = match.match(
-			/(?:directed by|created by|written by|developed by|by)\s+(.+)/i
-		);
+		const nameMatch = match.match(/(?:directed by|created by|written by|developed by|by)\s+(.+)/i);
 		if (nameMatch) {
 			const name = nameMatch[1];
 			const wrongNames = generateWrongNames();
@@ -260,7 +258,7 @@ function generateWrongDescriptions(sourceType: SourceType): string[] {
 		sports_league: 'Sports organization',
 		award_list: 'Award ceremony',
 		grammy: 'Grammy-winning music',
-		'game_console': 'Console video game'
+		game_console: 'Console video game'
 	};
 
 	return Object.entries(allTypes)

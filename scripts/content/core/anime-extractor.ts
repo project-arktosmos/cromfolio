@@ -162,9 +162,7 @@ export async function extractAnime(
 					const jikanChars = await getJikanCharacters(malId);
 					// Deduplicate by name
 					const existingNames = new Set(characters.map((c) => c.name.toLowerCase()));
-					const newChars = jikanChars.filter(
-						(c) => !existingNames.has(c.name.toLowerCase())
-					);
+					const newChars = jikanChars.filter((c) => !existingNames.has(c.name.toLowerCase()));
 					characters = [...characters, ...newChars].slice(0, maxCharacters);
 					console.log(`Total characters: ${characters.length}`);
 				} catch (err) {
@@ -184,8 +182,7 @@ export async function extractAnime(
 		}
 
 		// Step 8: Select cover image
-		const coverImage =
-			anime.coverImageLarge || anime.coverImage || selectedImages[0]?.url;
+		const coverImage = anime.coverImageLarge || anime.coverImage || selectedImages[0]?.url;
 
 		if (dryRun) {
 			console.log('\n=== DRY RUN - No changes made ===');

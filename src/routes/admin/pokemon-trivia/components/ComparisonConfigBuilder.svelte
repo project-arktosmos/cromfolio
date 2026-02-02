@@ -41,10 +41,15 @@
 </script>
 
 <div class="bg-base-300 rounded-lg p-4">
-	<div class="flex items-center justify-between mb-3">
-		<h3 class="font-semibold text-sm">Comparison Configuration</h3>
+	<div class="mb-3 flex items-center justify-between">
+		<h3 class="text-sm font-semibold">Comparison Configuration</h3>
 		{#if config}
-			<button type="button" class="btn btn-ghost btn-xs text-error" onclick={clearConfig} {disabled}>
+			<button
+				type="button"
+				class="btn btn-ghost btn-xs text-error"
+				onclick={clearConfig}
+				{disabled}
+			>
 				Clear
 			</button>
 		{/if}
@@ -54,14 +59,14 @@
 		<button type="button" class="btn btn-ghost btn-sm w-full" onclick={initConfig} {disabled}>
 			+ Configure Comparison
 		</button>
-		<p class="text-xs text-base-content/50 mt-2">
+		<p class="text-base-content/50 mt-2 text-xs">
 			Required for superlative and comparison template types.
 		</p>
 	{:else}
 		<div class="space-y-3">
 			<!-- Operator -->
-			<div class="flex gap-2 items-center">
-				<label class="w-24 text-sm text-base-content/80">Find</label>
+			<div class="flex items-center gap-2">
+				<label class="text-base-content/80 w-24 text-sm">Find</label>
 				<div class="join flex-1">
 					<button
 						type="button"
@@ -89,8 +94,8 @@
 			</div>
 
 			<!-- Attribute -->
-			<div class="flex gap-2 items-center">
-				<label class="w-24 text-sm text-base-content/80">Attribute</label>
+			<div class="flex items-center gap-2">
+				<label class="text-base-content/80 w-24 text-sm">Attribute</label>
 				<select
 					class="select select-sm select-bordered flex-1"
 					value={config.attribute}
@@ -109,8 +114,8 @@
 
 			<!-- Count (for comparison type) -->
 			{#if showCount}
-				<div class="flex gap-2 items-center">
-					<label class="w-24 text-sm text-base-content/80">Compare</label>
+				<div class="flex items-center gap-2">
+					<label class="text-base-content/80 w-24 text-sm">Compare</label>
 					<div class="join">
 						<button
 							type="button"
@@ -139,7 +144,7 @@
 			{/if}
 		</div>
 
-		<p class="text-xs text-base-content/50 mt-3">
+		<p class="text-base-content/50 mt-3 text-xs">
 			{#if config.operator === 'max'}
 				Find the Pokemon with the <strong>highest</strong>
 				{POKEMON_ATTRIBUTES[config.attribute]?.label ?? config.attribute}

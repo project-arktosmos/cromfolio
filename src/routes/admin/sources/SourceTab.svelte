@@ -21,7 +21,8 @@
 	import type {
 		SourceTabConfig,
 		SelectableImageItem,
-		SelectableCharacterItem
+		SelectableCharacterItem,
+		SourceType
 	} from './sources.types';
 
 	// Helper to create a mock StickerTypeEntity for preview
@@ -37,8 +38,8 @@
 		};
 	}
 
-	// Source type options (must match parent page)
-	const sourceTypeOptions = [
+	// Source type options (must match SourceType in sources.types.ts)
+	const sourceTypeOptions: { value: SourceType; label: string }[] = [
 		{ value: 'movies', label: 'Movies' },
 		{ value: 'tv', label: 'TV Series' },
 		{ value: 'videogames', label: 'Videogames' },
@@ -48,9 +49,7 @@
 		{ value: 'awards', label: 'Award Lists' },
 		{ value: 'grammy', label: 'Grammy Awards' },
 		{ value: 'game-consoles', label: 'Game Consoles' }
-	] as const;
-
-	type SourceType = (typeof sourceTypeOptions)[number]['value'];
+	];
 
 	// Props
 	type TResult = $$Generic;
@@ -86,7 +85,9 @@
 	let stickersCreated = $state<number>(0);
 
 	// Selected sticker for details view (separate from selection for source)
-	let selectedStickerForDetails = $state<SelectableImageItem | SelectableCharacterItem | null>(null);
+	let selectedStickerForDetails = $state<SelectableImageItem | SelectableCharacterItem | null>(
+		null
+	);
 
 	// Content details state
 	let contentDetails = $state<ContentDetails | null>(null);
@@ -543,7 +544,9 @@
 	}
 
 	// Generate preview tags from card metadata
-	function getPreviewTags(card: SelectableImageItem | SelectableCharacterItem): { key: string; value: string }[] {
+	function getPreviewTags(
+		card: SelectableImageItem | SelectableCharacterItem
+	): { key: string; value: string }[] {
 		const tags: { key: string; value: string }[] = [];
 
 		if ('characterName' in card || 'character' in card) {
@@ -575,7 +578,8 @@
 				// Categorize by resolution
 				const pixels = img.width * img.height;
 				let resolution = 'low';
-				if (pixels >= 2073600) resolution = 'hd'; // 1920x1080
+				if (pixels >= 2073600)
+					resolution = 'hd'; // 1920x1080
 				else if (pixels >= 921600) resolution = 'medium'; // 1280x720
 				tags.push({ key: 'resolution', value: resolution });
 			}
@@ -585,10 +589,10 @@
 	}
 </script>
 
-<div class="grid grid-cols-5 gap-4 flex-1 min-h-0">
+<div class="grid min-h-0 flex-1 grid-cols-5 gap-4">
 	<!-- Column 1: Search -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
 			<div class="form-control mb-3">
 				<select
 					class="select select-bordered select-sm w-full"
@@ -655,10 +659,10 @@
 							{@const isSelected = selectedResult && config.getId(selectedResult) === resultId}
 							<div
 								class={classNames(
-									'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+									'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 									'hover:bg-base-300',
 									{
-										'bg-primary/20 ring-2 ring-primary': isSelected,
+										'bg-primary/20 ring-primary ring-2': isSelected,
 										'bg-base-100': !isSelected
 									}
 								)}
@@ -672,11 +676,11 @@
 										<img
 											src={config.getPoster(result)}
 											alt={config.getTitle(result)}
-											class="w-10 h-14 object-cover rounded"
+											class="h-14 w-10 rounded object-cover"
 										/>
 									{:else}
 										<div
-											class="w-10 h-14 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+											class="bg-base-300 text-base-content/30 flex h-14 w-10 items-center justify-center rounded"
 										>
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
@@ -694,9 +698,9 @@
 											</svg>
 										</div>
 									{/if}
-									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm truncate">{config.getTitle(result)}</div>
-										<div class="text-xs text-base-content/60">{config.getYear(result)}</div>
+									<div class="min-w-0 flex-1">
+										<div class="truncate text-sm font-medium">{config.getTitle(result)}</div>
+										<div class="text-base-content/60 text-xs">{config.getYear(result)}</div>
 										{#if alreadyExists}
 											<span class="badge badge-warning badge-xs mt-1">Exists</span>
 										{/if}
@@ -711,16 +715,16 @@
 	</div>
 
 	<!-- Column 2: Source Details Panel -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Source Details</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Source Details</h2>
 
 			{#if !selectedResult}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a result to view details.</p>
 				</div>
 			{:else if isLoadingDetails}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else if detailsError}
@@ -728,31 +732,31 @@
 					<span class="text-sm">{detailsError}</span>
 				</div>
 			{:else if contentDetails}
-				<div class="flex-1 overflow-y-auto space-y-3">
+				<div class="flex-1 space-y-3 overflow-y-auto">
 					<!-- Poster and Basic Info -->
 					<div class="flex gap-3">
 						{#if contentDetails.poster}
 							<img
 								src={contentDetails.poster}
 								alt={contentDetails.title}
-								class="w-20 h-30 object-cover rounded shadow"
+								class="h-30 w-20 rounded object-cover shadow"
 							/>
 						{/if}
-						<div class="flex-1 min-w-0">
-							<h3 class="font-bold text-base line-clamp-2">{contentDetails.title}</h3>
-							<p class="text-sm text-base-content/60">{contentDetails.year}</p>
+						<div class="min-w-0 flex-1">
+							<h3 class="line-clamp-2 text-base font-bold">{contentDetails.title}</h3>
+							<p class="text-base-content/60 text-sm">{contentDetails.year}</p>
 							{#if contentDetails.rated}
 								<span class="badge badge-outline badge-xs mt-1">{contentDetails.rated}</span>
 							{/if}
 							{#if contentDetails.runtime}
-								<span class="badge badge-outline badge-xs mt-1 ml-1">{contentDetails.runtime}</span>
+								<span class="badge badge-outline badge-xs ml-1 mt-1">{contentDetails.runtime}</span>
 							{/if}
 						</div>
 					</div>
 
 					<!-- Ratings -->
 					{#if contentDetails.imdbRating || contentDetails.metascore}
-						<div class="flex gap-2 flex-wrap">
+						<div class="flex flex-wrap gap-2">
 							{#if contentDetails.imdbRating}
 								<div class="badge badge-warning gap-1">
 									<span class="font-bold">IMDb</span>
@@ -771,7 +775,7 @@
 					<!-- Genre -->
 					{#if contentDetails.genre}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Genre</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Genre</span>
 							<p class="text-sm">{contentDetails.genre}</p>
 						</div>
 					{/if}
@@ -779,7 +783,7 @@
 					<!-- Plot -->
 					{#if contentDetails.plot}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Plot</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Plot</span>
 							<p class="text-sm leading-relaxed">{contentDetails.plot}</p>
 						</div>
 					{/if}
@@ -787,7 +791,7 @@
 					<!-- Director -->
 					{#if contentDetails.director}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Director</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Director</span>
 							<p class="text-sm">{contentDetails.director}</p>
 						</div>
 					{/if}
@@ -795,7 +799,7 @@
 					<!-- Writer -->
 					{#if contentDetails.writer}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Writer</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Writer</span>
 							<p class="text-sm">{contentDetails.writer}</p>
 						</div>
 					{/if}
@@ -803,7 +807,7 @@
 					<!-- Actors -->
 					{#if contentDetails.actors}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Cast</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Cast</span>
 							<p class="text-sm">{contentDetails.actors}</p>
 						</div>
 					{/if}
@@ -811,7 +815,7 @@
 					<!-- Awards -->
 					{#if contentDetails.awards}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Awards</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Awards</span>
 							<p class="text-sm">{contentDetails.awards}</p>
 						</div>
 					{/if}
@@ -868,11 +872,11 @@
 					<div class="space-y-3">
 						<div class="flex gap-3">
 							{#if poster}
-								<img src={poster} alt={title} class="w-20 h-30 object-cover rounded shadow" />
+								<img src={poster} alt={title} class="h-30 w-20 rounded object-cover shadow" />
 							{/if}
-							<div class="flex-1 min-w-0">
-								<h3 class="font-bold text-base line-clamp-2">{title}</h3>
-								<p class="text-sm text-base-content/60">{year}</p>
+							<div class="min-w-0 flex-1">
+								<h3 class="line-clamp-2 text-base font-bold">{title}</h3>
+								<p class="text-base-content/60 text-sm">{year}</p>
 								<span class="badge {config.sourceBadgeClass} badge-sm mt-1"
 									>{config.sourceBadgeText}</span
 								>
@@ -897,9 +901,9 @@
 	</div>
 
 	<!-- Column 3: Images (Templates) -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<div class="flex items-center justify-between mb-2">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<div class="mb-2 flex items-center justify-between">
 				<h2 class="card-title text-lg">Images (Stickers)</h2>
 				{#if selectedResult && !isLoadingImages}
 					<span class="badge badge-primary">{getTotalSelectedCount()}</span>
@@ -907,13 +911,13 @@
 			</div>
 
 			{#if !selectedResult}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a result to view images.</p>
 				</div>
 			{:else if isLoadingImages}
-				<div class="flex-1 flex flex-col items-center justify-center gap-4">
+				<div class="flex flex-1 flex-col items-center justify-center gap-4">
 					<span class="loading loading-spinner loading-md"></span>
-					<div class="text-xs space-y-1">
+					<div class="space-y-1 text-xs">
 						{#each config.progressSources as source}
 							<div class="flex items-center gap-2 {getSourceStatusClass(source)}">
 								<span class="w-16">{source}:</span>
@@ -947,7 +951,7 @@
 				</div>
 
 				{#if getCurrentImages().length > 0 || (imageTab === 'characters' && characterImages.length > 0) || (imageTab === 'tmdb-cast' && getTmdbCastCharacters().length > 0)}
-					<div class="flex gap-2 mb-2">
+					<div class="mb-2 flex gap-2">
 						<button class="btn btn-xs btn-ghost" onclick={() => toggleAllImages(true)}>
 							Select All
 						</button>
@@ -961,7 +965,7 @@
 					{#if imageTab === 'tmdb-cast' && config.showCharacters}
 						{@const tmdbCharacters = getTmdbCastCharacters().sort((a, b) => a.order - b.order)}
 						{#if tmdbCharacters.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p class="text-sm">No TMDB cast information available.</p>
 							</div>
 						{:else}
@@ -981,7 +985,7 @@
 									{@const previewStickerType = createStickerTypeEntity(stickerTypeId)}
 									<div
 										class={classNames('relative cursor-pointer transition-all hover:scale-[1.02]', {
-											'ring-2 ring-primary': character.selected,
+											'ring-primary ring-2': character.selected,
 											'opacity-50 grayscale': !character.selected
 										})}
 										onclick={() => selectTemplateForDetails(character)}
@@ -989,20 +993,27 @@
 										role="button"
 										tabindex="0"
 									>
-										<div class="absolute top-2 left-2 z-10">
+										<div class="absolute left-2 top-2 z-10">
 											<input
 												type="checkbox"
 												class="checkbox checkbox-primary checkbox-sm bg-base-100"
 												checked={character.selected}
-												onclick={(e) => { e.stopPropagation(); toggleCharacter(character); }}
+												onclick={(e) => {
+													e.stopPropagation();
+													toggleCharacter(character);
+												}}
 											/>
 										</div>
 										<StickerItem sticker={previewSticker} />
-										<div class="p-2 bg-base-200">
+										<div class="bg-base-200 p-2">
 											{#if previewStickerType}
-												<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>{previewStickerType.name}</span>
+												<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}
+													>{previewStickerType.name}</span
+												>
 											{/if}
-											<h3 class="text-xs font-medium leading-tight truncate">{previewSticker.name}</h3>
+											<h3 class="truncate text-xs font-medium leading-tight">
+												{previewSticker.name}
+											</h3>
 										</div>
 									</div>
 								{/each}
@@ -1016,7 +1027,7 @@
 							return a.order - b.order;
 						})}
 						{#if sortedCharacters.length === 0}
-							<div class="text-center text-base-content/60 p-4">
+							<div class="text-base-content/60 p-4 text-center">
 								<p class="text-sm">No cast information available.</p>
 							</div>
 						{:else}
@@ -1036,7 +1047,7 @@
 									{@const previewStickerType = createStickerTypeEntity(stickerTypeId)}
 									<div
 										class={classNames('relative cursor-pointer transition-all hover:scale-[1.02]', {
-											'ring-2 ring-primary': character.selected,
+											'ring-primary ring-2': character.selected,
 											'opacity-50 grayscale': !character.selected
 										})}
 										onclick={() => selectTemplateForDetails(character)}
@@ -1044,27 +1055,34 @@
 										role="button"
 										tabindex="0"
 									>
-										<div class="absolute top-2 left-2 z-10">
+										<div class="absolute left-2 top-2 z-10">
 											<input
 												type="checkbox"
 												class="checkbox checkbox-primary checkbox-sm bg-base-100"
 												checked={character.selected}
-												onclick={(e) => { e.stopPropagation(); toggleCharacter(character); }}
+												onclick={(e) => {
+													e.stopPropagation();
+													toggleCharacter(character);
+												}}
 											/>
 										</div>
 										<StickerItem sticker={previewSticker} />
-										<div class="p-2 bg-base-200">
+										<div class="bg-base-200 p-2">
 											{#if previewStickerType}
-												<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>{previewStickerType.name}</span>
+												<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}
+													>{previewStickerType.name}</span
+												>
 											{/if}
-											<h3 class="text-xs font-medium leading-tight truncate">{previewSticker.name}</h3>
+											<h3 class="truncate text-xs font-medium leading-tight">
+												{previewSticker.name}
+											</h3>
 										</div>
 									</div>
 								{/each}
 							</div>
 						{/if}
 					{:else if getCurrentImages().length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p class="text-sm">No images from this source.</p>
 						</div>
 					{:else}
@@ -1081,7 +1099,7 @@
 								{@const previewStickerType = createStickerTypeEntity(image.imageType)}
 								<div
 									class={classNames('relative cursor-pointer transition-all hover:scale-[1.02]', {
-										'ring-2 ring-primary': image.selected,
+										'ring-primary ring-2': image.selected,
 										'opacity-50 grayscale': !image.selected
 									})}
 									onclick={() => selectTemplateForDetails(image)}
@@ -1089,20 +1107,27 @@
 									role="button"
 									tabindex="0"
 								>
-									<div class="absolute top-2 left-2 z-10">
+									<div class="absolute left-2 top-2 z-10">
 										<input
 											type="checkbox"
 											class="checkbox checkbox-primary checkbox-sm bg-base-100"
 											checked={image.selected}
-											onclick={(e) => { e.stopPropagation(); toggleImage(image); }}
+											onclick={(e) => {
+												e.stopPropagation();
+												toggleImage(image);
+											}}
 										/>
 									</div>
 									<StickerItem sticker={previewSticker} />
-									<div class="p-2 bg-base-200">
+									<div class="bg-base-200 p-2">
 										{#if previewStickerType}
-											<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>{previewStickerType.name}</span>
+											<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}
+												>{previewStickerType.name}</span
+											>
 										{/if}
-										<h3 class="text-xs font-medium leading-tight truncate">{previewSticker.name}</h3>
+										<h3 class="truncate text-xs font-medium leading-tight">
+											{previewSticker.name}
+										</h3>
 									</div>
 								</div>
 							{/each}
@@ -1114,23 +1139,26 @@
 	</div>
 
 	<!-- Column 4: Sticker Details -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Sticker Details</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Sticker Details</h2>
 
 			{#if !selectedStickerForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Click a sticker to view its metadata.</p>
 				</div>
 			{:else}
-				{@const isCharacter = 'characterName' in selectedStickerForDetails || 'character' in selectedStickerForDetails}
-				<div class="flex-1 overflow-y-auto space-y-3">
+				{@const isCharacter =
+					'characterName' in selectedStickerForDetails || 'character' in selectedStickerForDetails}
+				<div class="flex-1 space-y-3 overflow-y-auto">
 					<!-- Sticker Preview Image -->
 					<div class="flex justify-center">
 						<img
-							src={'profileUrl' in selectedStickerForDetails ? selectedStickerForDetails.profileUrl : selectedStickerForDetails.url}
+							src={'profileUrl' in selectedStickerForDetails
+								? selectedStickerForDetails.profileUrl
+								: selectedStickerForDetails.url}
 							alt="Sticker preview"
-							class="max-w-full max-h-48 object-contain rounded shadow"
+							class="max-h-48 max-w-full rounded object-contain shadow"
 						/>
 					</div>
 
@@ -1153,7 +1181,9 @@
 							{/if}
 							<div class="flex justify-between">
 								<span class="text-base-content/60">Type:</span>
-								<span class="badge badge-xs">{char.isActorHeadshot ? 'Actor Headshot' : 'Character'}</span>
+								<span class="badge badge-xs"
+									>{char.isActorHeadshot ? 'Actor Headshot' : 'Character'}</span
+								>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-base-content/60">Source:</span>
@@ -1165,22 +1195,32 @@
 							</div>
 							<div class="flex justify-between">
 								<span class="text-base-content/60">ID:</span>
-								<span class="text-xs font-mono truncate ml-2">{char.id}</span>
+								<span class="ml-2 truncate font-mono text-xs">{char.id}</span>
 							</div>
 						</div>
 
 						<div class="divider my-1 text-xs">URLs</div>
 						<div class="space-y-2 text-xs">
 							<div>
-								<span class="text-base-content/60 block mb-1">Profile URL:</span>
-								<a href={char.profileUrl} target="_blank" rel="noopener noreferrer" class="link link-primary break-all">
+								<span class="text-base-content/60 mb-1 block">Profile URL:</span>
+								<a
+									href={char.profileUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="link link-primary break-all"
+								>
 									{char.profileUrl}
 								</a>
 							</div>
 							{#if char.profileThumbUrl && char.profileThumbUrl !== char.profileUrl}
 								<div>
-									<span class="text-base-content/60 block mb-1">Thumbnail URL:</span>
-									<a href={char.profileThumbUrl} target="_blank" rel="noopener noreferrer" class="link link-primary break-all">
+									<span class="text-base-content/60 mb-1 block">Thumbnail URL:</span>
+									<a
+										href={char.profileThumbUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="link link-primary break-all"
+									>
 										{char.profileThumbUrl}
 									</a>
 								</div>
@@ -1226,15 +1266,25 @@
 						<div class="divider my-1 text-xs">URLs</div>
 						<div class="space-y-2 text-xs">
 							<div>
-								<span class="text-base-content/60 block mb-1">Full URL:</span>
-								<a href={img.url} target="_blank" rel="noopener noreferrer" class="link link-primary break-all">
+								<span class="text-base-content/60 mb-1 block">Full URL:</span>
+								<a
+									href={img.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="link link-primary break-all"
+								>
 									{img.url}
 								</a>
 							</div>
 							{#if img.thumbUrl && img.thumbUrl !== img.url}
 								<div>
-									<span class="text-base-content/60 block mb-1">Thumbnail URL:</span>
-									<a href={img.thumbUrl} target="_blank" rel="noopener noreferrer" class="link link-primary break-all">
+									<span class="text-base-content/60 mb-1 block">Thumbnail URL:</span>
+									<a
+										href={img.thumbUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="link link-primary break-all"
+									>
 										{img.thumbUrl}
 									</a>
 								</div>
@@ -1246,7 +1296,12 @@
 					<div class="divider my-1 text-xs">Status</div>
 					<div class="flex items-center justify-between">
 						<span class="text-base-content/60 text-sm">Selected for import:</span>
-						<span class={classNames('badge badge-sm', selectedStickerForDetails.selected ? 'badge-success' : 'badge-ghost')}>
+						<span
+							class={classNames(
+								'badge badge-sm',
+								selectedStickerForDetails.selected ? 'badge-success' : 'badge-ghost'
+							)}
+						>
 							{selectedStickerForDetails.selected ? 'Yes' : 'No'}
 						</span>
 					</div>
@@ -1268,13 +1323,13 @@
 	</div>
 
 	<!-- Column 5: Source Creation -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Create Source</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Create Source</h2>
 
 			<div class="flex-1 overflow-y-auto">
 				{#if !selectedResult}
-					<div class="flex items-center justify-center h-full text-base-content/60">
+					<div class="text-base-content/60 flex h-full items-center justify-center">
 						<p class="text-sm">Select a search result to create an source.</p>
 					</div>
 				{:else}
@@ -1286,14 +1341,10 @@
 					<div class="space-y-4">
 						<div class="flex gap-3">
 							{#if selectedCoverImage}
-								<img
-									src={selectedCoverImage}
-									alt={title}
-									class="w-24 h-36 object-cover rounded"
-								/>
+								<img src={selectedCoverImage} alt={title} class="h-36 w-24 rounded object-cover" />
 							{:else}
 								<div
-									class="w-24 h-36 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+									class="bg-base-300 text-base-content/30 flex h-36 w-24 items-center justify-center rounded"
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -1313,7 +1364,7 @@
 							{/if}
 							<div class="flex-1">
 								<h3 class="font-bold">{title}</h3>
-								<p class="text-sm text-base-content/60">{year}</p>
+								<p class="text-base-content/60 text-sm">{year}</p>
 								<span class="badge {config.sourceBadgeClass} badge-sm"
 									>{config.sourceBadgeText}</span
 								>
@@ -1322,7 +1373,7 @@
 										href={link.url}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="link link-primary text-xs mt-1 block"
+										class="link link-primary mt-1 block text-xs"
 									>
 										{link.label}
 									</a>
@@ -1371,7 +1422,7 @@
 									/>
 								</svg>
 								<div>
-									<span class="text-sm block">Source created!</span>
+									<span class="block text-sm">Source created!</span>
 									<span class="text-xs">{stickersCreated} stickers imported</span>
 								</div>
 							</div>

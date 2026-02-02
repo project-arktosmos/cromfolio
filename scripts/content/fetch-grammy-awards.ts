@@ -68,7 +68,7 @@ async function sparqlQuery<T>(query: string): Promise<T[]> {
 
 	const response = await fetch(url.toString(), {
 		headers: {
-			'Accept': 'application/sparql-results+json',
+			Accept: 'application/sparql-results+json',
 			'User-Agent': USER_AGENT
 		}
 	});
@@ -85,7 +85,7 @@ async function sparqlQuery<T>(query: string): Promise<T[]> {
  * Sleep for rate limiting
  */
 function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -114,7 +114,7 @@ async function fetchGrammyCategories(): Promise<GrammyCategory[]> {
 		categoryLabel: { value: string };
 	}>(query);
 
-	return results.map(r => ({
+	return results.map((r) => ({
 		id: r.category.value.replace('http://www.wikidata.org/entity/', ''),
 		label: r.categoryLabel.value
 	}));
@@ -123,7 +123,11 @@ async function fetchGrammyCategories(): Promise<GrammyCategory[]> {
 /**
  * Fetch winners for a specific Grammy category
  */
-async function fetchCategoryWinners(categoryId: string, startYear: number, endYear: number): Promise<GrammyRecipient[]> {
+async function fetchCategoryWinners(
+	categoryId: string,
+	startYear: number,
+	endYear: number
+): Promise<GrammyRecipient[]> {
 	const query = `
 		SELECT DISTINCT ?recipient ?recipientLabel ?year WHERE {
 			?recipient p:P166 ?awardStatement .
@@ -144,7 +148,7 @@ async function fetchCategoryWinners(categoryId: string, startYear: number, endYe
 		year: { value: string };
 	}>(query);
 
-	return results.map(r => ({
+	return results.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId,
@@ -157,7 +161,11 @@ async function fetchCategoryWinners(categoryId: string, startYear: number, endYe
 /**
  * Fetch nominees for a specific Grammy category
  */
-async function fetchCategoryNominees(categoryId: string, startYear: number, endYear: number): Promise<GrammyRecipient[]> {
+async function fetchCategoryNominees(
+	categoryId: string,
+	startYear: number,
+	endYear: number
+): Promise<GrammyRecipient[]> {
 	const query = `
 		SELECT DISTINCT ?recipient ?recipientLabel ?year WHERE {
 			?recipient p:P1411 ?nominationStatement .
@@ -178,7 +186,7 @@ async function fetchCategoryNominees(categoryId: string, startYear: number, endY
 		year: { value: string };
 	}>(query);
 
-	return results.map(r => ({
+	return results.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId,
@@ -192,7 +200,10 @@ async function fetchCategoryNominees(categoryId: string, startYear: number, endY
  * Alternative approach: Fetch all Grammy winners and nominees in bulk
  * This is more efficient but may timeout for large date ranges
  */
-async function fetchAllGrammyData(startYear: number, endYear: number): Promise<{
+async function fetchAllGrammyData(
+	startYear: number,
+	endYear: number
+): Promise<{
 	winners: GrammyRecipient[];
 	nominees: GrammyRecipient[];
 }> {
@@ -223,7 +234,7 @@ async function fetchAllGrammyData(startYear: number, endYear: number): Promise<{
 		year: { value: string };
 	}>(winnersQuery);
 
-	const winners = winnerResults.map(r => ({
+	const winners = winnerResults.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId: r.category.value.replace('http://www.wikidata.org/entity/', ''),
@@ -260,7 +271,7 @@ async function fetchAllGrammyData(startYear: number, endYear: number): Promise<{
 		year: { value: string };
 	}>(nomineesQuery);
 
-	const nominees = nomineeResults.map(r => ({
+	const nominees = nomineeResults.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId: r.category.value.replace('http://www.wikidata.org/entity/', ''),
@@ -311,7 +322,7 @@ async function fetchAllGrammyDataNoYearFilter(): Promise<{
 		year?: { value: string };
 	}>(winnersQuery);
 
-	const winners = winnerResults.map(r => ({
+	const winners = winnerResults.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId: r.category.value.replace('http://www.wikidata.org/entity/', ''),
@@ -321,8 +332,8 @@ async function fetchAllGrammyDataNoYearFilter(): Promise<{
 	}));
 
 	console.log(`Found ${winners.length} winners total`);
-	console.log(`  - With year: ${winners.filter(w => w.year > 0).length}`);
-	console.log(`  - Without year: ${winners.filter(w => w.year === 0).length}`);
+	console.log(`  - With year: ${winners.filter((w) => w.year > 0).length}`);
+	console.log(`  - Without year: ${winners.filter((w) => w.year === 0).length}`);
 	await sleep(RATE_LIMIT_MS);
 
 	// Fetch all nominees (may not have year)
@@ -350,7 +361,7 @@ async function fetchAllGrammyDataNoYearFilter(): Promise<{
 		year?: { value: string };
 	}>(nomineesQuery);
 
-	const nominees = nomineeResults.map(r => ({
+	const nominees = nomineeResults.map((r) => ({
 		recipientId: r.recipient.value.replace('http://www.wikidata.org/entity/', ''),
 		recipientLabel: r.recipientLabel.value,
 		categoryId: r.category.value.replace('http://www.wikidata.org/entity/', ''),
@@ -360,8 +371,8 @@ async function fetchAllGrammyDataNoYearFilter(): Promise<{
 	}));
 
 	console.log(`Found ${nominees.length} nominees total`);
-	console.log(`  - With year: ${nominees.filter(n => n.year > 0).length}`);
-	console.log(`  - Without year: ${nominees.filter(n => n.year === 0).length}`);
+	console.log(`  - With year: ${nominees.filter((n) => n.year > 0).length}`);
+	console.log(`  - Without year: ${nominees.filter((n) => n.year === 0).length}`);
 
 	return { winners, nominees };
 }
@@ -673,7 +684,6 @@ Properties used:
 
 		console.log('');
 		console.log('Done!');
-
 	} catch (error) {
 		console.error('Error:', error);
 		process.exit(1);

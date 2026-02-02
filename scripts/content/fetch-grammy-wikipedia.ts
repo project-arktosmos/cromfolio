@@ -26,7 +26,7 @@ const MAJOR_CATEGORIES = [
 	'Grammy_Award_for_Best_R%26B_Album',
 	'Grammy_Award_for_Best_Latin_Pop_Album',
 	'Grammy_Award_for_Best_Jazz_Vocal_Album',
-	'Grammy_Award_for_Best_Classical_Album',
+	'Grammy_Award_for_Best_Classical_Album'
 ];
 
 interface WikipediaPage {
@@ -47,7 +47,7 @@ interface GrammyEntry {
  * Sleep for rate limiting
  */
 function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -127,14 +127,17 @@ async function parseGrammyCeremonyPage(ceremonyNumber: number): Promise<GrammyEn
 			const category = cleanWikitext(categoryMatch[1]);
 			const winner = cleanWikitext(winnerMatch[1]);
 			const nominees = nomineesMatch
-				? nomineesMatch[1].split(/[,\n]/).map(n => cleanWikitext(n)).filter(Boolean)
+				? nomineesMatch[1]
+						.split(/[,\n]/)
+						.map((n) => cleanWikitext(n))
+						.filter(Boolean)
 				: [];
 
 			entries.push({
 				year,
 				category,
 				winner,
-				nominees: [winner, ...nominees.filter(n => n !== winner)]
+				nominees: [winner, ...nominees.filter((n) => n !== winner)]
 			});
 		}
 	}
@@ -150,7 +153,12 @@ async function parseGrammyCeremonyPage(ceremonyNumber: number): Promise<GrammyEn
 		if (generalFieldMatch) {
 			const section = generalFieldMatch[1];
 			// Look for album of the year, record of the year, etc.
-			const categories = ['Album of the Year', 'Record of the Year', 'Song of the Year', 'Best New Artist'];
+			const categories = [
+				'Album of the Year',
+				'Record of the Year',
+				'Song of the Year',
+				'Best New Artist'
+			];
 
 			for (const cat of categories) {
 				const catRegex = new RegExp(`'''${cat}'''[^*]*\\*\\s*'''([^']+)'''`, 'i');
@@ -218,9 +226,10 @@ async function parseGrammyCategoryPage(categorySlug: string): Promise<GrammyEntr
 		for (const row of rows) {
 			// Check for year in rowspan header
 			// Pattern: rowspan="6" ... [[1st Annual Grammy Awards|1959]]
-			const yearMatch = row.match(/\[\[\d+(?:st|nd|rd|th)\s+Annual\s+Grammy\s+Awards\|(\d{4})\]\]/i)
-				|| row.match(/rowspan[^|]*\|\s*\[\[.*?\|(\d{4})\]\]/i)
-				|| row.match(/\|\s*(\d{4})\s*(?:<br|$|\|)/);
+			const yearMatch =
+				row.match(/\[\[\d+(?:st|nd|rd|th)\s+Annual\s+Grammy\s+Awards\|(\d{4})\]\]/i) ||
+				row.match(/rowspan[^|]*\|\s*\[\[.*?\|(\d{4})\]\]/i) ||
+				row.match(/\|\s*(\d{4})\s*(?:<br|$|\|)/);
 
 			if (yearMatch) {
 				// Save previous year's data
@@ -242,7 +251,7 @@ async function parseGrammyCategoryPage(categorySlug: string): Promise<GrammyEntr
 			if (!currentYear) continue;
 
 			// Check if this is a winner row (yellow background)
-			const isWinner = row.includes('background:#FAEB86') || row.includes("background:#faeb86");
+			const isWinner = row.includes('background:#FAEB86') || row.includes('background:#faeb86');
 
 			// Extract album/artist from the row
 			// Pattern: | '''''[[Album]]''''' or | ''[[Album]]'' or | '''[[Artist]]''' or | [[Artist]]
@@ -322,7 +331,10 @@ function getOrdinalSuffix(n: number): string {
  * Transform entries to award format
  */
 function transformToAwardFormat(entries: GrammyEntry[]): Record<string, any> {
-	const result: Record<string, { grammy: Record<string, { nominee: string[]; winner: string[] }> }> = {};
+	const result: Record<
+		string,
+		{ grammy: Record<string, { nominee: string[]; winner: string[] }> }
+	> = {};
 
 	for (const entry of entries) {
 		const yearKey = String(entry.year);
@@ -467,7 +479,6 @@ Examples:
 		// Stats
 		const years = Object.keys(awardData);
 		console.log(`Years covered: ${years.length}`);
-
 	} catch (error) {
 		console.error('Error:', error);
 		process.exit(1);

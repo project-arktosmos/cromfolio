@@ -1,10 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import type {
-	TorrentAddedEvent,
-	TorrentInfo,
-	TorrentProgressEvent
-} from '$types/torrent.type';
+import type { TorrentAddedEvent, TorrentInfo, TorrentProgressEvent } from '$types/torrent.type';
 
 // ============================================================================
 // Tauri Commands
@@ -13,10 +9,7 @@ import type {
 /**
  * Add a torrent from magnet URI or .torrent file path
  */
-export async function addTorrent(
-	source: string,
-	downloadDir?: string
-): Promise<TorrentAddedEvent> {
+export async function addTorrent(source: string, downloadDir?: string): Promise<TorrentAddedEvent> {
 	return invoke<TorrentAddedEvent>('add_torrent', { source, downloadDir });
 }
 
@@ -78,9 +71,7 @@ export function onTorrentProgress(
 /**
  * Listen for when a torrent is added
  */
-export function onTorrentAdded(
-	callback: (event: TorrentAddedEvent) => void
-): Promise<UnlistenFn> {
+export function onTorrentAdded(callback: (event: TorrentAddedEvent) => void): Promise<UnlistenFn> {
 	return listen<TorrentAddedEvent>('torrent_added', (event) => {
 		callback(event.payload);
 	});

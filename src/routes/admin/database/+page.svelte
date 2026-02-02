@@ -115,8 +115,8 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<h1 class="text-2xl font-bold mb-4">Database Browser</h1>
+<div class="flex h-full flex-col">
+	<h1 class="mb-4 text-2xl font-bold">Database Browser</h1>
 
 	{#if error}
 		<div class="alert alert-error mb-4">
@@ -124,11 +124,11 @@
 		</div>
 	{/if}
 
-	<div class="flex gap-4 flex-1 min-h-0">
+	<div class="flex min-h-0 flex-1 gap-4">
 		<!-- Left sidebar: Tables list -->
-		<div class="card bg-base-200 w-64 flex-shrink-0 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
-				<h2 class="card-title text-lg mb-2">Tables</h2>
+		<div class="card bg-base-200 flex w-64 flex-shrink-0 flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
+				<h2 class="card-title mb-2 text-lg">Tables</h2>
 
 				<div class="flex-1 overflow-y-auto">
 					{#if isLoading}
@@ -136,7 +136,7 @@
 							<span class="loading loading-spinner loading-md"></span>
 						</div>
 					{:else if tables.length === 0}
-						<div class="text-center text-base-content/60 p-4">
+						<div class="text-base-content/60 p-4 text-center">
 							<p>No tables found.</p>
 						</div>
 					{:else}
@@ -144,10 +144,10 @@
 							{#each tables as table (table)}
 								<button
 									class={classNames(
-										'w-full text-left px-3 py-2 rounded-lg transition-colors',
-										'hover:bg-base-300 text-sm font-mono',
+										'w-full rounded-lg px-3 py-2 text-left transition-colors',
+										'hover:bg-base-300 font-mono text-sm',
 										{
-											'bg-primary/20 ring-2 ring-primary': selectedTable === table,
+											'bg-primary/20 ring-primary ring-2': selectedTable === table,
 											'bg-base-100': selectedTable !== table
 										}
 									)}
@@ -160,31 +160,31 @@
 					{/if}
 				</div>
 
-				<div class="mt-2 pt-2 border-t border-base-300">
-					<span class="text-xs text-base-content/50">{tables.length} tables</span>
+				<div class="border-base-300 mt-2 border-t pt-2">
+					<span class="text-base-content/50 text-xs">{tables.length} tables</span>
 				</div>
 			</div>
 		</div>
 
 		<!-- Main content: Table data -->
-		<div class="card bg-base-200 flex-1 overflow-hidden flex flex-col">
-			<div class="card-body p-4 flex flex-col h-full">
+		<div class="card bg-base-200 flex flex-1 flex-col overflow-hidden">
+			<div class="card-body flex h-full flex-col p-4">
 				{#if !selectedTable}
-					<div class="flex-1 flex items-center justify-center text-base-content/60">
+					<div class="text-base-content/60 flex flex-1 items-center justify-center">
 						<p>Select a table to view its contents</p>
 					</div>
 				{:else}
-					<div class="flex items-center justify-between mb-4">
-						<h2 class="card-title text-lg font-mono">{selectedTable}</h2>
+					<div class="mb-4 flex items-center justify-between">
+						<h2 class="card-title font-mono text-lg">{selectedTable}</h2>
 						{#if tableData}
-							<span class="text-sm text-base-content/60">
+							<span class="text-base-content/60 text-sm">
 								{tableData.totalCount} row{tableData.totalCount === 1 ? '' : 's'}
 							</span>
 						{/if}
 					</div>
 
 					{#if isLoadingData}
-						<div class="flex-1 flex items-center justify-center">
+						<div class="flex flex-1 items-center justify-center">
 							<span class="loading loading-spinner loading-lg"></span>
 						</div>
 					{:else if tableData}
@@ -216,13 +216,13 @@
 
 						<!-- Data table -->
 						<div class="flex-1 overflow-auto">
-							<table class="table table-xs table-pin-rows">
+							<table class="table-xs table-pin-rows table">
 								<thead>
 									<tr>
 										{#each tableData.columns as col (col.cid)}
-											<th class="font-mono bg-base-300">
+											<th class="bg-base-300 font-mono">
 												{col.name}
-												<span class="font-normal text-base-content/50 ml-1">
+												<span class="text-base-content/50 ml-1 font-normal">
 													({col.columnType || 'ANY'})
 												</span>
 											</th>
@@ -234,7 +234,7 @@
 										<tr class="hover">
 											{#each row as cell, cellIndex (cellIndex)}
 												<td
-													class={classNames('font-mono text-xs max-w-xs truncate', {
+													class={classNames('max-w-xs truncate font-mono text-xs', {
 														'text-base-content/40 italic': cell === null
 													})}
 													title={formatValue(cell)}
@@ -248,7 +248,7 @@
 							</table>
 
 							{#if tableData.rows.length === 0}
-								<div class="text-center text-base-content/60 p-8">
+								<div class="text-base-content/60 p-8 text-center">
 									<p>No data in this table.</p>
 								</div>
 							{/if}
@@ -256,8 +256,8 @@
 
 						<!-- Pagination -->
 						{#if tableData.totalCount > pageSize}
-							<div class="flex items-center justify-between mt-4 pt-4 border-t border-base-300">
-								<div class="text-sm text-base-content/60">
+							<div class="border-base-300 mt-4 flex items-center justify-between border-t pt-4">
+								<div class="text-base-content/60 text-sm">
 									Showing {(currentPage - 1) * pageSize + 1} -
 									{Math.min(currentPage * pageSize, tableData.totalCount)} of {tableData.totalCount}
 								</div>

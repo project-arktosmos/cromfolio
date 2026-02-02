@@ -13,10 +13,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const teamId = url.searchParams.get('team');
 
 	if (!isTheSportsDBConfigured()) {
-		return json(
-			{ error: 'TheSportsDB API not configured.' },
-			{ status: 503 }
-		);
+		return json({ error: 'TheSportsDB API not configured.' }, { status: 503 });
 	}
 
 	try {
@@ -38,10 +35,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json(result);
 		}
 
-		return json(
-			{ error: 'Provide search, id, or team parameter' },
-			{ status: 400 }
-		);
+		return json({ error: 'Provide search, id, or team parameter' }, { status: 400 });
 	} catch (error) {
 		console.error('[api/sports/players] Error:', error);
 		return json({ error: 'Failed to fetch players' }, { status: 500 });

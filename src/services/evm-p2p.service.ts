@@ -156,9 +156,10 @@ class EvmP2PService {
 		const timestamp = Math.floor(Date.now() / 1000);
 
 		// Compute simple hashes
-		const parentHash = state.latestBlock === 0
-			? '0x' + '0'.repeat(64)
-			: await this.computeBlockHash(state.latestBlock);
+		const parentHash =
+			state.latestBlock === 0
+				? '0x' + '0'.repeat(64)
+				: await this.computeBlockHash(state.latestBlock);
 
 		const txHashes = pendingTxs.map((tx) => tx.hash);
 		const txRoot = this.computeMerkleRoot(txHashes);
@@ -192,7 +193,10 @@ class EvmP2PService {
 	private computeBlockHashFromBlock(block: Block): string {
 		const data = `${block.number}:${block.parentHash}:${block.transactionsRoot}:${block.timestamp}:${block.proposer}`;
 		// Simple hash using btoa (in production, use proper keccak256)
-		const hash = btoa(data).replace(/[^a-zA-Z0-9]/g, '').slice(0, 64).padEnd(64, '0');
+		const hash = btoa(data)
+			.replace(/[^a-zA-Z0-9]/g, '')
+			.slice(0, 64)
+			.padEnd(64, '0');
 		return '0x' + hash;
 	}
 
@@ -213,7 +217,10 @@ class EvmP2PService {
 		}
 		// Simplified: just concatenate and hash
 		const combined = hashes.join('');
-		const hash = btoa(combined).replace(/[^a-zA-Z0-9]/g, '').slice(0, 64).padEnd(64, '0');
+		const hash = btoa(combined)
+			.replace(/[^a-zA-Z0-9]/g, '')
+			.slice(0, 64)
+			.padEnd(64, '0');
 		return '0x' + hash;
 	}
 
@@ -232,7 +239,9 @@ class EvmP2PService {
 
 		// Check proposer is the current leader
 		if (block.proposer !== state.currentLeader) {
-			console.warn(`[EVM-P2P] Block rejected: proposer ${block.proposer} is not leader ${state.currentLeader}`);
+			console.warn(
+				`[EVM-P2P] Block rejected: proposer ${block.proposer} is not leader ${state.currentLeader}`
+			);
 			return false;
 		}
 

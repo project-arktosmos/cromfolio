@@ -13,10 +13,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const all = url.searchParams.get('all');
 
 	if (!isTheSportsDBConfigured()) {
-		return json(
-			{ error: 'TheSportsDB API not configured.' },
-			{ status: 503 }
-		);
+		return json({ error: 'TheSportsDB API not configured.' }, { status: 503 });
 	}
 
 	try {

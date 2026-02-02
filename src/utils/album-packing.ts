@@ -84,11 +84,7 @@ function canFitInColumn(
 /**
  * Add a scaled sticker to a column
  */
-function addToColumn(
-	column: PackedColumn,
-	scaledSticker: ScaledSticker,
-	gapHeight: number
-): void {
+function addToColumn(column: PackedColumn, scaledSticker: ScaledSticker, gapHeight: number): void {
 	if (column.stickers.length > 0) {
 		column.totalHeight += gapHeight;
 	}
@@ -105,10 +101,7 @@ function addToColumn(
  * 3. If left is full, try right column
  * 4. If both are full, start a new page
  */
-export function packStickersIntoPages(
-	stickers: Sticker[],
-	config: PackingConfig
-): PackedPage[] {
+export function packStickersIntoPages(stickers: Sticker[], config: PackingConfig): PackedPage[] {
 	if (stickers.length === 0) {
 		return [];
 	}
@@ -147,11 +140,27 @@ export function packStickersIntoPages(
 		};
 
 		// Try left column first
-		if (canFitInColumn(currentPage.leftColumn, scaledHeight, maxColumnHeight, config.stickerGap, config.maxStickersPerColumn)) {
+		if (
+			canFitInColumn(
+				currentPage.leftColumn,
+				scaledHeight,
+				maxColumnHeight,
+				config.stickerGap,
+				config.maxStickersPerColumn
+			)
+		) {
 			addToColumn(currentPage.leftColumn, scaledSticker, config.stickerGap);
 		}
 		// Then try right column
-		else if (canFitInColumn(currentPage.rightColumn, scaledHeight, maxColumnHeight, config.stickerGap, config.maxStickersPerColumn)) {
+		else if (
+			canFitInColumn(
+				currentPage.rightColumn,
+				scaledHeight,
+				maxColumnHeight,
+				config.stickerGap,
+				config.maxStickersPerColumn
+			)
+		) {
 			addToColumn(currentPage.rightColumn, scaledSticker, config.stickerGap);
 		}
 		// Start new page
@@ -276,10 +285,7 @@ export function getGridPageHeight(config: GridPackingConfig): number {
 /**
  * Calculate the scaled height of a sticker when fit to grid column width
  */
-export function calculateGridScaledHeight(
-	sticker: Sticker,
-	columnWidth: number
-): number {
+export function calculateGridScaledHeight(sticker: Sticker, columnWidth: number): number {
 	const { width, height } = getStickerDimensions(sticker);
 	const scaleFactor = columnWidth / width;
 	return height * scaleFactor;

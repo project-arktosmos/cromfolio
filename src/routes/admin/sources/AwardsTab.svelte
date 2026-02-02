@@ -177,7 +177,12 @@
 		const movieMap = new Map<string, { isWinner: boolean; category: string }>();
 
 		for (const category of allCategories) {
-			const categoryData = getNomineesForCategory(eventData, selectedYear, selectedAwardType, category);
+			const categoryData = getNomineesForCategory(
+				eventData,
+				selectedYear,
+				selectedAwardType,
+				category
+			);
 			if (!categoryData) continue;
 
 			// Add winners
@@ -412,10 +417,10 @@
 	}
 </script>
 
-<div class="grid grid-cols-5 gap-4 flex-1 min-h-0">
+<div class="grid min-h-0 flex-1 grid-cols-5 gap-4">
 	<!-- Column 1: Award Selection -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
 			<div class="form-control mb-3">
 				<select
 					class="select select-bordered select-sm w-full"
@@ -496,7 +501,7 @@
 
 						<!-- Category info (shows count of categories) -->
 						{#if selectedAwardType && categories.length > 0}
-							<div class="text-xs text-base-content/60 mt-2">
+							<div class="text-base-content/60 mt-2 text-xs">
 								{categories.length} categories loaded
 							</div>
 						{/if}
@@ -507,9 +512,9 @@
 	</div>
 
 	<!-- Column 2: Nominees List -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<div class="flex items-center justify-between mb-2">
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<div class="mb-2 flex items-center justify-between">
 				<h2 class="card-title text-lg">Nominees</h2>
 				{#if movies.length > 0}
 					<span class="badge badge-primary">{getSelectedCount()}/{movies.length}</span>
@@ -517,19 +522,19 @@
 			</div>
 
 			{#if !selectedAwardType}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select an award type to view nominees.</p>
 				</div>
 			{:else if isLoadingMovies}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else if movies.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No nominees found.</p>
 				</div>
 			{:else}
-				<div class="flex gap-2 mb-2">
+				<div class="mb-2 flex gap-2">
 					<button class="btn btn-xs btn-ghost" onclick={() => toggleAllMovies(true)}>
 						Select All
 					</button>
@@ -544,10 +549,10 @@
 							{@const isSelected = selectedMovieForDetails?.imdbId === movie.imdbId}
 							<div
 								class={classNames(
-									'w-full text-left p-2 rounded-lg transition-colors cursor-pointer',
+									'w-full cursor-pointer rounded-lg p-2 text-left transition-colors',
 									'hover:bg-base-300',
 									{
-										'bg-primary/20 ring-2 ring-primary': isSelected,
+										'bg-primary/20 ring-primary ring-2': isSelected,
 										'bg-base-100': !isSelected
 									}
 								)}
@@ -565,18 +570,18 @@
 										onchange={() => toggleMovie(movie)}
 									/>
 									{#if movie.isLoading}
-										<div class="w-10 h-14 bg-base-300 rounded flex items-center justify-center">
+										<div class="bg-base-300 flex h-14 w-10 items-center justify-center rounded">
 											<span class="loading loading-spinner loading-xs"></span>
 										</div>
 									{:else if movie.details?.poster}
 										<img
 											src={movie.details.poster}
 											alt={movie.details.title}
-											class="w-10 h-14 object-cover rounded"
+											class="h-14 w-10 rounded object-cover"
 										/>
 									{:else}
 										<div
-											class="w-10 h-14 bg-base-300 rounded flex items-center justify-center text-base-content/30"
+											class="bg-base-300 text-base-content/30 flex h-14 w-10 items-center justify-center rounded"
 										>
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
@@ -594,26 +599,29 @@
 											</svg>
 										</div>
 									{/if}
-									<div class="flex-1 min-w-0">
+									<div class="min-w-0 flex-1">
 										{#if movie.isLoading}
-											<div class="font-medium text-sm truncate text-base-content/50">
+											<div class="text-base-content/50 truncate text-sm font-medium">
 												Loading...
 											</div>
-											<div class="text-xs text-base-content/40">{movie.imdbId}</div>
+											<div class="text-base-content/40 text-xs">{movie.imdbId}</div>
 										{:else if movie.error}
-											<div class="font-medium text-sm truncate text-error">
+											<div class="text-error truncate text-sm font-medium">
 												{movie.error}
 											</div>
-											<div class="text-xs text-base-content/60">{movie.imdbId}</div>
+											<div class="text-base-content/60 text-xs">{movie.imdbId}</div>
 										{:else if movie.details}
-											<div class="font-medium text-sm truncate">{movie.details.title}</div>
-											<div class="text-xs text-base-content/60">{movie.details.year}</div>
+											<div class="truncate text-sm font-medium">{movie.details.title}</div>
+											<div class="text-base-content/60 text-xs">{movie.details.year}</div>
 										{/if}
-										<div class="flex flex-wrap gap-1 mt-1">
+										<div class="mt-1 flex flex-wrap gap-1">
 											{#if movie.isWinner}
 												<span class="badge badge-warning badge-xs">Winner</span>
 											{/if}
-											<span class="badge badge-ghost badge-xs truncate max-w-[100px]" title={formatCategoryName(movie.category)}>
+											<span
+												class="badge badge-ghost badge-xs max-w-[100px] truncate"
+												title={formatCategoryName(movie.category)}
+											>
 												{formatCategoryName(movie.category)}
 											</span>
 										</div>
@@ -628,38 +636,38 @@
 	</div>
 
 	<!-- Column 3: Movie Details -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Movie Details</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Movie Details</h2>
 
 			{#if !selectedMovieForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a movie to view details.</p>
 				</div>
 			{:else if selectedMovieForDetails.isLoading}
-				<div class="flex-1 flex items-center justify-center">
+				<div class="flex flex-1 items-center justify-center">
 					<span class="loading loading-spinner loading-md"></span>
 				</div>
 			{:else if selectedMovieForDetails.details}
 				{@const details = selectedMovieForDetails.details}
-				<div class="flex-1 overflow-y-auto space-y-3">
+				<div class="flex-1 space-y-3 overflow-y-auto">
 					<!-- Poster and Basic Info -->
 					<div class="flex gap-3">
 						{#if details.poster}
 							<img
 								src={details.poster}
 								alt={details.title}
-								class="w-20 h-30 object-cover rounded shadow"
+								class="h-30 w-20 rounded object-cover shadow"
 							/>
 						{/if}
-						<div class="flex-1 min-w-0">
-							<h3 class="font-bold text-base line-clamp-2">{details.title}</h3>
-							<p class="text-sm text-base-content/60">{details.year}</p>
+						<div class="min-w-0 flex-1">
+							<h3 class="line-clamp-2 text-base font-bold">{details.title}</h3>
+							<p class="text-base-content/60 text-sm">{details.year}</p>
 							{#if details.rated}
 								<span class="badge badge-outline badge-xs mt-1">{details.rated}</span>
 							{/if}
 							{#if details.runtime}
-								<span class="badge badge-outline badge-xs mt-1 ml-1">{details.runtime}</span>
+								<span class="badge badge-outline badge-xs ml-1 mt-1">{details.runtime}</span>
 							{/if}
 							{#if selectedMovieForDetails.isWinner}
 								<div class="mt-1">
@@ -671,7 +679,7 @@
 
 					<!-- Ratings -->
 					{#if details.imdbRating || details.metascore}
-						<div class="flex gap-2 flex-wrap">
+						<div class="flex flex-wrap gap-2">
 							{#if details.imdbRating}
 								<div class="badge badge-warning gap-1">
 									<span class="font-bold">IMDb</span>
@@ -690,7 +698,7 @@
 					<!-- Genre -->
 					{#if details.genre}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Genre</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Genre</span>
 							<p class="text-sm">{details.genre}</p>
 						</div>
 					{/if}
@@ -698,7 +706,7 @@
 					<!-- Plot -->
 					{#if details.plot}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Plot</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Plot</span>
 							<p class="text-sm leading-relaxed">{details.plot}</p>
 						</div>
 					{/if}
@@ -706,7 +714,7 @@
 					<!-- Director -->
 					{#if details.director}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Director</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Director</span>
 							<p class="text-sm">{details.director}</p>
 						</div>
 					{/if}
@@ -714,7 +722,7 @@
 					<!-- Awards -->
 					{#if details.awards}
 						<div>
-							<span class="text-xs font-semibold text-base-content/60 uppercase">Awards</span>
+							<span class="text-base-content/60 text-xs font-semibold uppercase">Awards</span>
 							<p class="text-sm">{details.awards}</p>
 						</div>
 					{/if}
@@ -731,7 +739,7 @@
 					</a>
 				</div>
 			{:else}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Failed to load movie details.</p>
 				</div>
 			{/if}
@@ -739,12 +747,12 @@
 	</div>
 
 	<!-- Column 4: Poster Preview -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Sticker Preview</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Sticker Preview</h2>
 
 			{#if !selectedMovieForDetails}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select a movie to preview sticker.</p>
 				</div>
 			{:else if selectedMovieForDetails.details}
@@ -763,19 +771,21 @@
 					<div class="flex flex-col items-center gap-4">
 						<div class="w-48">
 							<StickerItem sticker={previewSticker} />
-							<div class="p-2 bg-base-200 rounded-b">
+							<div class="bg-base-200 rounded-b p-2">
 								{#if previewStickerType}
-									<div class="flex justify-center mb-1">
-										<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}>{previewStickerType.name}</span>
+									<div class="mb-1 flex justify-center">
+										<span class={classNames('badge badge-xs', previewStickerType.badgeColor)}
+											>{previewStickerType.name}</span
+										>
 									</div>
 								{/if}
-								<h3 class="text-xs font-medium text-center leading-tight">{previewSticker.name}</h3>
+								<h3 class="text-center text-xs font-medium leading-tight">{previewSticker.name}</h3>
 							</div>
 						</div>
 
 						<div class="text-center">
-							<p class="font-medium text-sm">{details.title}</p>
-							<p class="text-xs text-base-content/60">{details.year}</p>
+							<p class="text-sm font-medium">{details.title}</p>
+							<p class="text-base-content/60 text-xs">{details.year}</p>
 							{#if selectedMovieForDetails.isWinner}
 								<span class="badge badge-warning badge-sm mt-1">Winner</span>
 							{:else}
@@ -791,7 +801,7 @@
 									<img
 										src={poster.thumbUrl}
 										alt="Poster {i + 2}"
-										class="w-full h-auto rounded shadow"
+										class="h-auto w-full rounded shadow"
 									/>
 								{/each}
 							</div>
@@ -799,7 +809,7 @@
 					</div>
 				</div>
 			{:else}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No preview available.</p>
 				</div>
 			{/if}
@@ -807,16 +817,16 @@
 	</div>
 
 	<!-- Column 5: Create Source -->
-	<div class="card bg-base-200 overflow-hidden flex flex-col">
-		<div class="card-body p-4 flex flex-col h-full">
-			<h2 class="card-title text-lg mb-2">Create Source</h2>
+	<div class="card bg-base-200 flex flex-col overflow-hidden">
+		<div class="card-body flex h-full flex-col p-4">
+			<h2 class="card-title mb-2 text-lg">Create Source</h2>
 
 			{#if !selectedAwardType}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">Select an award type to create an award source.</p>
 				</div>
 			{:else if movies.length === 0}
-				<div class="flex-1 flex items-center justify-center text-base-content/60">
+				<div class="text-base-content/60 flex flex-1 items-center justify-center">
 					<p class="text-sm">No movies loaded yet.</p>
 				</div>
 			{:else}
@@ -824,8 +834,8 @@
 					<div class="space-y-4">
 						<!-- Award Info -->
 						<div>
-							<h3 class="font-bold text-sm">{getAwardListName()}</h3>
-							<p class="text-xs text-base-content/60 mt-1">
+							<h3 class="text-sm font-bold">{getAwardListName()}</h3>
+							<p class="text-base-content/60 mt-1 text-xs">
 								{formatAwardTypeName(selectedAwardType)}
 							</p>
 						</div>
@@ -865,7 +875,7 @@
 									/>
 								</svg>
 								<div>
-									<span class="text-sm block">Source created!</span>
+									<span class="block text-sm">Source created!</span>
 									<span class="text-xs">{stickersCreated} stickers imported</span>
 								</div>
 							</div>

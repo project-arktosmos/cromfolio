@@ -24,9 +24,9 @@
 
 	// Game state
 	let selectedSource = $state<Source | null>(null);
-	let gameStickers = $state<{ sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[]>(
-		[]
-	);
+	let gameStickers = $state<
+		{ sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[]
+	>([]);
 	let timeRemaining = $state(GAME_DURATION);
 	let timerInterval = $state<ReturnType<typeof setInterval> | null>(null);
 	let firstSelection = $state<number | null>(null);
@@ -86,7 +86,8 @@
 		totalPairs = selectedStickers.length;
 
 		// Create pairs (duplicate each sticker)
-		const pairs: { sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[] = [];
+		const pairs: { sticker: Sticker; pairId: number; isFlipped: boolean; isMatched: boolean }[] =
+			[];
 		selectedStickers.forEach((sticker, index) => {
 			// Add two copies of each sticker with the same pairId
 			pairs.push({ sticker, pairId: index, isFlipped: false, isMatched: false });
@@ -238,14 +239,14 @@
 				<span>No sources available. Create sources with stickers in the admin panel first.</span>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{#each sources as source (source.id)}
 					{@const stickerCount = getStickerCount(source.id)}
 					{@const canPlay = canPlaySource(source.id)}
 					<div
 						class={classNames('card bg-base-200 transition-all', {
-							'cursor-pointer hover:shadow-lg hover:scale-[1.02]': canPlay,
-							'opacity-50 cursor-not-allowed': !canPlay
+							'cursor-pointer hover:scale-[1.02] hover:shadow-lg': canPlay,
+							'cursor-not-allowed opacity-50': !canPlay
 						})}
 						onclick={() => canPlay && startGame(source)}
 						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(source)}
@@ -254,13 +255,13 @@
 					>
 						{#if source.coverImage}
 							<figure class="relative">
-								<img src={source.coverImage} alt={source.title} class="w-full h-48 object-cover" />
+								<img src={source.coverImage} alt={source.title} class="h-48 w-full object-cover" />
 							</figure>
 						{:else}
-							<figure class="relative bg-base-300 h-48 flex items-center justify-center">
+							<figure class="bg-base-300 relative flex h-48 items-center justify-center">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-16 w-16 text-base-content/30"
+									class="text-base-content/30 h-16 w-16"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -276,15 +277,15 @@
 						{/if}
 						<div class="card-body p-4">
 							<h2 class="card-title text-lg">{source.title}</h2>
-							<p class="text-sm text-base-content/60">
+							<p class="text-base-content/60 text-sm">
 								{stickerCount} stickers
 							</p>
 							{#if !canPlay}
-								<p class="text-xs text-error">
+								<p class="text-error text-xs">
 									Need at least {MIN_STICKERS_REQUIRED} stickers
 								</p>
 							{/if}
-							<div class="card-actions justify-end mt-2">
+							<div class="card-actions mt-2 justify-end">
 								<button
 									class={classNames('btn btn-sm', {
 										'btn-primary': canPlay,
@@ -304,7 +305,7 @@
 		<!-- Game View -->
 		<div class="flex flex-col items-center gap-6">
 			<!-- Source info and back button -->
-			<div class="flex items-center justify-between w-full max-w-4xl">
+			<div class="flex w-full max-w-4xl items-center justify-between">
 				<button class="btn btn-ghost btn-sm gap-2" onclick={backToSources}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -331,9 +332,9 @@
 			<div class="flex items-center gap-8">
 				<!-- Timer -->
 				<div class="flex flex-col items-center gap-2">
-					<div class="relative w-24 h-24">
+					<div class="relative h-24 w-24">
 						<!-- Background circle -->
-						<svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+						<svg class="h-24 w-24 -rotate-90 transform" viewBox="0 0 100 100">
 							<circle
 								cx="50"
 								cy="50"
@@ -356,7 +357,8 @@
 								class={classNames({
 									'transition-all duration-1000': viewState === 'playing',
 									'text-success': timeRemaining > 20 && gameResult !== 'lost',
-									'text-warning': timeRemaining > 10 && timeRemaining <= 20 && gameResult !== 'lost',
+									'text-warning':
+										timeRemaining > 10 && timeRemaining <= 20 && gameResult !== 'lost',
 									'text-error': timeRemaining <= 10 || gameResult === 'lost',
 									'text-primary': gameResult === 'won'
 								})}
@@ -367,7 +369,8 @@
 							<span
 								class={classNames('text-3xl font-bold tabular-nums', {
 									'text-success': timeRemaining > 20 && gameResult !== 'lost',
-									'text-warning': timeRemaining > 10 && timeRemaining <= 20 && gameResult !== 'lost',
+									'text-warning':
+										timeRemaining > 10 && timeRemaining <= 20 && gameResult !== 'lost',
 									'text-error': timeRemaining <= 10 || gameResult === 'lost',
 									'text-primary': gameResult === 'won'
 								})}
@@ -380,15 +383,15 @@
 
 				<!-- Progress -->
 				<div class="flex flex-col items-center gap-1">
-					<div class="text-4xl font-bold text-primary">
+					<div class="text-primary text-4xl font-bold">
 						{matchesFound}/{totalPairs}
 					</div>
-					<div class="text-sm text-base-content/60">Pairs found</div>
+					<div class="text-base-content/60 text-sm">Pairs found</div>
 				</div>
 			</div>
 
 			<!-- Stickers Grid -->
-			<div class="grid grid-cols-4 gap-3 w-full max-w-2xl">
+			<div class="grid w-full max-w-2xl grid-cols-4 gap-3">
 				{#each gameStickers as gameSticker, index (index)}
 					{@const isClickable =
 						viewState === 'playing' &&
@@ -396,12 +399,9 @@
 						!gameSticker.isFlipped &&
 						!gameSticker.isMatched}
 					<div
-						class={classNames(
-							'aspect-[3/4] relative cursor-pointer perspective-1000',
-							{
-								'pointer-events-none': !isClickable
-							}
-						)}
+						class={classNames('perspective-1000 relative aspect-[3/4] cursor-pointer', {
+							'pointer-events-none': !isClickable
+						})}
 						onclick={() => selectSticker(index)}
 						onkeydown={(e) => e.key === 'Enter' && selectSticker(index)}
 						role="button"
@@ -410,7 +410,7 @@
 						<!-- Sticker container with flip animation -->
 						<div
 							class={classNames(
-								'w-full h-full transition-transform duration-300 transform-style-3d relative',
+								'transform-style-3d relative h-full w-full transition-transform duration-300',
 								{
 									'rotate-y-180': gameSticker.isFlipped || gameSticker.isMatched
 								}
@@ -419,16 +419,16 @@
 							<!-- Sticker Back (face down) -->
 							<div
 								class={classNames(
-									'absolute inset-0 backface-hidden rounded-lg flex items-center justify-center',
-									'bg-gradient-to-br from-primary to-secondary',
+									'backface-hidden absolute inset-0 flex items-center justify-center rounded-lg',
+									'from-primary to-secondary bg-gradient-to-br',
 									{
-										'hover:scale-105 hover:shadow-xl transition-all': isClickable
+										'transition-all hover:scale-105 hover:shadow-xl': isClickable
 									}
 								)}
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-12 w-12 text-primary-content/50"
+									class="text-primary-content/50 h-12 w-12"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -445,10 +445,10 @@
 							<!-- Sticker Front (face up) -->
 							<div
 								class={classNames(
-									'absolute inset-0 backface-hidden rotate-y-180 rounded-lg overflow-hidden',
+									'backface-hidden rotate-y-180 absolute inset-0 overflow-hidden rounded-lg',
 									'bg-base-200',
 									{
-										'ring-4 ring-success': gameSticker.isMatched,
+										'ring-success ring-4': gameSticker.isMatched,
 										'opacity-70': gameSticker.isMatched && viewState === 'result'
 									}
 								)}
@@ -456,14 +456,14 @@
 								<img
 									src={gameSticker.sticker.image}
 									alt={gameSticker.sticker.name}
-									class="w-full h-full object-cover"
+									class="h-full w-full object-cover"
 									onerror={(e) => {
 										(e.target as HTMLImageElement).src =
 											'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect fill="%23374151" width="128" height="128"/><text x="64" y="68" text-anchor="middle" fill="%239CA3AF" font-size="16">?</text></svg>';
 									}}
 								/>
 								{#if gameSticker.isMatched}
-									<div class="absolute top-1 right-1 badge badge-success badge-sm">
+									<div class="badge badge-success badge-sm absolute right-1 top-1">
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
 											class="h-3 w-3"
@@ -491,7 +491,7 @@
 				<div class="card bg-base-200 w-full max-w-md">
 					<div class="card-body items-center text-center">
 						{#if gameResult === 'won'}
-							<div class="text-6xl mb-2">🎉</div>
+							<div class="mb-2 text-6xl">🎉</div>
 							<h2 class="card-title text-success">You Won!</h2>
 							<p class="text-base-content/70">
 								You found all pairs with {formatTime(timeRemaining)} remaining!
@@ -501,7 +501,7 @@
 								<div class="stat-value text-success">+{earnedPoints}</div>
 							</div>
 						{:else}
-							<div class="text-6xl mb-2">⏰</div>
+							<div class="mb-2 text-6xl">⏰</div>
 							<h2 class="card-title text-error">Time's Up!</h2>
 							<p class="text-base-content/70">
 								You found {matchesFound} out of {totalPairs} pairs.

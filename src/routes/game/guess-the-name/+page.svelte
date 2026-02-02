@@ -194,9 +194,7 @@
 		const uniqueLetters = getUniqueLetters(normalizedTargetName);
 		if (uniqueLetters.size === 0) return MIN_BLUR;
 
-		const revealedUniqueLetters = new Set(
-			[...revealedLetters].map((i) => normalizedTargetName[i])
-		);
+		const revealedUniqueLetters = new Set([...revealedLetters].map((i) => normalizedTargetName[i]));
 		const revealRatio = revealedUniqueLetters.size / uniqueLetters.size;
 
 		// Blur decreases as more letters are revealed
@@ -295,14 +293,14 @@
 				<span>No sources available. Create sources with stickers in the admin panel first.</span>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{#each sources as source (source.id)}
 					{@const stickerCount = getStickerCount(source.id)}
 					{@const canPlay = canPlaySource(source.id)}
 					<div
 						class={classNames('card bg-base-200 transition-all', {
-							'cursor-pointer hover:shadow-lg hover:scale-[1.02]': canPlay,
-							'opacity-50 cursor-not-allowed': !canPlay
+							'cursor-pointer hover:scale-[1.02] hover:shadow-lg': canPlay,
+							'cursor-not-allowed opacity-50': !canPlay
 						})}
 						onclick={() => canPlay && startGame(source)}
 						onkeydown={(e) => e.key === 'Enter' && canPlay && startGame(source)}
@@ -311,13 +309,13 @@
 					>
 						{#if source.coverImage}
 							<figure class="relative">
-								<img src={source.coverImage} alt={source.title} class="w-full h-48 object-cover" />
+								<img src={source.coverImage} alt={source.title} class="h-48 w-full object-cover" />
 							</figure>
 						{:else}
-							<figure class="relative bg-base-300 h-48 flex items-center justify-center">
+							<figure class="bg-base-300 relative flex h-48 items-center justify-center">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-16 w-16 text-base-content/30"
+									class="text-base-content/30 h-16 w-16"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -333,13 +331,13 @@
 						{/if}
 						<div class="card-body p-4">
 							<h2 class="card-title text-lg">{source.title}</h2>
-							<p class="text-sm text-base-content/60">
+							<p class="text-base-content/60 text-sm">
 								{stickerCount} stickers
 							</p>
 							{#if !canPlay}
-								<p class="text-xs text-error">Need at least 1 sticker</p>
+								<p class="text-error text-xs">Need at least 1 sticker</p>
 							{/if}
-							<div class="card-actions justify-end mt-2">
+							<div class="card-actions mt-2 justify-end">
 								<button
 									class={classNames('btn btn-sm', {
 										'btn-primary': canPlay,
@@ -359,7 +357,7 @@
 		<!-- Game View -->
 		<div class="flex flex-col items-center gap-6">
 			<!-- Source info and back button -->
-			<div class="flex items-center justify-between w-full max-w-3xl">
+			<div class="flex w-full max-w-3xl items-center justify-between">
 				<button class="btn btn-ghost btn-sm gap-2" onclick={backToSources}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -387,7 +385,7 @@
 				<div class="flex gap-1">
 					{#each Array(6) as _, i}
 						<div
-							class={classNames('w-4 h-4 rounded-full transition-colors', {
+							class={classNames('h-4 w-4 rounded-full transition-colors', {
 								'bg-error': i < wrongGuesses,
 								'bg-base-300': i >= wrongGuesses
 							})}
@@ -405,7 +403,7 @@
 							<img
 								src={currentSticker.image}
 								alt={viewState === 'result' ? currentSticker.name : 'Mystery'}
-								class="w-full h-full object-cover transition-all duration-300"
+								class="h-full w-full object-cover transition-all duration-300"
 								style={`filter: blur(${getCurrentBlur()}px)`}
 								onerror={(e) => {
 									(e.target as HTMLImageElement).src =
@@ -418,14 +416,14 @@
 			{/if}
 
 			<!-- Letter tiles display -->
-			<div class="flex flex-wrap justify-center gap-2 max-w-3xl">
+			<div class="flex max-w-3xl flex-wrap justify-center gap-2">
 				{#each normalizedTargetName.split('') as char, index}
 					{#if char === ' '}
 						<div class="w-4"></div>
 					{:else}
 						<div
 							class={classNames(
-								'w-10 h-12 sm:w-12 sm:h-14 flex items-center justify-center text-xl sm:text-2xl font-bold uppercase border-2 rounded transition-all',
+								'flex h-12 w-10 items-center justify-center rounded border-2 text-xl font-bold uppercase transition-all sm:h-14 sm:w-12 sm:text-2xl',
 								{
 									'border-success bg-success/20 text-success': revealedLetters.has(index),
 									'border-base-content/30 bg-base-200': !revealedLetters.has(index)
@@ -444,9 +442,9 @@
 
 			<!-- Virtual Keyboard -->
 			{#if viewState === 'playing'}
-				<div class="flex flex-col items-center gap-1.5 pt-4 w-full max-w-lg">
+				<div class="flex w-full max-w-lg flex-col items-center gap-1.5 pt-4">
 					{#each KEYBOARD_ROWS as row}
-						<div class="flex gap-1.5 justify-center">
+						<div class="flex justify-center gap-1.5">
 							{#each row as key}
 								<button
 									class={getKeyClasses(key)}
@@ -466,7 +464,7 @@
 				<div class="card bg-base-200 w-full max-w-md">
 					<div class="card-body items-center text-center">
 						{#if gameResult === 'won'}
-							<div class="text-6xl mb-2">🎉</div>
+							<div class="mb-2 text-6xl">🎉</div>
 							<h2 class="card-title text-success">You got it!</h2>
 							<p class="text-base-content/70">
 								The answer was: <span class="font-bold">{targetName}</span>
@@ -479,7 +477,7 @@
 								<div class="stat-value text-success">+{earnedPoints}</div>
 							</div>
 						{:else}
-							<div class="text-6xl mb-2">😔</div>
+							<div class="mb-2 text-6xl">😔</div>
 							<h2 class="card-title text-error">Game Over</h2>
 							<p class="text-base-content/70">
 								The answer was: <span class="font-bold">{targetName}</span>
@@ -499,12 +497,12 @@
 
 			<!-- Instructions -->
 			{#if viewState === 'playing' && guessedLetters.size === 0}
-				<div class="mt-4 text-center text-sm text-base-content/50">
+				<div class="text-base-content/50 mt-4 text-center text-sm">
 					<p>Guess letters to reveal the name.</p>
 					<p class="mt-1">Each correct guess removes blur from the image!</p>
 					<p class="mt-1">
-						<span class="inline-block h-4 w-4 bg-success rounded"></span> Correct &nbsp;
-						<span class="inline-block h-4 w-4 bg-error rounded"></span> Wrong
+						<span class="bg-success inline-block h-4 w-4 rounded"></span> Correct &nbsp;
+						<span class="bg-error inline-block h-4 w-4 rounded"></span> Wrong
 					</p>
 				</div>
 			{/if}

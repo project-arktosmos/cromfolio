@@ -37,12 +37,14 @@ function createToastStore() {
 		add,
 		remove,
 		clear,
-		success: (message: string, duration?: number) => add(message, 'success' as ThemeColors, duration),
+		success: (message: string, duration?: number) =>
+			add(message, 'success' as ThemeColors, duration),
 		error: (message: string, duration?: number) => {
 			console.error('[Toast Error]', message);
 			return add(message, 'error' as ThemeColors, duration ?? 5000);
 		},
-		warning: (message: string, duration?: number) => add(message, 'warning' as ThemeColors, duration),
+		warning: (message: string, duration?: number) =>
+			add(message, 'warning' as ThemeColors, duration),
 		info: (message: string, duration?: number) => add(message, 'info' as ThemeColors, duration)
 	};
 }

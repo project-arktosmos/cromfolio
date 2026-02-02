@@ -9,7 +9,7 @@
 <div class="flex h-screen">
 	<GameSidebar items={menuData.items} />
 
-	<main class="flex-1 flex flex-col p-6 bg-base-100 overflow-hidden">
+	<main class="bg-base-100 flex flex-1 flex-col overflow-hidden p-6">
 		{@render children?.()}
 	</main>
 </div>

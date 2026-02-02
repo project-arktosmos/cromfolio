@@ -5,7 +5,17 @@
  */
 
 import type { DbAdapter } from './db-adapter.js';
-import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType } from '../types.js';
+import type {
+	ID,
+	Source,
+	Sticker,
+	Provider,
+	Tag,
+	ProviderType,
+	ExternalIdType,
+	Collection,
+	CollectionSticker
+} from '../types.js';
 
 // Dynamic import to avoid issues when running in Node.js
 let invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
@@ -75,6 +85,32 @@ export function createTauriAdapter(): DbAdapter {
 			await invoke<unknown>('add_tag_to_sticker', {
 				stickerId: String(stickerId),
 				tagId: String(tagId)
+			});
+		},
+
+		async findSourceByTitle(title: string): Promise<Source | null> {
+			const sources = await invoke<Source[]>('get_all_sources');
+			return sources.find((s) => s.title === title) || null;
+		},
+
+		async findCollectionByTitle(title: string): Promise<Collection | null> {
+			const collections = await invoke<Collection[]>('get_all_collections');
+			return collections.find((c) => c.title === title) || null;
+		},
+
+		async createCollection(collection: Partial<Collection>): Promise<Collection> {
+			return invoke<Collection>('create_collection', { collection });
+		},
+
+		async addStickerToCollection(
+			collectionId: ID,
+			stickerId: ID,
+			sortOrder?: number
+		): Promise<CollectionSticker> {
+			return invoke<CollectionSticker>('add_sticker_to_collection', {
+				collectionId: String(collectionId),
+				stickerId: String(stickerId),
+				sortOrder: sortOrder ?? 0
 			});
 		},
 

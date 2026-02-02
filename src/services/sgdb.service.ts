@@ -65,7 +65,9 @@ export function isSgdbConfigured(): boolean {
 /**
  * Search SteamGridDB for games by name
  */
-export async function searchSgdbGames(name: string): Promise<SGDBSearchResponse | { error: string }> {
+export async function searchSgdbGames(
+	name: string
+): Promise<SGDBSearchResponse | { error: string }> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -100,7 +102,9 @@ export async function searchSgdbGames(name: string): Promise<SGDBSearchResponse 
 /**
  * Get grids (cover art) for a game by game ID
  */
-export async function getSgdbGrids(gameId: number): Promise<SGDBImagesResponse | { error: string }> {
+export async function getSgdbGrids(
+	gameId: number
+): Promise<SGDBImagesResponse | { error: string }> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -109,11 +113,14 @@ export async function getSgdbGrids(gameId: number): Promise<SGDBImagesResponse |
 	}
 
 	try {
-		const response = await fetch(`${SGDB_BASE_URL}/grids/game/${gameId}?dimensions=600x900,342x482,460x215`, {
-			headers: {
-				Authorization: `Bearer ${apiKey}`
+		const response = await fetch(
+			`${SGDB_BASE_URL}/grids/game/${gameId}?dimensions=600x900,342x482,460x215`,
+			{
+				headers: {
+					Authorization: `Bearer ${apiKey}`
+				}
 			}
-		});
+		);
 
 		if (!response.ok) {
 			throw new Error(`SteamGridDB API error: ${response.status}`);
@@ -132,7 +139,9 @@ export async function getSgdbGrids(gameId: number): Promise<SGDBImagesResponse |
 /**
  * Get heroes (banner images) for a game by game ID
  */
-export async function getSgdbHeroes(gameId: number): Promise<SGDBImagesResponse | { error: string }> {
+export async function getSgdbHeroes(
+	gameId: number
+): Promise<SGDBImagesResponse | { error: string }> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -164,7 +173,9 @@ export async function getSgdbHeroes(gameId: number): Promise<SGDBImagesResponse 
 /**
  * Get logos for a game by game ID
  */
-export async function getSgdbLogos(gameId: number): Promise<SGDBImagesResponse | { error: string }> {
+export async function getSgdbLogos(
+	gameId: number
+): Promise<SGDBImagesResponse | { error: string }> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -196,7 +207,9 @@ export async function getSgdbLogos(gameId: number): Promise<SGDBImagesResponse |
 /**
  * Get icons for a game by game ID
  */
-export async function getSgdbIcons(gameId: number): Promise<SGDBImagesResponse | { error: string }> {
+export async function getSgdbIcons(
+	gameId: number
+): Promise<SGDBImagesResponse | { error: string }> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -228,9 +241,13 @@ export async function getSgdbIcons(gameId: number): Promise<SGDBImagesResponse |
 /**
  * Get all images for a game by name (searches and then fetches images)
  */
-export async function getAllSgdbImagesByName(
-	name: string
-): Promise<{ gameId: number | null; images: Array<{ url: string; thumb: string; type: string; width: number; height: number }> } | { error: string }> {
+export async function getAllSgdbImagesByName(name: string): Promise<
+	| {
+			gameId: number | null;
+			images: Array<{ url: string; thumb: string; type: string; width: number; height: number }>;
+	  }
+	| { error: string }
+> {
 	const apiKey = getApiKey();
 	if (!apiKey) {
 		return {
@@ -258,7 +275,13 @@ export async function getAllSgdbImagesByName(
 			getSgdbLogos(gameId)
 		]);
 
-		const images: Array<{ url: string; thumb: string; type: string; width: number; height: number }> = [];
+		const images: Array<{
+			url: string;
+			thumb: string;
+			type: string;
+			width: number;
+			height: number;
+		}> = [];
 
 		// Process grids (cover art)
 		if (!('error' in grids) && grids.data) {
