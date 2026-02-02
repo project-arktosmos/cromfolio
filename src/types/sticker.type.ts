@@ -45,6 +45,9 @@ export interface Sticker {
 	addedAt?: string;
 	createdAt?: string;
 	updatedAt?: string;
+
+	// Joined fields (populated from related tables)
+	sourceName?: string;
 }
 
 export interface StickerCollection {

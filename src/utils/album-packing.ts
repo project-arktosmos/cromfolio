@@ -330,7 +330,11 @@ export function packStickersIntoGrid(
 		const gapToAdd = currentPage.rows.length > 0 ? config.rowGap : 0;
 		const heightNeeded = row.rowHeight + gapToAdd;
 
-		if (currentPage.totalHeight + heightNeeded > maxPageHeight) {
+		// Check if page is full (by height or by row count)
+		const heightFull = currentPage.totalHeight + heightNeeded > maxPageHeight;
+		const rowsFull = config.maxRowsPerPage && currentPage.rows.length >= config.maxRowsPerPage;
+
+		if (heightFull || rowsFull) {
 			// Current page is full, start new page
 			if (currentPage.rows.length > 0) {
 				pages.push(currentPage);

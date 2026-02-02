@@ -225,6 +225,7 @@ fn row_to_sticker(row: &rusqlite::Row) -> Sticker {
         added_at: row.get(10).unwrap_or(None),
         created_at: row.get(11).unwrap_or_default(),
         updated_at: row.get(12).unwrap_or_default(),
+        source_name: None,
     }
 }
 

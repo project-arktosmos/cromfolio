@@ -2,6 +2,7 @@ pub mod collection_types;
 pub mod collections;
 pub mod llm_configs;
 pub mod pokemon_trivia_templates;
+pub mod pokemon_trivia_templates_v2;
 pub mod providers;
 pub mod questions;
 pub mod rarities;

@@ -23,7 +23,8 @@
 		"content:tv": "tsx scripts/content/extract-tv.ts",
 		"content:awards": "tsx scripts/content/extract-awards.ts",
 		"content:anime": "tsx scripts/content/extract-anime.ts",
-		"content:pokemon": "tsx scripts/content/extract-pokemon.ts"
+		"content:pokemon": "tsx scripts/content/extract-pokemon.ts",
+		"pokemon:backgrounds": "tsx scripts/content/pokemon-backgrounds.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -36,6 +37,7 @@
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/svelte": "^5.2.8",
 		"@types/better-sqlite3": "^7.6.13",
+		"@types/sharp": "^0.32.0",
 		"@vitest/coverage-v8": "4.0.6",
 		"@vitest/ui": "^4.0.6",
 		"better-sqlite3": "^12.6.2",
@@ -49,6 +51,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"sharp": "^0.34.5",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwindcss": "^4.0.0",
@@ -61,7 +64,8 @@
 	"pnpm": {
 		"onlyBuiltDependencies": [
 			"esbuild",
-			"better-sqlite3"
+			"better-sqlite3",
+			"sharp"
 		]
 	},
 	"dependencies": {

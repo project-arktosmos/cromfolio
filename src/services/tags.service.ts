@@ -287,3 +287,47 @@ export async function getPokemonCommonTagKeys(): Promise<string[]> {
 		return [];
 	}
 }
+
+/**
+ * Pokemon with tags structure returned from backend
+ */
+export interface PokemonWithTags {
+	id: string;
+	name: string;
+	image: string;
+	tags: Record<string, string>;
+}
+
+/**
+ * Get a random Pokemon with all its tags
+ * Used for trivia preview in admin panel
+ */
+export async function getRandomPokemonWithTags(): Promise<PokemonWithTags | null> {
+	try {
+		return await invoke<PokemonWithTags | null>('get_random_pokemon_with_tags');
+	} catch (e) {
+		console.error('[tags.service] getRandomPokemonWithTags:', e);
+		return null;
+	}
+}
+
+/**
+ * Get random Pokemon from a specific generation (for wrong answers in trivia)
+ * Excludes the Pokemon with the given ID
+ */
+export async function getRandomPokemonByGeneration(
+	generation: string,
+	excludeId: string,
+	limit: number
+): Promise<PokemonWithTags[]> {
+	try {
+		return await invoke<PokemonWithTags[]>('get_random_pokemon_by_generation', {
+			generation,
+			excludeId,
+			limit
+		});
+	} catch (e) {
+		console.error('[tags.service] getRandomPokemonByGeneration:', e);
+		return [];
+	}
+}

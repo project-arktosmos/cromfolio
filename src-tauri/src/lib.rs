@@ -249,6 +249,8 @@ pub fn run() {
             commands::get_sticker_ids_by_tag,
             commands::get_sticker_names_by_imdb_ids,
             commands::get_pokemon_common_tag_keys,
+            commands::get_random_pokemon_with_tags,
+            commands::get_random_pokemon_by_generation,
             // Collections
             commands::get_all_collections,
             commands::get_collection,
@@ -406,7 +408,7 @@ pub fn run() {
             commands::prepare_collection_export,
             commands::create_torrent_for_export,
             commands::open_directory,
-            // Pokemon Trivia Templates
+            // Pokemon Trivia Templates (v1)
             commands::get_all_pokemon_trivia_templates,
             commands::get_pokemon_trivia_template,
             commands::get_pokemon_trivia_templates_by_tag_key,
@@ -415,6 +417,18 @@ pub fn run() {
             commands::create_pokemon_trivia_template,
             commands::update_pokemon_trivia_template,
             commands::delete_pokemon_trivia_template,
+            // Pokemon Trivia Templates V2 (enhanced with 9 template types)
+            commands::get_all_pokemon_trivia_templates_v2,
+            commands::get_pokemon_trivia_template_v2,
+            commands::get_pokemon_trivia_templates_v2_by_type,
+            commands::get_pokemon_trivia_templates_v2_by_attribute,
+            commands::get_active_pokemon_trivia_templates_v2,
+            commands::get_pokemon_trivia_templates_v2_by_difficulty,
+            commands::get_pokemon_trivia_template_v2_types,
+            commands::get_pokemon_trivia_template_v2_attributes,
+            commands::create_pokemon_trivia_template_v2,
+            commands::update_pokemon_trivia_template_v2,
+            commands::delete_pokemon_trivia_template_v2,
             // Utility
             commands::get_cwd,
         ])

@@ -157,16 +157,17 @@ pub fn get_stickers_for_collection(
         .prepare(
             "SELECT s.id, s.source_id, s.name, s.image, s.sticker_type_id,
                     s.image_source, s.width, s.height, s.fragment_of, s.fragment_position,
-                    s.added_at, s.created_at, s.updated_at
+                    s.added_at, s.created_at, s.updated_at, src.title as source_name
              FROM stickers s
              INNER JOIN collection_stickers cs ON s.id = cs.sticker_id
+             LEFT JOIN sources src ON s.source_id = src.id
              WHERE cs.collection_id = ?1
              ORDER BY cs.sort_order ASC, s.name ASC",
         )
         .map_err(|e| e.to_string())?;
 
     let rows = stmt
-        .query_map(params![collection_id], |row| Ok(row_to_sticker(row)))
+        .query_map(params![collection_id], |row| Ok(row_to_sticker_with_source(row)))
         .map_err(|e| e.to_string())?;
 
     rows.collect::<Result<Vec<_>, _>>()
@@ -244,6 +245,26 @@ fn row_to_sticker(row: &rusqlite::Row) -> Sticker {
         added_at: row.get(10).unwrap_or(None),
         created_at: row.get(11).unwrap_or_default(),
         updated_at: row.get(12).unwrap_or_default(),
+        source_name: None,
+    }
+}
+
+fn row_to_sticker_with_source(row: &rusqlite::Row) -> Sticker {
+    Sticker {
+        id: row.get(0).unwrap_or_default(),
+        source_id: row.get(1).unwrap_or_default(),
+        name: row.get(2).unwrap_or_default(),
+        image: row.get(3).unwrap_or_default(),
+        sticker_type_id: row.get(4).unwrap_or(None),
+        image_source: row.get(5).unwrap_or(None),
+        width: row.get(6).unwrap_or(None),
+        height: row.get(7).unwrap_or(None),
+        fragment_of: row.get(8).unwrap_or(None),
+        fragment_position: row.get(9).unwrap_or(None),
+        added_at: row.get(10).unwrap_or(None),
+        created_at: row.get(11).unwrap_or_default(),
+        updated_at: row.get(12).unwrap_or_default(),
+        source_name: row.get(13).unwrap_or(None),
     }
 }
 

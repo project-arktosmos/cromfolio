@@ -240,6 +240,9 @@ impl Database {
         // Pokemon trivia templates table
         Self::create_pokemon_trivia_templates_table(conn)?;
 
+        // Pokemon trivia templates v2 table (enhanced)
+        Self::create_pokemon_trivia_templates_v2_table(conn)?;
+
         Ok(())
     }
 
@@ -1035,6 +1038,214 @@ impl Database {
         .map_err(|e| format!("Failed to create pokemon_trivia_templates tag_key index: {}", e))?;
 
         log::info!("Pokemon trivia templates table created successfully");
+        Ok(())
+    }
+
+    /// Create pokemon_trivia_templates_v2 table for enhanced trivia question templates
+    /// Supports 9 different template types: simple_match, reverse_lookup, superlative,
+    /// comparison, multi_condition, range, negation, statistical, type_effectiveness
+    fn create_pokemon_trivia_templates_v2_table(conn: &Connection) -> Result<(), String> {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS pokemon_trivia_templates_v2 (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                template_type TEXT NOT NULL,
+                question_template TEXT NOT NULL,
+                answer_template TEXT NOT NULL,
+                primary_attribute TEXT NOT NULL,
+                conditions TEXT NOT NULL DEFAULT '[]',
+                condition_logic TEXT NOT NULL DEFAULT 'and',
+                scope_filters TEXT NOT NULL DEFAULT '{}',
+                comparison_config TEXT,
+                difficulty TEXT,
+                weight INTEGER NOT NULL DEFAULT 100,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates_v2 table: {}", e))?;
+
+        // Indexes for efficient lookups
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ptt_v2_template_type ON pokemon_trivia_templates_v2(template_type)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates_v2 template_type index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ptt_v2_primary_attribute ON pokemon_trivia_templates_v2(primary_attribute)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates_v2 primary_attribute index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ptt_v2_is_active ON pokemon_trivia_templates_v2(is_active)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates_v2 is_active index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ptt_v2_difficulty ON pokemon_trivia_templates_v2(difficulty)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates_v2 difficulty index: {}", e))?;
+
+        // Migrate existing templates from v1 to v2 if v2 is empty and v1 has data
+        Self::migrate_pokemon_trivia_templates_v1_to_v2(conn)?;
+
+        // Seed default templates if table is empty
+        Self::seed_pokemon_trivia_templates_v2(conn)?;
+
+        log::info!("Pokemon trivia templates v2 table created successfully");
+        Ok(())
+    }
+
+    /// Migrate existing pokemon_trivia_templates to v2 format
+    fn migrate_pokemon_trivia_templates_v1_to_v2(conn: &Connection) -> Result<(), String> {
+        // Check if v2 table is empty
+        let v2_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM pokemon_trivia_templates_v2", [], |row| row.get(0))
+            .unwrap_or(0);
+
+        if v2_count > 0 {
+            return Ok(()); // Already has data, skip migration
+        }
+
+        // Check if v1 table has data
+        let v1_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM pokemon_trivia_templates", [], |row| row.get(0))
+            .unwrap_or(0);
+
+        if v1_count == 0 {
+            return Ok(()); // No data to migrate
+        }
+
+        log::info!("Migrating {} pokemon trivia templates from v1 to v2...", v1_count);
+
+        // Migrate v1 templates to v2 as simple_match type
+        conn.execute(
+            "INSERT INTO pokemon_trivia_templates_v2 (
+                id, name, description, template_type,
+                question_template, answer_template, primary_attribute,
+                conditions, condition_logic, scope_filters, comparison_config,
+                difficulty, weight, is_active, created_at, updated_at
+            )
+            SELECT
+                id,
+                tag_key || ' template',
+                '',
+                'simple_match',
+                question_template,
+                answer_template,
+                tag_key,
+                '[]',
+                'and',
+                '{}',
+                NULL,
+                NULL,
+                100,
+                is_active,
+                created_at,
+                updated_at
+            FROM pokemon_trivia_templates",
+            [],
+        )
+        .map_err(|e| format!("Failed to migrate pokemon trivia templates: {}", e))?;
+
+        log::info!("Successfully migrated {} pokemon trivia templates to v2", v1_count);
+        Ok(())
+    }
+
+    /// Seed default Pokemon trivia templates v2 covering all 9 template types
+    fn seed_pokemon_trivia_templates_v2(conn: &Connection) -> Result<(), String> {
+        // Check if seed templates already exist by looking for a specific seed template name
+        // This allows seeding even if migration added v1 templates to v2
+        let seed_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM pokemon_trivia_templates_v2 WHERE name = 'Pokemon Type'",
+                [],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if seed_exists {
+            return Ok(()); // Seed templates already exist
+        }
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // Starter templates for each type
+        // Format: (name, description, template_type, question_template, answer_template, primary_attribute, conditions, condition_logic, scope_filters, comparison_config, difficulty, weight)
+        let templates: Vec<(&str, &str, &str, &str, &str, &str, &str, &str, &str, Option<&str>, Option<&str>, i32)> = vec![
+            // Simple Match templates
+            ("Pokemon Type", "Ask what type a Pokemon is", "simple_match", "What type is {name}?", "{type}", "type", "[]", "and", "{}", None, Some("easy"), 100),
+            ("Pokemon Generation", "Ask which generation a Pokemon is from", "simple_match", "{name} is from which generation?", "{generation}", "generation", "[]", "and", "{}", None, Some("easy"), 100),
+            ("Pokemon Ability", "Ask about a Pokemon's ability", "simple_match", "What is {name}'s primary ability?", "{ability}", "ability", "[]", "and", "{}", None, Some("medium"), 100),
+            ("Pokemon Hidden Ability", "Ask about hidden ability", "simple_match", "What is {name}'s hidden ability?", "{hidden-ability}", "hidden-ability", "[]", "and", "{}", None, Some("hard"), 80),
+            ("Pokemon Base Attack", "Ask about base attack stat", "simple_match", "What is {name}'s base attack stat?", "{attack}", "attack", "[]", "and", "{}", None, Some("hard"), 60),
+
+            // Reverse Lookup templates
+            ("Find by Type", "Find a Pokemon of a specific type", "reverse_lookup", "Name a {type} type Pokemon", "{name}", "type", r#"[{"attribute":"type","operator":"eq","value":"{type}"}]"#, "and", "{}", None, Some("easy"), 100),
+            ("Find by Ability", "Find Pokemon with specific ability", "reverse_lookup", "Which Pokemon has the ability {ability}?", "{name}", "ability", r#"[{"attribute":"ability","operator":"eq","value":"{ability}"}]"#, "and", "{}", None, Some("medium"), 100),
+            ("Find by Generation", "Find Pokemon from specific generation", "reverse_lookup", "Name a Pokemon from {generation}", "{name}", "generation", r#"[{"attribute":"generation","operator":"eq","value":"{generation}"}]"#, "and", "{}", None, Some("easy"), 100),
+
+            // Superlative templates
+            ("Highest Attack", "Find Pokemon with highest attack", "superlative", "Which Pokemon has the highest base attack stat?", "{name}", "attack", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"attack","count":1}"#), Some("hard"), 100),
+            ("Fastest Pokemon", "Find Pokemon with highest speed", "superlative", "Which Pokemon has the highest speed stat?", "{name}", "speed", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"speed","count":1}"#), Some("hard"), 100),
+            ("Heaviest Pokemon", "Find heaviest Pokemon", "superlative", "Which Pokemon is the heaviest?", "{name}", "weight-kg", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"weight-kg","count":1}"#), Some("medium"), 100),
+            ("Highest BST", "Find Pokemon with highest base stat total", "superlative", "Which Pokemon has the highest base stat total?", "{name}", "base-stat-total", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"base-stat-total","count":1}"#), Some("hard"), 80),
+
+            // Comparison templates
+            ("Compare Attack", "Compare attack stats of two Pokemon", "comparison", "Which has higher attack: {pokemon_1} or {pokemon_2}?", "{name}", "attack", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"attack","count":2}"#), Some("medium"), 100),
+            ("Compare Speed", "Compare speed stats", "comparison", "Which is faster: {pokemon_1} or {pokemon_2}?", "{name}", "speed", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"speed","count":2}"#), Some("medium"), 100),
+            ("Compare Weight (4)", "Compare weight of four Pokemon", "comparison", "Between {pokemon_1}, {pokemon_2}, {pokemon_3}, and {pokemon_4}, which is the heaviest?", "{name}", "weight-kg", "[]", "and", "{}", Some(r#"{"operator":"max","attribute":"weight-kg","count":4}"#), Some("hard"), 80),
+
+            // Multi-condition templates
+            ("Type + Generation", "Find Pokemon matching type and generation", "multi_condition", "Which {type} type Pokemon is from {generation}?", "{name}", "type", r#"[{"attribute":"type","operator":"eq","value":"{type}"},{"attribute":"generation","operator":"eq","value":"{generation}"}]"#, "and", "{}", None, Some("medium"), 100),
+            ("Type + Ability", "Find Pokemon matching type and ability", "multi_condition", "Which {type} type Pokemon has the ability {ability}?", "{name}", "type", r#"[{"attribute":"type","operator":"eq","value":"{type}"},{"attribute":"ability","operator":"eq","value":"{ability}"}]"#, "and", "{}", None, Some("hard"), 80),
+            ("Legendary + Generation", "Find legendary from specific gen", "multi_condition", "Which legendary Pokemon is from {generation}?", "{name}", "legendary", r#"[{"attribute":"legendary","operator":"eq","value":"true"},{"attribute":"generation","operator":"eq","value":"{generation}"}]"#, "and", "{}", None, Some("medium"), 100),
+
+            // Range templates
+            ("High BST Range", "Find Pokemon in BST range", "range", "Which Pokemon has a base stat total between 500 and 600?", "{name}", "base-stat-total", r#"[{"attribute":"base-stat-total","operator":"between","values":["500","600"]}]"#, "and", "{}", None, Some("hard"), 100),
+            ("Heavy Pokemon", "Find heavy Pokemon", "range", "Which Pokemon weighs more than 100kg?", "{name}", "weight-kg", r#"[{"attribute":"weight-kg","operator":"gt","value":"100"}]"#, "and", "{}", None, Some("medium"), 100),
+            ("Fast Pokemon", "Find fast Pokemon", "range", "Which Pokemon has a speed stat above 100?", "{name}", "speed", r#"[{"attribute":"speed","operator":"gt","value":"100"}]"#, "and", "{}", None, Some("medium"), 100),
+
+            // Negation templates
+            ("Not Water Type", "Find Pokemon that is not Water type", "negation", "Which of these Pokemon is NOT a Water type?", "{name}", "type", r#"[{"attribute":"type","operator":"neq","value":"water"}]"#, "and", "{}", None, Some("easy"), 100),
+            ("Not Legendary", "Find non-legendary Pokemon", "negation", "Which of these Pokemon is NOT legendary?", "{name}", "legendary", r#"[{"attribute":"legendary","operator":"eq","value":"false"}]"#, "and", "{}", None, Some("easy"), 100),
+
+            // Statistical templates
+            ("Has Hidden Ability", "Find Pokemon with hidden ability", "statistical", "Which Pokemon has a hidden ability?", "{name}", "hidden-ability", r#"[{"attribute":"hidden-ability","operator":"exists"}]"#, "and", "{}", None, Some("medium"), 100),
+            ("No Hidden Ability", "Find Pokemon without hidden ability", "statistical", "Which Pokemon does NOT have a hidden ability?", "{name}", "hidden-ability", r#"[{"attribute":"hidden-ability","operator":"not_exists"}]"#, "and", "{}", None, Some("hard"), 80),
+
+            // Type Effectiveness templates
+            ("4x Fire Weakness", "Find Pokemon with 4x fire weakness", "type_effectiveness", "Which Pokemon takes 4x damage from Fire moves?", "{name}", "against-fire", r#"[{"attribute":"against-fire","operator":"eq","value":"4"}]"#, "and", "{}", None, Some("medium"), 100),
+            ("Ground Immunity", "Find Pokemon immune to Ground", "type_effectiveness", "Which Pokemon is immune to Ground moves?", "{name}", "against-ground", r#"[{"attribute":"against-ground","operator":"eq","value":"0"}]"#, "and", "{}", None, Some("easy"), 100),
+            ("Electric Resistance", "Find Pokemon that resists Electric", "type_effectiveness", "Which Pokemon takes half damage from Electric moves?", "{name}", "against-electric", r#"[{"attribute":"against-electric","operator":"eq","value":"0.5"}]"#, "and", "{}", None, Some("medium"), 100),
+        ];
+
+        let templates_count = templates.len();
+        for (name, description, template_type, question, answer, primary_attr, conditions, logic, scope, comparison, difficulty, weight) in templates {
+            let id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO pokemon_trivia_templates_v2 (
+                    id, name, description, template_type, question_template, answer_template,
+                    primary_attribute, conditions, condition_logic, scope_filters,
+                    comparison_config, difficulty, weight, is_active, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 1, ?14, ?15)",
+                rusqlite::params![
+                    id, name, description, template_type, question, answer,
+                    primary_attr, conditions, logic, scope,
+                    comparison, difficulty, weight, now, now
+                ],
+            )
+            .map_err(|e| format!("Failed to seed template '{}': {}", name, e))?;
+        }
+
+        log::info!("Seeded {} default Pokemon trivia templates v2", templates_count);
         Ok(())
     }
 }

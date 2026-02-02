@@ -51,24 +51,34 @@
 </script>
 
 <div class={classNames('w-full h-full p-2', classes)} style={bgStyle}>
-	{#if isFragment}
-		<!-- Fragment sticker: show only one quadrant of the image -->
-		<div class="w-full h-full overflow-hidden">
+	<div class="relative w-full h-full overflow-hidden">
+		<div class="absolute top-0 left-0 right-0 bg-white/90 z-10">
+			<span class="text-[10px] font-medium text-black truncate block text-center">{sticker.name}</span>
+		</div>
+		{#if isFragment}
+			<!-- Fragment sticker: show only one quadrant of the image -->
+			<div class="w-full h-full overflow-hidden">
+				<img
+					src={sticker.image}
+					alt={sticker.name}
+					class="w-full h-full object-contain"
+					style={fragmentStyle}
+					onerror={handleImageError}
+				/>
+			</div>
+		{:else}
+			<!-- Normal sticker: show full image -->
 			<img
 				src={sticker.image}
 				alt={sticker.name}
-				class="w-full h-full object-cover"
-				style={fragmentStyle}
+				class="w-full h-full object-contain"
 				onerror={handleImageError}
 			/>
-		</div>
-	{:else}
-		<!-- Normal sticker: show full image -->
-		<img
-			src={sticker.image}
-			alt={sticker.name}
-			class="w-full h-full object-contain"
-			onerror={handleImageError}
-		/>
-	{/if}
+		{/if}
+		{#if sticker.sourceName}
+			<div class="absolute bottom-0 left-0 right-0 bg-white/90 z-10">
+				<span class="text-[8px] font-medium text-black truncate block text-center">{sticker.sourceName}</span>
+			</div>
+		{/if}
+	</div>
 </div>

@@ -21,7 +21,7 @@ pub mod user_sticker_placement;
 pub use collection::{Collection, CollectionSticker};
 pub use collection_type::CollectionType;
 pub use llm_config::{LlmConfig, LlmProvider};
-pub use pokemon_trivia_template::PokemonTriviaTemplate;
+pub use pokemon_trivia_template::{PokemonTriviaTemplate, PokemonTriviaTemplateV2};
 pub use provider::Provider;
 pub use question::Question;
 pub use rarity::Rarity;

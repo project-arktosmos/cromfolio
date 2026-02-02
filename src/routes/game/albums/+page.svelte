@@ -50,17 +50,13 @@
 	} from '$services/user-placed-icons.service';
 	import type { UserPlacedIcon } from '$types/user-placed-icon.type';
 
-	// Layout configuration (2-column grid, 3 for pokemon)
+	// Layout configuration
 	const PAGE_ASPECT = getGridPageAspectRatio();
 
-	// Reactive config based on collection type
-	let config = $derived.by(() => {
-		const isPokemon = selectedCollectionType?.name?.toLowerCase() === 'pokemon';
-		return {
-			...DEFAULT_GRID_PACKING_CONFIG,
-			columns: isPokemon ? 4 : 2
-		};
-	});
+	// Pokemon grid config: 3 columns x 4 rows = 12 stickers per page
+	const POKEMON_COLS = 3;
+	const POKEMON_ROWS = 4;
+	const POKEMON_PER_PAGE = POKEMON_COLS * POKEMON_ROWS;
 
 	let collections: Collection[] = $state([]);
 	let stickers: Sticker[] = $state([]);
@@ -87,6 +83,27 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	let stickerRarityMap = $state<Map<string, string>>(new Map()); // stickerId -> rarityId
 	let currentSpread = $state(0);
 	let selectedCollectionType = $state<CollectionType | null>(null);
+
+	// Page flip animation state
+	let isFlipping = $state(false);
+	let flipDirection = $state<'forward' | 'backward' | null>(null);
+	let targetSpread = $state<number | null>(null);
+	const FLIP_DURATION = 600;
+
+	// Check if current collection is pokemon type
+	let isPokemonCollection = $derived(selectedCollectionType?.name?.toLowerCase() === 'pokemon');
+
+	// Reactive config based on collection type
+	let config = $derived.by(() => {
+		if (isPokemonCollection) {
+			return {
+				...DEFAULT_GRID_PACKING_CONFIG,
+				columns: POKEMON_COLS,
+				maxRowsPerPage: POKEMON_ROWS
+			};
+		}
+		return DEFAULT_GRID_PACKING_CONFIG;
+	});
 
 	// Cached stickers per collection (for booster packs)
 	let collectionStickers = $state<Map<string, Sticker[]>>(new Map());
@@ -357,6 +374,16 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		return { regularStickers: regular, winnerStickers: winners };
 	});
 
+	// For pokemon: simple pagination of stickers (12 per page)
+	let pokemonPages = $derived.by(() => {
+		if (!isPokemonCollection || regularStickers.length === 0) return [];
+		const pages: Sticker[][] = [];
+		for (let i = 0; i < regularStickers.length; i += POKEMON_PER_PAGE) {
+			pages.push(regularStickers.slice(i, i + POKEMON_PER_PAGE));
+		}
+		return pages;
+	});
+
 	// Pack regular stickers into grid-based pages (2 columns)
 	let packedPages = $derived.by(() => {
 		if (regularStickers.length === 0) return [];
@@ -372,6 +399,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	});
 
 	function getTotalRegularPages(): number {
+		if (isPokemonCollection) return pokemonPages.length;
 		return packedPages.length;
 	}
 
@@ -418,6 +446,23 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		return groupedWinners[rightWinnerIdx] ?? null;
 	}
 
+	// Winner getters for specific spread (for flip animation)
+	function getLeftWinnerForSpread(spread: number): GroupedFragments | null {
+		const winnerSpreadStart = 1 + getRegularSpreadsCount();
+		if (spread < winnerSpreadStart) return null;
+		const winnerSpreadIndex = spread - winnerSpreadStart;
+		const leftWinnerIdx = winnerSpreadIndex * 2;
+		return groupedWinners[leftWinnerIdx] ?? null;
+	}
+
+	function getRightWinnerForSpread(spread: number): GroupedFragments | null {
+		const winnerSpreadStart = 1 + getRegularSpreadsCount();
+		if (spread < winnerSpreadStart) return null;
+		const winnerSpreadIndex = spread - winnerSpreadStart;
+		const rightWinnerIdx = winnerSpreadIndex * 2 + 1;
+		return groupedWinners[rightWinnerIdx] ?? null;
+	}
+
 	function isCoverSpread(): boolean {
 		return currentSpread === 0;
 	}
@@ -438,23 +483,82 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 		return packedPages[rightPageIdx] ?? null;
 	}
 
+	// Pokemon page helpers - return flat sticker arrays
+	function getLeftPokemonPage(): Sticker[] | null {
+		const leftPageIdx = (currentSpread - 1) * 2;
+		return pokemonPages[leftPageIdx] ?? null;
+	}
+
+	function getRightPokemonPage(): Sticker[] | null {
+		const rightPageIdx = (currentSpread - 1) * 2 + 1;
+		return pokemonPages[rightPageIdx] ?? null;
+	}
+
 	function hasRightPage(): boolean {
 		return getRightPage() !== null;
 	}
 
+	// Page getters for specific spread (for flip animation back-face rendering)
+	function getLeftPageForSpread(spread: number): GridPackedPage | null {
+		if (spread === 0) return null;
+		const leftPageIdx = (spread - 1) * 2;
+		return packedPages[leftPageIdx] ?? null;
+	}
+
+	function getRightPageForSpread(spread: number): GridPackedPage | null {
+		if (spread === 0) return null;
+		const rightPageIdx = (spread - 1) * 2 + 1;
+		return packedPages[rightPageIdx] ?? null;
+	}
+
+	function getLeftPokemonPageForSpread(spread: number): Sticker[] | null {
+		if (spread === 0) return null;
+		const leftPageIdx = (spread - 1) * 2;
+		return pokemonPages[leftPageIdx] ?? null;
+	}
+
+	function getRightPokemonPageForSpread(spread: number): Sticker[] | null {
+		if (spread === 0) return null;
+		const rightPageIdx = (spread - 1) * 2 + 1;
+		return pokemonPages[rightPageIdx] ?? null;
+	}
+
 	function goToSpread(spread: number) {
 		const totalSpreads = getTotalSpreads();
-		if (spread >= 0 && spread < totalSpreads) {
+		if (spread >= 0 && spread < totalSpreads && !isFlipping) {
 			currentSpread = spread;
 		}
 	}
 
 	function nextSpread() {
-		goToSpread(currentSpread + 1);
+		const totalSpreads = getTotalSpreads();
+		if (isFlipping || currentSpread >= totalSpreads - 1) return;
+
+		targetSpread = currentSpread + 1;
+		isFlipping = true;
+		flipDirection = 'forward';
+
+		setTimeout(() => {
+			currentSpread = targetSpread!;
+			isFlipping = false;
+			flipDirection = null;
+			targetSpread = null;
+		}, FLIP_DURATION);
 	}
 
 	function prevSpread() {
-		goToSpread(currentSpread - 1);
+		if (isFlipping || currentSpread <= 0) return;
+
+		targetSpread = currentSpread - 1;
+		isFlipping = true;
+		flipDirection = 'backward';
+
+		setTimeout(() => {
+			currentSpread = targetSpread!;
+			isFlipping = false;
+			flipDirection = null;
+			targetSpread = null;
+		}, FLIP_DURATION);
 	}
 
 	async function handleStickerMouseEnter(sticker: Sticker) {
@@ -1132,13 +1236,19 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 								</div>
 							{:else if isWinnerSpread()}
 							<!-- Winner Book View (two pages side by side) -->
-							{@const leftWinner = getLeftWinner()}
-							{@const rightWinner = getRightWinner()}
+							<!-- During forward flip, show target right page; during backward flip, show target left page -->
+							{@const leftWinner = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
+								? getLeftWinnerForSpread(targetSpread)
+								: getLeftWinner()}
+							{@const rightWinner = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
+								? getRightWinnerForSpread(targetSpread)
+								: getRightWinner()}
 							{@const winnerSpreadIndex = currentSpread - (1 + getRegularSpreadsCount())}
 							{@const winnerLeftPageIndex = getTotalRegularPages() + (winnerSpreadIndex * 2)}
 							{@const winnerRightPageIndex = getTotalRegularPages() + (winnerSpreadIndex * 2) + 1}
 
-							<div class="flex w-full gap-1">
+							<div class="book-perspective relative">
+								<div class="flex w-full gap-1">
 								<!-- Left Winner Page -->
 								{#if leftWinner}
 									{@const topLeft = leftWinner.fragments.get(1)}
@@ -1456,15 +1566,337 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 										</div>
 									</div>
 								{/if}
+								</div>
+
+								<!-- Flip Animation Overlay for Winners -->
+								{#if isFlipping && targetSpread !== null}
+									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
+										{#if flipDirection === 'forward'}
+											<!-- Forward: right page flips to left -->
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											<div
+												class="page-container flex-1 flip-forward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: simple winner page representation -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0 flex items-center justify-center">
+													<span class="badge badge-warning">Winner</span>
+												</div>
+												<!-- Back face: paper texture -->
+												<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
+											</div>
+										{:else if flipDirection === 'backward'}
+											<!-- Backward: left page flips to right -->
+											<div
+												class="page-container flex-1 flip-backward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: simple winner page representation -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0 flex items-center justify-center">
+													<span class="badge badge-warning">Winner</span>
+												</div>
+												<!-- Back face: paper texture -->
+												<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
+											</div>
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+										{/if}
+									</div>
+								{/if}
 							</div>
-						{:else}
-							<!-- Book View (two pages side by side) -->
-							{@const leftPage = getLeftPage()}
-							{@const rightPage = getRightPage()}
+						{:else if isPokemonCollection}
+							<!-- Pokemon Book View (3x4 grid enforced) -->
+							<!-- During forward flip, show target right page; during backward flip, show target left page -->
+							{@const leftPokemonStickers = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
+								? getLeftPokemonPageForSpread(targetSpread)
+								: getLeftPokemonPage()}
+							{@const rightPokemonStickers = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
+								? getRightPokemonPageForSpread(targetSpread)
+								: getRightPokemonPage()}
 							{@const leftPageIndex = (currentSpread - 1) * 2}
 							{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
 
-							<div class="flex w-full gap-1">
+							<div class="book-perspective relative">
+								<div class="flex w-full gap-1">
+								<!-- Left Page -->
+								{#if leftPokemonStickers}
+									{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
+									{@const leftPlacedIcons = getPlacedIconsForPage(leftPageIndex)}
+									<div
+										class={classNames(
+											'bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden flex-1 relative',
+											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+										)}
+										style="aspect-ratio: {PAGE_ASPECT};"
+										onclick={(e) => {
+											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, leftPageIndex);
+										}}
+										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
+										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
+									>
+										<PlacedStampOverlay
+											placedStamps={leftPlacedStamps}
+											stampImages={stampImageCache}
+											{stampsDataDir}
+											editable={!isPlacementMode && !isIconPlacementMode}
+											onstampremove={(ps) => handlePlacedStampRemove(ps)}
+										/>
+										<PlacedIconOverlay
+											placedIcons={leftPlacedIcons}
+											editable={!isPlacementMode && !isIconPlacementMode}
+											oniconremove={(pi) => handlePlacedIconRemove(pi)}
+										/>
+										<div
+											class="h-full grid"
+											style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+										>
+											{#each leftPokemonStickers as sticker (sticker.id)}
+												{@const copyCount = getCachedCopyCount(sticker.id)}
+												{@const owned = copyCount > 0}
+												{@const placed = placedStickerIds.has(String(sticker.id))}
+												{@const rarity = getStickerRarity(sticker)}
+												<div
+													class={classNames(
+														'cursor-pointer overflow-hidden flex flex-col relative',
+														{ 'grayscale opacity-50': !owned }
+													)}
+													onclick={() => handleStickerClick(sticker)}
+													onmouseenter={() => handleStickerMouseEnter(sticker)}
+													onmousemove={handleStickerMouseMove}
+													onmouseleave={handleStickerMouseLeave}
+													role="button"
+													tabindex="0"
+												>
+													{#if owned && !placed}
+														<button
+															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
+															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
+														>
+															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
+														</button>
+													{/if}
+													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<StickerItem
+															{sticker}
+															bgColor={rarity?.colorFrom ?? '#6B7280'}
+															borderColor={rarity?.colorTo}
+															classes="w-full h-full object-contain"
+														/>
+													</div>
+												</div>
+											{/each}
+										</div>
+									</div>
+								{/if}
+
+								<!-- Right Page -->
+								{#if rightPokemonStickers}
+									{@const rightPlacedStamps = getPlacedStampsForPage(rightPageIndex)}
+									{@const rightPlacedIcons = getPlacedIconsForPage(rightPageIndex)}
+									<div
+										class={classNames(
+											'bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 relative',
+											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+										)}
+										style="aspect-ratio: {PAGE_ASPECT};"
+										onclick={(e) => {
+											if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+											if (isIconPlacementMode) handleIconPageClick(e, e.currentTarget as HTMLElement, rightPageIndex);
+										}}
+										role={(isPlacementMode || isIconPlacementMode) ? 'button' : 'img'}
+										tabindex={(isPlacementMode || isIconPlacementMode) ? 0 : -1}
+									>
+										<PlacedStampOverlay
+											placedStamps={rightPlacedStamps}
+											stampImages={stampImageCache}
+											{stampsDataDir}
+											editable={!isPlacementMode && !isIconPlacementMode}
+											onstampremove={(ps) => handlePlacedStampRemove(ps)}
+										/>
+										<PlacedIconOverlay
+											placedIcons={rightPlacedIcons}
+											editable={!isPlacementMode && !isIconPlacementMode}
+											oniconremove={(pi) => handlePlacedIconRemove(pi)}
+										/>
+										<div
+											class="h-full grid"
+											style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+										>
+											{#each rightPokemonStickers as sticker (sticker.id)}
+												{@const copyCount = getCachedCopyCount(sticker.id)}
+												{@const owned = copyCount > 0}
+												{@const placed = placedStickerIds.has(String(sticker.id))}
+												{@const rarity = getStickerRarity(sticker)}
+												<div
+													class={classNames(
+														'cursor-pointer overflow-hidden flex flex-col relative',
+														{ 'grayscale opacity-50': !owned }
+													)}
+													onclick={() => handleStickerClick(sticker)}
+													onmouseenter={() => handleStickerMouseEnter(sticker)}
+													onmousemove={handleStickerMouseMove}
+													onmouseleave={handleStickerMouseLeave}
+													role="button"
+													tabindex="0"
+												>
+													{#if owned && !placed}
+														<button
+															class="absolute inset-0 bg-base-300/80 rounded border-2 border-dashed border-primary/40 flex items-center justify-center z-20 cursor-pointer hover:bg-base-300/90 hover:border-primary/60 transition-colors"
+															onclick={(e) => { e.stopPropagation(); handleStickerClick(sticker); }}
+														>
+															<span class="text-primary/60 text-[10px] font-medium">Stick</span>
+														</button>
+													{/if}
+													<div class={classNames('w-full h-full', { 'opacity-70 hover:opacity-100 transition-opacity': owned && !placed })}>
+														<StickerItem
+															{sticker}
+															bgColor={rarity?.colorFrom ?? '#6B7280'}
+															borderColor={rarity?.colorTo}
+															classes="w-full h-full object-contain"
+														/>
+													</div>
+												</div>
+											{/each}
+										</div>
+									</div>
+								{:else}
+									<!-- Empty right page placeholder -->
+									<div
+										class="bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden flex-1 opacity-30"
+										style="aspect-ratio: {PAGE_ASPECT};"
+									>
+										<div class="h-full p-4 flex items-center justify-center">
+											<span class="text-gray-300">End of album</span>
+										</div>
+									</div>
+								{/if}
+								</div>
+
+								<!-- Flip Animation Overlay for Pokemon -->
+								{#if isFlipping && targetSpread !== null}
+									{@const currentRightStickers = getRightPokemonPage()}
+									{@const currentLeftStickers = getLeftPokemonPage()}
+									{@const targetLeftStickers = getLeftPokemonPageForSpread(targetSpread)}
+									{@const targetRightStickers = getRightPokemonPageForSpread(targetSpread)}
+									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
+										{#if flipDirection === 'forward' && currentRightStickers}
+											<!-- Forward: right page flips to left -->
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											<div
+												class="page-container flex-1 flip-forward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: current right page -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0">
+													<div
+														class="h-full grid"
+														style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+													>
+														{#each currentRightStickers as sticker (sticker.id)}
+															{@const rarity = getStickerRarity(sticker)}
+															<div class="overflow-hidden">
+																<StickerItem
+																	{sticker}
+																	bgColor={rarity?.colorFrom ?? '#6B7280'}
+																	borderColor={rarity?.colorTo}
+																	classes="w-full h-full object-contain"
+																/>
+															</div>
+														{/each}
+													</div>
+												</div>
+												<!-- Back face: target left page -->
+												{#if targetLeftStickers}
+													<div class="page-back bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full">
+														<div
+															class="h-full grid"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+														>
+															{#each targetLeftStickers as sticker (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																<div class="overflow-hidden">
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full object-contain"
+																	/>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{:else}
+													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
+												{/if}
+											</div>
+										{:else if flipDirection === 'backward' && currentLeftStickers}
+											<!-- Backward: left page flips to right -->
+											<div
+												class="page-container flex-1 flip-backward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: current left page -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0">
+													<div
+														class="h-full grid"
+														style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+													>
+														{#each currentLeftStickers as sticker (sticker.id)}
+															{@const rarity = getStickerRarity(sticker)}
+															<div class="overflow-hidden">
+																<StickerItem
+																	{sticker}
+																	bgColor={rarity?.colorFrom ?? '#6B7280'}
+																	borderColor={rarity?.colorTo}
+																	classes="w-full h-full object-contain"
+																/>
+															</div>
+														{/each}
+													</div>
+												</div>
+												<!-- Back face: target right page -->
+												{#if targetRightStickers}
+													<div class="page-back bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full">
+														<div
+															class="h-full grid"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+														>
+															{#each targetRightStickers as sticker (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																<div class="overflow-hidden">
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full h-full object-contain"
+																	/>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{:else}
+													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
+												{/if}
+											</div>
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<!-- Regular Book View (two pages side by side) -->
+							<!-- During forward flip, show target right page; during backward flip, show target left page -->
+							{@const leftPage = (isFlipping && flipDirection === 'backward' && targetSpread !== null)
+								? getLeftPageForSpread(targetSpread)
+								: getLeftPage()}
+							{@const rightPage = (isFlipping && flipDirection === 'forward' && targetSpread !== null)
+								? getRightPageForSpread(targetSpread)
+								: getRightPage()}
+							{@const leftPageIndex = (currentSpread - 1) * 2}
+							{@const rightPageIndex = (currentSpread - 1) * 2 + 1}
+
+							<div class="book-perspective relative">
+								<div class="flex w-full gap-1">
 								<!-- Left Page -->
 								{#if leftPage}
 									{@const leftPlacedStamps = getPlacedStampsForPage(leftPageIndex)}
@@ -1637,6 +2069,126 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 										</div>
 									</div>
 								{/if}
+								</div>
+
+								<!-- Flip Animation Overlay for Regular -->
+								{#if isFlipping && targetSpread !== null}
+									{@const currentLeftPage = getLeftPage()}
+									{@const currentRightPage = getRightPage()}
+									{@const targetLeftPage = getLeftPageForSpread(targetSpread)}
+									{@const targetRightPage = getRightPageForSpread(targetSpread)}
+									<div class="absolute inset-0 flex w-full gap-1 pointer-events-none">
+										{#if flipDirection === 'forward' && currentRightPage}
+											<!-- Forward: right page flips to left -->
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+											<div
+												class="page-container flex-1 flip-forward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: current right page -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full absolute inset-0">
+													<div
+														class="h-full grid"
+														style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+													>
+														{#each currentRightPage.rows as row}
+															{#each row.stickers as { sticker } (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																<div class="p-1 overflow-hidden">
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full"
+																	/>
+																</div>
+															{/each}
+														{/each}
+													</div>
+												</div>
+												<!-- Back face: target left page -->
+												{#if targetLeftPage}
+													<div class="page-back bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full">
+														<div
+															class="h-full grid"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+														>
+															{#each targetLeftPage.rows as row}
+																{#each row.stickers as { sticker } (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	<div class="p-1 overflow-hidden">
+																		<StickerItem
+																			{sticker}
+																			bgColor={rarity?.colorFrom ?? '#6B7280'}
+																			borderColor={rarity?.colorTo}
+																			classes="w-full"
+																		/>
+																	</div>
+																{/each}
+															{/each}
+														</div>
+													</div>
+												{:else}
+													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-l-lg w-full h-full"></div>
+												{/if}
+											</div>
+										{:else if flipDirection === 'backward' && currentLeftPage}
+											<!-- Backward: left page flips to right -->
+											<div
+												class="page-container flex-1 flip-backward"
+												style="aspect-ratio: {PAGE_ASPECT};"
+											>
+												<!-- Front face: current left page -->
+												<div class="page-face bg-white text-gray-900 shadow-xl rounded-l-lg overflow-hidden w-full h-full absolute inset-0">
+													<div
+														class="h-full grid"
+														style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+													>
+														{#each currentLeftPage.rows as row}
+															{#each row.stickers as { sticker } (sticker.id)}
+																{@const rarity = getStickerRarity(sticker)}
+																<div class="p-1 overflow-hidden">
+																	<StickerItem
+																		{sticker}
+																		bgColor={rarity?.colorFrom ?? '#6B7280'}
+																		borderColor={rarity?.colorTo}
+																		classes="w-full"
+																	/>
+																</div>
+															{/each}
+														{/each}
+													</div>
+												</div>
+												<!-- Back face: target right page -->
+												{#if targetRightPage}
+													<div class="page-back bg-white text-gray-900 shadow-xl rounded-r-lg overflow-hidden w-full h-full">
+														<div
+															class="h-full grid"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+														>
+															{#each targetRightPage.rows as row}
+																{#each row.stickers as { sticker } (sticker.id)}
+																	{@const rarity = getStickerRarity(sticker)}
+																	<div class="p-1 overflow-hidden">
+																		<StickerItem
+																			{sticker}
+																			bgColor={rarity?.colorFrom ?? '#6B7280'}
+																			borderColor={rarity?.colorTo}
+																			classes="w-full"
+																		/>
+																	</div>
+																{/each}
+															{/each}
+														</div>
+													</div>
+												{:else}
+													<div class="page-back bg-gradient-to-br from-gray-100 to-gray-200 shadow-xl rounded-r-lg w-full h-full"></div>
+												{/if}
+											</div>
+											<div class="flex-1" style="aspect-ratio: {PAGE_ASPECT};"></div>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						{/if}
 
@@ -1647,7 +2199,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 									<button
 										class="btn btn-sm btn-outline"
 										onclick={prevSpread}
-										disabled={currentSpread === 0}
+										disabled={currentSpread === 0 || isFlipping}
 									>
 										Previous
 									</button>
@@ -1657,7 +2209,7 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 									<button
 										class="btn btn-sm btn-outline"
 										onclick={nextSpread}
-										disabled={currentSpread === totalSpreads - 1}
+										disabled={currentSpread === totalSpreads - 1 || isFlipping}
 									>
 										Next
 									</button>
@@ -1748,3 +2300,45 @@ let collectionStickerCounts = $state<Map<string, CollectionDetailedStats>>(new M
 	<CursorIcon iconPath={selectedIconPath} color={selectedIconColor} mousePosition={globalMousePosition} scale={iconPlacementScale} />
 {/if}
 
+<style>
+	.book-perspective {
+		perspective: 2000px;
+	}
+	.page-container {
+		position: relative;
+		transform-style: preserve-3d;
+	}
+	.page-face {
+		backface-visibility: hidden;
+	}
+	.page-back {
+		backface-visibility: hidden;
+		transform: rotateY(180deg);
+		position: absolute;
+		inset: 0;
+	}
+
+	/* Forward flip: right page flips to left */
+	/* transform-origin at left edge, offset by half the gap (gap-1 = 0.25rem, half = 0.125rem) */
+	.flip-forward {
+		animation: flipForward 600ms ease-in-out forwards;
+		transform-origin: -0.125rem center;
+	}
+
+	/* Backward flip: left page flips to right */
+	/* transform-origin at right edge, offset by half the gap */
+	.flip-backward {
+		animation: flipBackward 600ms ease-in-out forwards;
+		transform-origin: calc(100% + 0.125rem) center;
+	}
+
+	@keyframes flipForward {
+		0% { transform: rotateY(0deg); z-index: 10; }
+		100% { transform: rotateY(-180deg); z-index: 10; }
+	}
+
+	@keyframes flipBackward {
+		0% { transform: rotateY(0deg); z-index: 10; }
+		100% { transform: rotateY(180deg); z-index: 10; }
+	}
+</style>

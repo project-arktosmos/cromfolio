@@ -42,4 +42,8 @@ pub struct Sticker {
     pub created_at: String,
     #[serde(default)]
     pub updated_at: String,
+
+    // Joined fields (populated from related tables)
+    #[serde(default)]
+    pub source_name: Option<String>,
 }

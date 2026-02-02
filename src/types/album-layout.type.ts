@@ -104,6 +104,8 @@ export interface GridPackingConfig {
 	rowGap: number;
 	/** Height reserved for page number header */
 	headerHeight: number;
+	/** Maximum rows per page (optional, unlimited if not set) */
+	maxRowsPerPage?: number;
 }
 
 /**

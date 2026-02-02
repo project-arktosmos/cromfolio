@@ -2,107 +2,191 @@
 	import classNames from 'classnames';
 	import { onMount } from 'svelte';
 	import {
-		getAllPokemonTriviaTemplates,
-		createPokemonTriviaTemplate,
-		updatePokemonTriviaTemplate,
-		deletePokemonTriviaTemplate
+		getAllPokemonTriviaTemplatesV2,
+		createPokemonTriviaTemplateV2,
+		updatePokemonTriviaTemplateV2,
+		deletePokemonTriviaTemplateV2
 	} from '$services/pokemon-trivia-templates.service';
-	import { getPokemonCommonTagKeys } from '$services/tags.service';
-	import type { PokemonTriviaTemplate } from '$types/pokemon-trivia-template.type';
+	import {
+		type PokemonTriviaTemplateV2,
+		type TemplateType,
+		type TemplateCondition,
+		type ScopeFilter,
+		type ComparisonConfig,
+		type Difficulty,
+		TEMPLATE_TYPE_INFO,
+		POKEMON_ATTRIBUTES,
+		parseConditions,
+		stringifyConditions,
+		parseScopeFilters,
+		stringifyScopeFilters,
+		parseComparisonConfig,
+		stringifyComparisonConfig
+	} from '$types/pokemon-trivia-template.type';
+	import TemplateTypeSelector from './components/TemplateTypeSelector.svelte';
+	import ConditionBuilder from './components/ConditionBuilder.svelte';
+	import ScopeFilterBuilder from './components/ScopeFilterBuilder.svelte';
+	import ComparisonConfigBuilder from './components/ComparisonConfigBuilder.svelte';
+	import TemplatePreview from './components/TemplatePreview.svelte';
 
 	// Templates state
-	let templates: PokemonTriviaTemplate[] = $state([]);
+	let templates: PokemonTriviaTemplateV2[] = $state([]);
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 
-	// Tag keys that are available for Pokemon (derived from all tags)
-	let availableTagKeys: string[] = $state([]);
-	let isLoadingTags = $state(true);
-
 	// Selection state
-	let selectedTemplate = $state<PokemonTriviaTemplate | null>(null);
-
-	// Form state
+	let selectedTemplate = $state<PokemonTriviaTemplateV2 | null>(null);
 	let isEditing = $state(false);
-	let formTagKey = $state('');
-	let formQuestionTemplate = $state('');
-	let formAnswerTemplate = $state('');
-	let formIsActive = $state(true);
 
 	// Filter state
-	let filterTagKey = $state<string | 'all'>('all');
+	let filterType = $state<TemplateType | 'all'>('all');
+	let searchQuery = $state('');
+
+	// Form state
+	let formName = $state('');
+	let formDescription = $state('');
+	let formTemplateType = $state<TemplateType>('simple_match');
+	let formQuestionTemplate = $state('');
+	let formAnswerTemplate = $state('');
+	let formPrimaryAttribute = $state('type');
+	let formConditions = $state<TemplateCondition[]>([]);
+	let formConditionLogic = $state<'and' | 'or'>('and');
+	let formScopeFilters = $state<ScopeFilter>({});
+	let formComparisonConfig = $state<ComparisonConfig | null>(null);
+	let formDifficulty = $state<Difficulty | ''>('');
+	let formWeight = $state(100);
+	let formIsActive = $state(true);
 
 	// Filtered templates
 	let filteredTemplates = $derived.by(() => {
-		if (filterTagKey === 'all') return templates;
-		return templates.filter((t) => t.tagKey === filterTagKey);
+		let result = templates;
+
+		// Filter by type
+		if (filterType !== 'all') {
+			result = result.filter((t) => t.templateType === filterType);
+		}
+
+		// Filter by search query
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			result = result.filter(
+				(t) =>
+					t.name.toLowerCase().includes(query) ||
+					t.questionTemplate.toLowerCase().includes(query) ||
+					t.primaryAttribute.toLowerCase().includes(query)
+			);
+		}
+
+		return result;
 	});
 
-	// Get unique tag keys from templates (for filter dropdown)
-	let templateTagKeys = $derived.by(() => {
-		const keys = new Set(templates.map((t) => t.tagKey));
-		return Array.from(keys).sort();
+	// Template types present in templates (for filter dropdown)
+	let availableTemplateTypes = $derived.by(() => {
+		const types = new Set(templates.map((t) => t.templateType));
+		return Array.from(types).sort();
 	});
+
+	// Show condition builder for certain template types
+	let showConditionBuilder = $derived(
+		[
+			'reverse_lookup',
+			'multi_condition',
+			'range',
+			'negation',
+			'statistical',
+			'type_effectiveness'
+		].includes(formTemplateType)
+	);
+
+	// Show comparison config for superlative/comparison types
+	let showComparisonConfig = $derived(['superlative', 'comparison'].includes(formTemplateType));
+
+	// Show count selector for comparison type only
+	let showComparisonCount = $derived(formTemplateType === 'comparison');
 
 	onMount(async () => {
-		await Promise.all([loadTemplates(), loadTagKeys()]);
+		await loadTemplates();
 	});
 
 	async function loadTemplates() {
 		isLoading = true;
-		templates = await getAllPokemonTriviaTemplates();
+		templates = await getAllPokemonTriviaTemplatesV2();
 		isLoading = false;
 	}
 
-	async function loadTagKeys() {
-		isLoadingTags = true;
-		try {
-			// Get tag keys that are common to ALL Pokemon stickers
-			availableTagKeys = await getPokemonCommonTagKeys();
-		} catch (e) {
-			console.error('Failed to load tag keys:', e);
-		}
-		isLoadingTags = false;
-	}
-
 	function resetForm() {
-		formTagKey = '';
+		formName = '';
+		formDescription = '';
+		formTemplateType = 'simple_match';
 		formQuestionTemplate = '';
 		formAnswerTemplate = '';
+		formPrimaryAttribute = 'type';
+		formConditions = [];
+		formConditionLogic = 'and';
+		formScopeFilters = {};
+		formComparisonConfig = null;
+		formDifficulty = '';
+		formWeight = 100;
 		formIsActive = true;
 		isEditing = false;
 		selectedTemplate = null;
 	}
 
-	function selectTemplate(template: PokemonTriviaTemplate) {
+	function selectTemplate(template: PokemonTriviaTemplateV2) {
 		if (selectedTemplate?.id === template.id && !isEditing) {
 			resetForm();
 		} else {
 			selectedTemplate = template;
-			formTagKey = template.tagKey;
+			formName = template.name;
+			formDescription = template.description;
+			formTemplateType = template.templateType as TemplateType;
 			formQuestionTemplate = template.questionTemplate;
 			formAnswerTemplate = template.answerTemplate;
+			formPrimaryAttribute = template.primaryAttribute;
+			formConditions = parseConditions(template.conditions);
+			formConditionLogic = template.conditionLogic;
+			formScopeFilters = parseScopeFilters(template.scopeFilters);
+			formComparisonConfig = parseComparisonConfig(template.comparisonConfig);
+			formDifficulty = (template.difficulty as Difficulty) || '';
+			formWeight = template.weight;
 			formIsActive = template.isActive;
 			isEditing = true;
 		}
 	}
 
 	async function handleSubmit() {
-		if (!formTagKey || !formQuestionTemplate.trim() || !formAnswerTemplate.trim() || isSaving) {
+		if (
+			!formName.trim() ||
+			!formQuestionTemplate.trim() ||
+			!formAnswerTemplate.trim() ||
+			isSaving
+		) {
 			return;
 		}
 
 		isSaving = true;
 
 		try {
+			const templateData = {
+				name: formName.trim(),
+				description: formDescription.trim(),
+				templateType: formTemplateType,
+				questionTemplate: formQuestionTemplate.trim(),
+				answerTemplate: formAnswerTemplate.trim(),
+				primaryAttribute: formPrimaryAttribute,
+				conditions: stringifyConditions(formConditions),
+				conditionLogic: formConditionLogic,
+				scopeFilters: stringifyScopeFilters(formScopeFilters),
+				comparisonConfig: stringifyComparisonConfig(formComparisonConfig),
+				difficulty: formDifficulty || undefined,
+				weight: formWeight,
+				isActive: formIsActive
+			};
+
 			if (isEditing && selectedTemplate) {
-				// Update existing
-				const updated = await updatePokemonTriviaTemplate({
+				const updated = await updatePokemonTriviaTemplateV2({
 					...selectedTemplate,
-					tagKey: formTagKey,
-					questionTemplate: formQuestionTemplate.trim(),
-					answerTemplate: formAnswerTemplate.trim(),
-					isActive: formIsActive
+					...templateData
 				});
 
 				if (updated) {
@@ -110,13 +194,7 @@
 					resetForm();
 				}
 			} else {
-				// Create new
-				const created = await createPokemonTriviaTemplate({
-					tagKey: formTagKey,
-					questionTemplate: formQuestionTemplate.trim(),
-					answerTemplate: formAnswerTemplate.trim(),
-					isActive: formIsActive
-				});
+				const created = await createPokemonTriviaTemplateV2(templateData);
 
 				if (created) {
 					await loadTemplates();
@@ -130,12 +208,12 @@
 		isSaving = false;
 	}
 
-	async function handleDelete(template: PokemonTriviaTemplate, event: MouseEvent) {
+	async function handleDelete(template: PokemonTriviaTemplateV2, event: MouseEvent) {
 		event.stopPropagation();
 
-		if (!confirm(`Delete template for "${template.tagKey}"?`)) return;
+		if (!confirm(`Delete template "${template.name}"?`)) return;
 
-		const success = await deletePokemonTriviaTemplate(template.id);
+		const success = await deletePokemonTriviaTemplateV2(template.id);
 		if (success) {
 			await loadTemplates();
 			if (selectedTemplate?.id === template.id) {
@@ -144,10 +222,10 @@
 		}
 	}
 
-	async function toggleActive(template: PokemonTriviaTemplate, event: MouseEvent) {
+	async function toggleActive(template: PokemonTriviaTemplateV2, event: MouseEvent) {
 		event.stopPropagation();
 
-		const updated = await updatePokemonTriviaTemplate({
+		const updated = await updatePokemonTriviaTemplateV2({
 			...template,
 			isActive: !template.isActive
 		});
@@ -159,49 +237,51 @@
 
 	// Check if form is valid
 	let isFormValid = $derived(
-		formTagKey && formQuestionTemplate.trim() && formAnswerTemplate.trim()
+		formName.trim() && formQuestionTemplate.trim() && formAnswerTemplate.trim()
 	);
 
-	// Preview the template with example values
-	let previewQuestion = $derived.by(() => {
-		if (!formQuestionTemplate) return '';
-		return formQuestionTemplate
-			.replace(/{name}/g, 'Pikachu')
-			.replace(/{type}/g, 'Electric')
-			.replace(/{ability}/g, 'Static')
-			.replace(/{generation}/g, 'gen-1')
-			.replace(/{[^}]+}/g, '???');
-	});
-
-	let previewAnswer = $derived.by(() => {
-		if (!formAnswerTemplate) return '';
-		return formAnswerTemplate
-			.replace(/{name}/g, 'Pikachu')
-			.replace(/{type}/g, 'Electric')
-			.replace(/{ability}/g, 'Static')
-			.replace(/{generation}/g, 'gen-1')
-			.replace(/{[^}]+}/g, '???');
+	// Get grouped attributes for dropdown
+	const attributesByCategory = $derived.by(() => {
+		const grouped: Record<string, [string, (typeof POKEMON_ATTRIBUTES)[string]][]> = {};
+		for (const [key, info] of Object.entries(POKEMON_ATTRIBUTES)) {
+			if (!grouped[info.category]) {
+				grouped[info.category] = [];
+			}
+			grouped[info.category].push([key, info]);
+		}
+		return grouped;
 	});
 </script>
 
 <div class="flex flex-col h-full">
 	<h1 class="text-2xl font-bold mb-4">Pokemon Trivia Templates</h1>
 
-	<div class="grid grid-cols-2 gap-4 flex-1 min-h-0">
+	<div class="grid grid-cols-3 gap-4 flex-1 min-h-0">
 		<!-- Column 1: Templates List -->
 		<div class="card bg-base-200 overflow-hidden flex flex-col">
 			<div class="card-body p-4 flex flex-col h-full">
 				<div class="flex items-center justify-between mb-2">
 					<h2 class="card-title text-lg">Templates</h2>
-					<span class="text-sm text-base-content/60">{templates.length} total</span>
+					<span class="text-sm text-base-content/60"
+						>{filteredTemplates.length} / {templates.length}</span
+					>
 				</div>
 
-				<!-- Filter by tag key -->
-				<div class="mb-3">
-					<select class="select select-bordered select-sm w-full" bind:value={filterTagKey}>
-						<option value="all">All Tag Keys</option>
-						{#each templateTagKeys as key}
-							<option value={key}>{key}</option>
+				<!-- Search and Filter -->
+				<div class="space-y-2 mb-3">
+					<input
+						type="text"
+						class="input input-bordered input-sm w-full"
+						placeholder="Search templates..."
+						bind:value={searchQuery}
+					/>
+					<select class="select select-bordered select-sm w-full" bind:value={filterType}>
+						<option value="all">All Types</option>
+						{#each availableTemplateTypes as type}
+							<option value={type}>
+								{TEMPLATE_TYPE_INFO[type as TemplateType]?.icon ?? ''}
+								{TEMPLATE_TYPE_INFO[type as TemplateType]?.label ?? type}
+							</option>
 						{/each}
 					</select>
 				</div>
@@ -213,7 +293,7 @@
 						</div>
 					{:else if filteredTemplates.length === 0}
 						<div class="text-center text-base-content/60 p-4">
-							<p>No templates yet.</p>
+							<p>No templates found.</p>
 							<p class="text-sm mt-1">Create templates using the form.</p>
 						</div>
 					{:else}
@@ -236,17 +316,23 @@
 								>
 									<div class="flex items-start justify-between gap-2">
 										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1">
-												<span class="badge badge-primary badge-sm">{template.tagKey}</span>
+											<div class="flex items-center gap-2 mb-1 flex-wrap">
+												<span class="badge badge-primary badge-sm">
+													{TEMPLATE_TYPE_INFO[template.templateType as TemplateType]?.icon ?? ''}
+													{TEMPLATE_TYPE_INFO[template.templateType as TemplateType]?.label ??
+														template.templateType}
+												</span>
+												<span class="badge badge-ghost badge-sm">{template.primaryAttribute}</span>
+												{#if template.difficulty}
+													<span class="badge badge-outline badge-xs">{template.difficulty}</span>
+												{/if}
 												{#if !template.isActive}
-													<span class="badge badge-ghost badge-xs">inactive</span>
+													<span class="badge badge-warning badge-xs">inactive</span>
 												{/if}
 											</div>
-											<div class="font-medium text-sm line-clamp-2">
+											<div class="font-medium text-sm truncate">{template.name}</div>
+											<div class="text-xs text-base-content/60 line-clamp-1 mt-1">
 												{template.questionTemplate}
-											</div>
-											<div class="text-xs text-success mt-1">
-												→ {template.answerTemplate}
 											</div>
 										</div>
 										<div class="flex flex-col gap-1">
@@ -277,8 +363,8 @@
 			</div>
 		</div>
 
-		<!-- Column 2: Form -->
-		<div class="card bg-base-200 overflow-hidden flex flex-col">
+		<!-- Column 2 & 3: Editor -->
+		<div class="col-span-2 card bg-base-200 overflow-hidden flex flex-col">
 			<div class="card-body p-4 flex flex-col h-full">
 				<div class="flex items-center justify-between mb-2">
 					<h2 class="card-title text-lg">
@@ -291,94 +377,185 @@
 
 				<div class="flex-1 overflow-y-auto">
 					<div class="space-y-4">
-						<!-- Tag Key -->
-						<div class="form-control">
-							<label class="label" for="tag-key">
-								<span class="label-text font-semibold">Tag Key *</span>
-							</label>
-							{#if isLoadingTags}
-								<span class="loading loading-spinner loading-sm"></span>
-							{:else}
+						<!-- Template Type Selector -->
+						<TemplateTypeSelector
+							value={formTemplateType}
+							onchange={(v) => (formTemplateType = v)}
+							disabled={isSaving}
+						/>
+
+						<!-- Basic Info -->
+						<div class="grid grid-cols-2 gap-4">
+							<div class="form-control">
+								<label class="label" for="name">
+									<span class="label-text font-semibold">Name *</span>
+								</label>
+								<input
+									id="name"
+									type="text"
+									placeholder="e.g., Pokemon Type Question"
+									class="input input-bordered w-full"
+									bind:value={formName}
+									disabled={isSaving}
+								/>
+							</div>
+							<div class="form-control">
+								<label class="label" for="primary-attribute">
+									<span class="label-text font-semibold">Primary Attribute</span>
+								</label>
 								<select
-									id="tag-key"
+									id="primary-attribute"
 									class="select select-bordered w-full"
-									bind:value={formTagKey}
+									bind:value={formPrimaryAttribute}
+									disabled={isSaving}
 								>
-									<option value="">Select a tag key...</option>
-									{#each availableTagKeys as key}
-										<option value={key}>{key}</option>
+									{#each Object.entries(attributesByCategory) as [category, attrs]}
+										<optgroup label={category}>
+											{#each attrs as [key, info]}
+												<option value={key}>{info.label}</option>
+											{/each}
+										</optgroup>
 									{/each}
 								</select>
-							{/if}
-							<label class="label">
-								<span class="label-text-alt text-base-content/60">
-									The tag category this template targets (e.g., "type", "ability")
-								</span>
-							</label>
+							</div>
 						</div>
 
-						<!-- Question Template -->
+						<!-- Description -->
 						<div class="form-control">
-							<label class="label" for="question-template">
-								<span class="label-text font-semibold">Question Template *</span>
-							</label>
-							<textarea
-								id="question-template"
-								placeholder={'What type is {name}?'}
-								class="textarea textarea-bordered w-full h-20"
-								bind:value={formQuestionTemplate}
-							></textarea>
-							<label class="label">
-								<span class="label-text-alt text-base-content/60">
-									Use {'{name}'} for Pokemon name, {'{type}'}, {'{ability}'}, etc.
-								</span>
-							</label>
-						</div>
-
-						<!-- Answer Template -->
-						<div class="form-control">
-							<label class="label" for="answer-template">
-								<span class="label-text font-semibold text-success">Answer Template *</span>
+							<label class="label" for="description">
+								<span class="label-text font-semibold">Description</span>
 							</label>
 							<input
-								id="answer-template"
+								id="description"
 								type="text"
-								placeholder={'{type}'}
-								class="input input-bordered input-success w-full"
-								bind:value={formAnswerTemplate}
+								placeholder="Optional description of what this template generates"
+								class="input input-bordered w-full"
+								bind:value={formDescription}
+								disabled={isSaving}
 							/>
-							<label class="label">
-								<span class="label-text-alt text-base-content/60">
-									The value that will be the correct answer (e.g., {'{type}'})
-								</span>
-							</label>
 						</div>
 
-						<!-- Preview -->
-						{#if formQuestionTemplate || formAnswerTemplate}
-							<div class="bg-base-300 rounded-lg p-3">
-								<div class="text-xs text-base-content/60 mb-1">Preview (with Pikachu)</div>
-								<div class="font-medium text-sm">{previewQuestion}</div>
-								<div class="text-sm text-success mt-1">→ {previewAnswer}</div>
+						<!-- Question/Answer Templates -->
+						<div class="grid grid-cols-2 gap-4">
+							<div class="form-control">
+								<label class="label" for="question-template">
+									<span class="label-text font-semibold">Question Template *</span>
+								</label>
+								<textarea
+									id="question-template"
+									placeholder={'What type is {name}?'}
+									class="textarea textarea-bordered w-full h-20"
+									bind:value={formQuestionTemplate}
+									disabled={isSaving}
+								></textarea>
+								<label class="label">
+									<span class="label-text-alt text-base-content/60">
+										Use {'{name}'}, {'{type}'}, {'{ability}'}, etc.
+									</span>
+								</label>
 							</div>
+							<div class="form-control">
+								<label class="label" for="answer-template">
+									<span class="label-text font-semibold text-success">Answer Template *</span>
+								</label>
+								<textarea
+									id="answer-template"
+									placeholder={'{type}'}
+									class="textarea textarea-bordered textarea-success w-full h-20"
+									bind:value={formAnswerTemplate}
+									disabled={isSaving}
+								></textarea>
+								<label class="label">
+									<span class="label-text-alt text-base-content/60">
+										Usually {'{name}'} or the attribute value
+									</span>
+								</label>
+							</div>
+						</div>
+
+						<!-- Condition Builder (conditional) -->
+						{#if showConditionBuilder}
+							<ConditionBuilder
+								conditions={formConditions}
+								conditionLogic={formConditionLogic}
+								onConditionsChange={(c) => (formConditions = c)}
+								onLogicChange={(l) => (formConditionLogic = l)}
+								disabled={isSaving}
+							/>
 						{/if}
 
-						<!-- Is Active -->
-						<div class="form-control">
-							<label class="label cursor-pointer justify-start gap-3">
+						<!-- Comparison Config (conditional) -->
+						{#if showComparisonConfig}
+							<ComparisonConfigBuilder
+								config={formComparisonConfig}
+								onchange={(c) => (formComparisonConfig = c)}
+								showCount={showComparisonCount}
+								disabled={isSaving}
+							/>
+						{/if}
+
+						<!-- Scope Filters -->
+						<ScopeFilterBuilder
+							scopeFilters={formScopeFilters}
+							onchange={(f) => (formScopeFilters = f)}
+							disabled={isSaving}
+						/>
+
+						<!-- Settings -->
+						<div class="grid grid-cols-3 gap-4">
+							<div class="form-control">
+								<label class="label" for="difficulty">
+									<span class="label-text font-semibold">Difficulty</span>
+								</label>
+								<select
+									id="difficulty"
+									class="select select-bordered w-full"
+									bind:value={formDifficulty}
+									disabled={isSaving}
+								>
+									<option value="">Any</option>
+									<option value="easy">Easy</option>
+									<option value="medium">Medium</option>
+									<option value="hard">Hard</option>
+								</select>
+							</div>
+							<div class="form-control">
+								<label class="label" for="weight">
+									<span class="label-text font-semibold">Weight</span>
+								</label>
 								<input
-									type="checkbox"
-									class="toggle toggle-success"
-									bind:checked={formIsActive}
+									id="weight"
+									type="number"
+									class="input input-bordered w-full"
+									bind:value={formWeight}
+									min="1"
+									max="1000"
+									disabled={isSaving}
 								/>
-								<span class="label-text">Active</span>
-							</label>
-							<label class="label pt-0">
-								<span class="label-text-alt text-base-content/60">
-									Inactive templates won't be used for question generation
-								</span>
-							</label>
+								<label class="label">
+									<span class="label-text-alt text-base-content/60">Higher = more likely</span>
+								</label>
+							</div>
+							<div class="form-control">
+								<label class="label cursor-pointer justify-start gap-3">
+									<input
+										type="checkbox"
+										class="toggle toggle-success"
+										bind:checked={formIsActive}
+										disabled={isSaving}
+									/>
+									<span class="label-text font-semibold">Active</span>
+								</label>
+							</div>
 						</div>
+
+						<!-- Live Preview -->
+						<TemplatePreview
+							templateType={formTemplateType}
+							questionTemplate={formQuestionTemplate}
+							answerTemplate={formAnswerTemplate}
+							primaryAttribute={formPrimaryAttribute}
+						/>
 
 						<!-- Submit -->
 						<button
@@ -393,29 +570,6 @@
 								{isEditing ? 'Update Template' : 'Create Template'}
 							{/if}
 						</button>
-					</div>
-				</div>
-
-				<!-- Help section -->
-				<div class="mt-4 pt-4 border-t border-base-300">
-					<div class="collapse collapse-arrow bg-base-100 rounded-lg">
-						<input type="checkbox" />
-						<div class="collapse-title text-sm font-medium">Available Placeholders</div>
-						<div class="collapse-content">
-							<div class="text-xs space-y-1">
-								<div><code class="text-primary">{'{name}'}</code> - Pokemon name</div>
-								<div><code class="text-primary">{'{type}'}</code> - Pokemon type</div>
-								<div><code class="text-primary">{'{ability}'}</code> - Pokemon ability</div>
-								<div><code class="text-primary">{'{hidden-ability}'}</code> - Hidden ability</div>
-								<div><code class="text-primary">{'{generation}'}</code> - Generation</div>
-								<div><code class="text-primary">{'{bst-tier}'}</code> - Base stat tier</div>
-								<div><code class="text-primary">{'{weight-class}'}</code> - Weight class</div>
-								<div><code class="text-primary">{'{height-class}'}</code> - Height class</div>
-								<div>
-									<code class="text-primary">{'{catch-difficulty}'}</code> - Catch difficulty
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>

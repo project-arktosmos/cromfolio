@@ -304,6 +304,23 @@ pub fn get_pokemon_common_tag_keys(db: State<'_, Database>) -> Result<Vec<String
     queries::tags::get_pokemon_common_tag_keys(&conn)
 }
 
+#[command]
+pub fn get_random_pokemon_with_tags(db: State<'_, Database>) -> Result<Option<queries::tags::PokemonWithTags>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::tags::get_random_pokemon_with_tags(&conn)
+}
+
+#[command]
+pub fn get_random_pokemon_by_generation(
+    generation: String,
+    exclude_id: String,
+    limit: usize,
+    db: State<'_, Database>
+) -> Result<Vec<queries::tags::PokemonWithTags>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::tags::get_random_pokemon_by_generation(&conn, &generation, &exclude_id, limit)
+}
+
 // ============================================================================
 // QUESTIONS (trivia)
 // ============================================================================
@@ -1506,6 +1523,76 @@ pub fn update_pokemon_trivia_template(template: PokemonTriviaTemplate, db: State
 pub fn delete_pokemon_trivia_template(id: String, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::pokemon_trivia_templates::delete(&conn, &id)
+}
+
+// ============================================================================
+// POKEMON TRIVIA TEMPLATES V2 (enhanced with 9 template types)
+// ============================================================================
+
+#[command]
+pub fn get_all_pokemon_trivia_templates_v2(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_all(&conn)
+}
+
+#[command]
+pub fn get_pokemon_trivia_template_v2(id: String, db: State<'_, Database>) -> Result<Option<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn get_pokemon_trivia_templates_v2_by_type(template_type: String, db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_by_template_type(&conn, &template_type)
+}
+
+#[command]
+pub fn get_pokemon_trivia_templates_v2_by_attribute(primary_attribute: String, db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_by_primary_attribute(&conn, &primary_attribute)
+}
+
+#[command]
+pub fn get_active_pokemon_trivia_templates_v2(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_active(&conn)
+}
+
+#[command]
+pub fn get_pokemon_trivia_templates_v2_by_difficulty(difficulty: String, db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplateV2>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_by_difficulty(&conn, &difficulty)
+}
+
+#[command]
+pub fn get_pokemon_trivia_template_v2_types(db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_unique_template_types(&conn)
+}
+
+#[command]
+pub fn get_pokemon_trivia_template_v2_attributes(db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::get_unique_primary_attributes(&conn)
+}
+
+#[command]
+pub fn create_pokemon_trivia_template_v2(template: PokemonTriviaTemplateV2, db: State<'_, Database>) -> Result<PokemonTriviaTemplateV2, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::create(&conn, &template)
+}
+
+#[command]
+pub fn update_pokemon_trivia_template_v2(template: PokemonTriviaTemplateV2, db: State<'_, Database>) -> Result<PokemonTriviaTemplateV2, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::update(&conn, &template)
+}
+
+#[command]
+pub fn delete_pokemon_trivia_template_v2(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates_v2::delete(&conn, &id)
 }
 
 /// Open a directory in the system file explorer

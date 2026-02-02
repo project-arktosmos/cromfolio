@@ -279,6 +279,184 @@ fn chrono_now() -> String {
     chrono::Utc::now().to_rfc3339()
 }
 
+/// Represents a Pokemon with all its tags as a flat map
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct PokemonWithTags {
+    pub id: String,
+    pub name: String,
+    pub image: String,
+    pub tags: std::collections::HashMap<String, String>,
+}
+
+/// Get a random Pokemon with all its tags
+/// Used for trivia preview in admin panel
+pub fn get_random_pokemon_with_tags(conn: &Connection) -> Result<Option<PokemonWithTags>, String> {
+    use std::collections::HashMap;
+
+    // Get a random Pokemon sticker from a Pokemon source
+    let query = "
+        SELECT s.id, s.name, s.image
+        FROM stickers s
+        INNER JOIN sources src ON s.source_id = src.id
+        WHERE src.title LIKE 'Pokemon%'
+        AND s.fragment_position IS NULL
+        ORDER BY RANDOM()
+        LIMIT 1
+    ";
+
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let sticker: Option<(String, String, String)> = stmt
+        .query_row([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })
+        .ok();
+
+    let Some((sticker_id, name, image)) = sticker else {
+        return Ok(None);
+    };
+
+    // Get all tags for this sticker
+    let tags = get_by_sticker_id(conn, &sticker_id)?;
+
+    let mut tag_map: HashMap<String, String> = HashMap::new();
+    for tag in tags {
+        tag_map.insert(tag.key, tag.value);
+    }
+
+    Ok(Some(PokemonWithTags {
+        id: sticker_id,
+        name,
+        image,
+        tags: tag_map,
+    }))
+}
+
+/// Get random Pokemon from a specific generation (for wrong answers in trivia)
+/// Excludes the Pokemon with the given ID
+pub fn get_random_pokemon_by_generation(
+    conn: &Connection,
+    generation: &str,
+    exclude_id: &str,
+    limit: usize,
+) -> Result<Vec<PokemonWithTags>, String> {
+    use std::collections::HashMap;
+
+    // Find Pokemon with the same generation tag, excluding the given one
+    let query = "
+        SELECT DISTINCT s.id, s.name, s.image
+        FROM stickers s
+        INNER JOIN sources src ON s.source_id = src.id
+        INNER JOIN sticker_tags st ON s.id = st.sticker_id
+        INNER JOIN tags t ON st.tag_id = t.id
+        WHERE src.title LIKE 'Pokemon%'
+        AND s.fragment_position IS NULL
+        AND s.id != ?1
+        AND t.key = 'generation'
+        AND t.value = ?2
+        ORDER BY RANDOM()
+        LIMIT ?3
+    ";
+
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let stickers: Vec<(String, String, String)> = stmt
+        .query_map(params![exclude_id, generation, limit as i64], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    // If we don't have enough from the same generation, get more from any generation
+    let mut results = Vec::new();
+    let mut used_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
+    used_ids.insert(exclude_id.to_string());
+
+    for (sticker_id, name, image) in &stickers {
+        used_ids.insert(sticker_id.clone());
+        let tags = get_by_sticker_id(conn, sticker_id)?;
+        let mut tag_map: HashMap<String, String> = HashMap::new();
+        for tag in tags {
+            tag_map.insert(tag.key, tag.value);
+        }
+        results.push(PokemonWithTags {
+            id: sticker_id.clone(),
+            name: name.clone(),
+            image: image.clone(),
+            tags: tag_map,
+        });
+    }
+
+    // If we need more, get from any generation
+    if results.len() < limit {
+        let remaining = limit - results.len();
+        let used_list: Vec<&String> = used_ids.iter().collect();
+        let placeholders: String = used_list.iter().enumerate()
+            .map(|(i, _)| format!("?{}", i + 1))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        let fallback_query = format!(
+            "SELECT s.id, s.name, s.image
+             FROM stickers s
+             INNER JOIN sources src ON s.source_id = src.id
+             WHERE src.title LIKE 'Pokemon%'
+             AND s.fragment_position IS NULL
+             AND s.id NOT IN ({})
+             ORDER BY RANDOM()
+             LIMIT ?{}",
+            placeholders,
+            used_list.len() + 1
+        );
+
+        let mut stmt = conn.prepare(&fallback_query).map_err(|e| e.to_string())?;
+
+        let mut all_params: Vec<&dyn rusqlite::ToSql> = Vec::new();
+        for id in &used_list {
+            all_params.push(*id);
+        }
+        let remaining_i64 = remaining as i64;
+        all_params.push(&remaining_i64);
+
+        let extra_stickers: Vec<(String, String, String)> = stmt
+            .query_map(rusqlite::params_from_iter(all_params), |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        for (sticker_id, name, image) in extra_stickers {
+            let tags = get_by_sticker_id(conn, &sticker_id)?;
+            let mut tag_map: HashMap<String, String> = HashMap::new();
+            for tag in tags {
+                tag_map.insert(tag.key, tag.value);
+            }
+            results.push(PokemonWithTags {
+                id: sticker_id,
+                name,
+                image,
+                tags: tag_map,
+            });
+        }
+    }
+
+    Ok(results)
+}
+
 /// Get tag keys used by Pokemon stickers, ordered by coverage (most common first)
 /// Returns keys that appear on at least 50% of Pokemon stickers
 pub fn get_pokemon_common_tag_keys(conn: &Connection) -> Result<Vec<String>, String> {
