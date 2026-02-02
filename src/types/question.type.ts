@@ -4,8 +4,6 @@
 
 import type { ID } from '$types/core.type';
 
-export type CorrectAnswer = 'a' | 'b' | 'c';
-
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface Question {
@@ -13,13 +11,11 @@ export interface Question {
 	sourceId: ID;
 	questionText: string;
 
-	// ABC answer options
-	answerA: string;
-	answerB: string;
-	answerC: string;
+	// The correct answer text
+	correctAnswer: string;
 
-	// Correct answer: 'a', 'b', or 'c'
-	correctAnswer: CorrectAnswer;
+	// All wrong answer options (stored as JSON array in DB)
+	wrongAnswers: string[];
 
 	// Optional difficulty level
 	difficulty?: Difficulty;

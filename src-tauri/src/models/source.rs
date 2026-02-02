@@ -11,6 +11,8 @@ pub enum SourceType {
     SportsLeague,
     Animal,
     AwardList,
+    Grammy,
+    GameConsole,
 }
 
 impl Default for SourceType {
@@ -29,6 +31,8 @@ impl std::fmt::Display for SourceType {
             SourceType::SportsLeague => write!(f, "sports_league"),
             SourceType::Animal => write!(f, "animal"),
             SourceType::AwardList => write!(f, "award_list"),
+            SourceType::Grammy => write!(f, "grammy"),
+            SourceType::GameConsole => write!(f, "game_console"),
         }
     }
 }
@@ -43,6 +47,8 @@ impl SourceType {
             "sports_league" => SourceType::SportsLeague,
             "animal" => SourceType::Animal,
             "award_list" => SourceType::AwardList,
+            "grammy" => SourceType::Grammy,
+            "game_console" => SourceType::GameConsole,
             _ => SourceType::Movie,
         }
     }

@@ -127,6 +127,27 @@ export interface StickerTag {
 }
 
 // ============================================================================
+// COLLECTION TYPES
+// ============================================================================
+
+export interface Collection {
+	id: ID;
+	collectionTypeId?: string;
+	title: string;
+	description: string;
+	coverImage?: string;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export interface CollectionSticker {
+	collectionId: ID;
+	stickerId: ID;
+	sortOrder: number;
+	addedAt?: string;
+}
+
+// ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 

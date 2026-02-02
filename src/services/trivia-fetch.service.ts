@@ -7,7 +7,7 @@
 
 import type { ID } from '$types/core.type';
 import type { Source, SourceType } from '$types/source.type';
-import type { Question, Difficulty, CorrectAnswer } from '$types/question.type';
+import type { Question, Difficulty } from '$types/question.type';
 import type {
 	TheTriviaAPIQuestion,
 	WikipediaSummary,
@@ -29,7 +29,9 @@ const SOURCE_TYPE_TO_TRIVIA_CATEGORY: Record<SourceType, string> = {
 	anime: 'general_knowledge',
 	animal: 'science',
 	sports_league: 'sport_and_leisure',
-	award_list: 'film_and_tv'
+	award_list: 'film_and_tv',
+	grammy: 'music',
+	'game_console': 'general_knowledge'
 };
 
 // Wikipedia title suffix by source type
@@ -40,7 +42,9 @@ const SOURCE_TYPE_TO_WIKI_SUFFIX: Record<SourceType, string> = {
 	anime: '(anime)',
 	animal: '',
 	sports_league: '',
-	award_list: ''
+	award_list: '',
+	grammy: '',
+	'game_console': '(video game)'
 };
 
 /**
@@ -254,7 +258,9 @@ function generateWrongDescriptions(sourceType: SourceType): string[] {
 		anime: 'Japanese animated series',
 		animal: 'Animal species',
 		sports_league: 'Sports organization',
-		award_list: 'Award ceremony'
+		award_list: 'Award ceremony',
+		grammy: 'Grammy-winning music',
+		'game_console': 'Console video game'
 	};
 
 	return Object.entries(allTypes)
@@ -333,23 +339,15 @@ export async function fetchTriviaForSource(
 
 /**
  * Convert FetchedTrivia to Question for database storage
+ * Uses new schema: correctAnswer (text) + wrongAnswers (array)
  */
 export function convertToQuestion(trivia: FetchedTrivia, sourceId: ID): Question {
-	// Shuffle answers and assign to A, B, C
-	const allAnswers = [trivia.correctAnswer, ...trivia.incorrectAnswers];
-	const shuffled = shuffleArray(allAnswers);
-
-	const correctIndex = shuffled.indexOf(trivia.correctAnswer);
-	const correctAnswer: CorrectAnswer = (['a', 'b', 'c'] as const)[correctIndex];
-
 	return {
 		id: generateId(),
 		sourceId,
 		questionText: trivia.questionText,
-		answerA: shuffled[0] || '',
-		answerB: shuffled[1] || '',
-		answerC: shuffled[2] || '',
-		correctAnswer,
+		correctAnswer: trivia.correctAnswer,
+		wrongAnswers: trivia.incorrectAnswers,
 		difficulty: trivia.difficulty
 	};
 }

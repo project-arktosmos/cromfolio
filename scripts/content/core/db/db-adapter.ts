@@ -5,7 +5,7 @@
  * - Tauri adapter for UI (via invoke commands)
  */
 
-import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType } from '../types.js';
+import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType, Collection, CollectionSticker } from '../types.js';
 
 export interface DbAdapter {
 	/**
@@ -44,6 +44,26 @@ export interface DbAdapter {
 	 * Associate a tag with a sticker
 	 */
 	addTagToSticker(stickerId: ID, tagId: ID): Promise<void>;
+
+	/**
+	 * Find a source by title
+	 */
+	findSourceByTitle(title: string): Promise<Source | null>;
+
+	/**
+	 * Find a collection by title
+	 */
+	findCollectionByTitle(title: string): Promise<Collection | null>;
+
+	/**
+	 * Create a new collection
+	 */
+	createCollection(collection: Partial<Collection>): Promise<Collection>;
+
+	/**
+	 * Add a sticker to a collection
+	 */
+	addStickerToCollection(collectionId: ID, stickerId: ID, sortOrder?: number): Promise<CollectionSticker>;
 
 	/**
 	 * Close the database connection (cleanup)

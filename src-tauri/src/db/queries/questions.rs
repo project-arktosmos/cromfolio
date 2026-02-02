@@ -4,8 +4,8 @@ use crate::models::Question;
 pub fn get_all(conn: &Connection) -> Result<Vec<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
-                    correct_answer, difficulty, created_at, updated_at
+            "SELECT id, source_id, question_text, correct_answer, wrong_answers,
+                    difficulty, created_at, updated_at
              FROM questions
              ORDER BY created_at DESC",
         )
@@ -22,8 +22,8 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Question>, String> {
 pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
-                    correct_answer, difficulty, created_at, updated_at
+            "SELECT id, source_id, question_text, correct_answer, wrong_answers,
+                    difficulty, created_at, updated_at
              FROM questions
              WHERE id = ?1",
         )
@@ -42,8 +42,8 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Question>, String
 pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<Question>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, source_id, question_text, answer_a, answer_b, answer_c,
-                    correct_answer, difficulty, created_at, updated_at
+            "SELECT id, source_id, question_text, correct_answer, wrong_answers,
+                    difficulty, created_at, updated_at
              FROM questions
              WHERE source_id = ?1
              ORDER BY created_at DESC",
@@ -66,20 +66,20 @@ pub fn create(conn: &Connection, question: &Question) -> Result<Question, String
     };
 
     let now = chrono_now();
+    let wrong_answers_json = serde_json::to_string(&question.wrong_answers)
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "INSERT INTO questions (
-            id, source_id, question_text, answer_a, answer_b, answer_c,
-            correct_answer, difficulty, created_at, updated_at
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            id, source_id, question_text, correct_answer, wrong_answers,
+            difficulty, created_at, updated_at
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             id,
             question.source_id,
             question.question_text,
-            question.answer_a,
-            question.answer_b,
-            question.answer_c,
             question.correct_answer,
+            wrong_answers_json,
             question.difficulty,
             now,
             now
@@ -97,20 +97,20 @@ pub fn create(conn: &Connection, question: &Question) -> Result<Question, String
 
 pub fn update(conn: &Connection, question: &Question) -> Result<Question, String> {
     let now = chrono_now();
+    let wrong_answers_json = serde_json::to_string(&question.wrong_answers)
+        .map_err(|e| e.to_string())?;
 
     conn.execute(
         "UPDATE questions SET
-            source_id = ?2, question_text = ?3, answer_a = ?4, answer_b = ?5,
-            answer_c = ?6, correct_answer = ?7, difficulty = ?8, updated_at = ?9
+            source_id = ?2, question_text = ?3, correct_answer = ?4,
+            wrong_answers = ?5, difficulty = ?6, updated_at = ?7
          WHERE id = ?1",
         params![
             question.id,
             question.source_id,
             question.question_text,
-            question.answer_a,
-            question.answer_b,
-            question.answer_c,
             question.correct_answer,
+            wrong_answers_json,
             question.difficulty,
             now
         ],
@@ -140,17 +140,19 @@ pub fn delete_by_source_id(conn: &Connection, source_id: &str) -> Result<bool, S
 }
 
 fn row_to_question(row: &rusqlite::Row) -> Question {
+    let wrong_answers_json: String = row.get(4).unwrap_or_default();
+    let wrong_answers: Vec<String> = serde_json::from_str(&wrong_answers_json)
+        .unwrap_or_default();
+
     Question {
         id: row.get(0).unwrap_or_default(),
         source_id: row.get(1).unwrap_or_default(),
         question_text: row.get(2).unwrap_or_default(),
-        answer_a: row.get(3).unwrap_or_default(),
-        answer_b: row.get(4).unwrap_or_default(),
-        answer_c: row.get(5).unwrap_or_default(),
-        correct_answer: row.get(6).unwrap_or_default(),
-        difficulty: row.get(7).unwrap_or(None),
-        created_at: row.get(8).unwrap_or_default(),
-        updated_at: row.get(9).unwrap_or_default(),
+        correct_answer: row.get(3).unwrap_or_default(),
+        wrong_answers,
+        difficulty: row.get(5).unwrap_or(None),
+        created_at: row.get(6).unwrap_or_default(),
+        updated_at: row.get(7).unwrap_or_default(),
     }
 }
 

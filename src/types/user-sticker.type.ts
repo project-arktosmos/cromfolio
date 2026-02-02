@@ -8,5 +8,6 @@ export interface UserSticker {
 	id: ID;
 	stickerId: ID;
 	sourceId: ID;
+	rarityId?: ID;
 	acquiredAt: string;
 }

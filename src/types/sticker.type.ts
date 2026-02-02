@@ -29,9 +29,6 @@ export interface Sticker {
 	// Sticker type ID - FK reference to sticker_types table
 	stickerTypeId?: ID;
 
-	// Rarity reference
-	rarityId?: ID;
-
 	// Image source metadata
 	imageSource?: string; // e.g., 'tmdb', 'igdb', 'anilist', 'thesportsdb'
 

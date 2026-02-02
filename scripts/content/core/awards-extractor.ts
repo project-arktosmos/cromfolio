@@ -13,8 +13,7 @@ import type {
 	AwardEvent
 } from './types.js';
 import type { DbAdapter } from './db/db-adapter.js';
-import { getContentDetails } from './api/omdb.js';
-import { findByImdbId, getMovieImages, getTvImages } from './api/tmdb.js';
+import { findByImdbId, getMovieImages, getTvImages, getContentDetailsFromTmdb } from './api/tmdb.js';
 
 type FragmentPosition = 1 | 2 | 3 | 4;
 
@@ -89,14 +88,21 @@ export async function extractAwards(
 
 		console.log(`Processing ${yearsToProcess.length} year(s)`);
 
-		// Step 3: Collect all nominees to process
-		const nomineesToProcess: NomineeInfo[] = [];
+		if (dryRun) {
+			console.log('\n=== DRY RUN - No changes will be made ===\n');
+		}
 
+		// Step 3: Process each year separately (one source per year)
 		for (const year of yearsToProcess) {
 			if (!eventData[year]) {
 				console.log(`Year ${year} not found in event data, skipping`);
 				continue;
 			}
+
+			console.log(`\n--- Processing ${eventName} ${year} ---`);
+
+			// Collect nominees for this year
+			const yearNominees: NomineeInfo[] = [];
 
 			const awardTypes = filterAwardType
 				? [filterAwardType]
@@ -127,7 +133,7 @@ export async function extractAwards(
 					const winners = new Set(categoryData.winner);
 
 					for (const imdbId of allNominees) {
-						nomineesToProcess.push({
+						yearNominees.push({
 							imdbId,
 							category,
 							isWinner: winners.has(imdbId)
@@ -135,229 +141,235 @@ export async function extractAwards(
 					}
 				}
 			}
-		}
 
-		// Deduplicate by IMDB ID (keep winner status if any occurrence is a winner)
-		const uniqueNominees = new Map<string, NomineeInfo>();
-		for (const nominee of nomineesToProcess) {
-			const existing = uniqueNominees.get(nominee.imdbId);
-			if (!existing) {
-				uniqueNominees.set(nominee.imdbId, nominee);
-			} else if (nominee.isWinner && !existing.isWinner) {
-				// If this occurrence is a winner, update the status
-				existing.isWinner = true;
+			// Deduplicate by IMDB ID for this year
+			const uniqueYearNominees = new Map<string, NomineeInfo>();
+			for (const nominee of yearNominees) {
+				const existing = uniqueYearNominees.get(nominee.imdbId);
+				if (!existing) {
+					uniqueYearNominees.set(nominee.imdbId, nominee);
+				} else if (nominee.isWinner && !existing.isWinner) {
+					existing.isWinner = true;
+				}
 			}
-		}
 
-		const nominees = Array.from(uniqueNominees.values());
-		console.log(`\nFound ${nominees.length} unique nominees to process`);
-		console.log(
-			`  - Winners: ${nominees.filter((n) => n.isWinner).length}`
-		);
-		console.log(
-			`  - Nominees only: ${nominees.filter((n) => !n.isWinner).length}`
-		);
+			const nominees = Array.from(uniqueYearNominees.values());
+			console.log(`Found ${nominees.length} unique nominees for ${year}`);
+			console.log(`  - Winners: ${nominees.filter((n) => n.isWinner).length}`);
+			console.log(`  - Nominees only: ${nominees.filter((n) => !n.isWinner).length}`);
 
-		if (dryRun) {
-			console.log('\n=== DRY RUN - No changes will be made ===\n');
-		}
+			if (nominees.length === 0) {
+				console.log(`No nominees found for ${year}, skipping`);
+				continue;
+			}
 
-		// Step 4: Create source for this award list
-		const sourceTitle = buildAwardSourceTitle(
-			eventName,
-			filterYear,
-			filterAwardType ? dataLoader.formatAwardTypeName(filterAwardType) : undefined
-		);
+			// Create source for this year
+			const sourceTitle = buildAwardSourceTitle(
+				eventName,
+				year,
+				filterAwardType ? dataLoader.formatAwardTypeName(filterAwardType) : undefined
+			);
 
-		let source: Source | null = null;
+			let source: Source | null = null;
 
-		if (!dryRun) {
-			console.log(`\nCreating source: "${sourceTitle}"`);
-			source = await db.createSource({
-				sourceType: 'award_list',
-				title: sourceTitle,
-				description: buildAwardSourceDescription(
-					eventName,
-					filterYear,
-					filterAwardType,
-					filterCategory,
-					dataLoader
-				)
-			});
-			sourcesCreated = 1;
-		}
-
-		// Step 5: Process each nominee
-		let processedCount = 0;
-		const totalCount = nominees.length;
-
-		for (const nominee of nominees) {
-			processedCount++;
-			const progress = `[${processedCount}/${totalCount}]`;
-
-			try {
-				// Check if already exists
-				const exists = await db.providerExists('imdb', nominee.imdbId);
-				if (exists) {
-					console.log(`${progress} Skipping ${nominee.imdbId} (already exists)`);
-					skipped++;
-					continue;
-				}
-
-				// Fetch content details from OMDB
-				console.log(
-					`${progress} Fetching ${nominee.imdbId}${nominee.isWinner ? ' (WINNER)' : ''}...`
-				);
-				let details: ContentDetails;
-				try {
-					details = await getContentDetails(apiKeys.omdb, nominee.imdbId);
-				} catch (err) {
-					const msg = err instanceof Error ? err.message : String(err);
-					console.log(`  Error fetching OMDB details: ${msg}`);
-					errors.push(`${nominee.imdbId}: ${msg}`);
-					continue;
-				}
-
-				console.log(`  Title: ${details.title} (${details.year})`);
-
-				// Get poster image (prefer TMDB for higher quality)
-				let posterUrl = details.poster;
-
-				try {
-					const tmdbResult = await findByImdbId(apiKeys.tmdb, nominee.imdbId);
-					if (tmdbResult) {
-						const getImages =
-							tmdbResult.mediaType === 'tv' ? getTvImages : getMovieImages;
-						const images = await getImages(apiKeys.tmdb, tmdbResult.tmdbId);
-						const posters = images.filter((img) => img.imageType === 'poster');
-						if (posters.length > 0) {
-							posterUrl = posters[0].url;
-						}
-					}
-				} catch {
-					// TMDB lookup failed, fall back to OMDB poster
-				}
-
-				if (!posterUrl) {
-					console.log('  No poster available, skipping');
-					errors.push(`${nominee.imdbId}: No poster available`);
-					continue;
-				}
-
-				if (dryRun) {
-					const stickerCount = nominee.isWinner ? 4 : 1;
-					console.log(
-						`  Would create ${stickerCount} sticker(s) for "${details.title}"`
-					);
-					stickersCreated += stickerCount;
-					continue;
-				}
-
-				// Create stickers
-				const sourceId = source!.id;
-				const now = new Date().toISOString();
-
-				if (nominee.isWinner) {
-					// Winners get 4 fragment stickers
-					const fragmentGroupId = crypto.randomUUID();
-					const fragmentPositions: FragmentPosition[] = [1, 2, 3, 4];
-					const positionLabels = ['Top Left', 'Top Right', 'Bottom Left', 'Bottom Right'];
-
-					const fragmentStickers: Partial<Sticker>[] = fragmentPositions.map((pos, i) => ({
-						sourceId,
-						name: `${details.title} (${positionLabels[i]})`,
-						image: posterUrl!,
-						stickerTypeId: 'winner',
-						imageSource: 'tmdb',
-						fragmentOf: fragmentGroupId,
-						fragmentPosition: pos,
-						addedAt: now
-					}));
-
-					const created = await db.createStickersBatch(fragmentStickers);
-					stickersCreated += created.length;
-
-					// Add tags to each fragment
-					for (const sticker of created) {
-						tagsCreated += await addAwardTags(
-							db,
-							sticker.id,
-							eventId,
+			if (!dryRun) {
+				// Check if source already exists
+				const existingSource = await db.findSourceByTitle(sourceTitle);
+				if (existingSource) {
+					console.log(`Source already exists: "${sourceTitle}" - adding new stickers only`);
+					source = existingSource;
+				} else {
+					console.log(`Creating source: "${sourceTitle}"`);
+					source = await db.createSource({
+						sourceType: 'award_list',
+						title: sourceTitle,
+						description: buildAwardSourceDescription(
 							eventName,
-							filterYear || 'all',
-							filterAwardType || 'all',
-							nominee.category,
-							'winner',
-							nominee.imdbId
-						);
+							year,
+							filterAwardType,
+							filterCategory,
+							dataLoader
+						)
+					});
+					sourcesCreated++;
+				}
+			}
 
-						// Fragment-specific tags
-						if (sticker.fragmentOf) {
-							const fragOfTag = await db.findOrCreateTag('fragment_of', sticker.fragmentOf);
-							await db.addTagToSticker(sticker.id, fragOfTag.id);
-							tagsCreated++;
+			// Process each nominee for this year
+			let processedCount = 0;
+			const totalCount = nominees.length;
 
-							if (sticker.fragmentPosition) {
-								const fragPosTag = await db.findOrCreateTag(
-									'fragment_position',
-									String(sticker.fragmentPosition)
-								);
-								await db.addTagToSticker(sticker.id, fragPosTag.id);
-								tagsCreated++;
+			for (const nominee of nominees) {
+				processedCount++;
+				const progress = `[${year}][${processedCount}/${totalCount}]`;
+
+				try {
+					// Check if already exists
+					const exists = await db.providerExists('imdb', nominee.imdbId);
+					if (exists) {
+						console.log(`${progress} Skipping ${nominee.imdbId} (already exists)`);
+						skipped++;
+						continue;
+					}
+
+					// Fetch content details from TMDB
+					console.log(
+						`${progress} Fetching ${nominee.imdbId}${nominee.isWinner ? ' (WINNER)' : ''}...`
+					);
+					let details: ContentDetails;
+					try {
+						details = await getContentDetailsFromTmdb(apiKeys.tmdb, nominee.imdbId);
+					} catch (err) {
+						const msg = err instanceof Error ? err.message : String(err);
+						console.log(`  Error fetching TMDB details: ${msg}`);
+						errors.push(`${nominee.imdbId}: ${msg}`);
+						continue;
+					}
+
+					console.log(`  Title: ${details.title} (${details.year})`);
+
+					// Get higher quality poster from TMDB images API
+					let posterUrl = details.poster;
+
+					try {
+						const tmdbResult = await findByImdbId(apiKeys.tmdb, nominee.imdbId);
+						if (tmdbResult) {
+							const getImages =
+								tmdbResult.mediaType === 'tv' ? getTvImages : getMovieImages;
+							const images = await getImages(apiKeys.tmdb, tmdbResult.tmdbId);
+							const posters = images.filter((img) => img.imageType === 'poster');
+							if (posters.length > 0) {
+								posterUrl = posters[0].url;
 							}
 						}
+					} catch {
+						// Higher quality poster lookup failed, use default from details
 					}
 
-					console.log(`  Created 4 fragment stickers for winner "${details.title}"`);
-				} else {
-					// Nominees get 1 sticker
-					const nomineeStickers: Partial<Sticker>[] = [
-						{
-							sourceId,
-							name: details.title,
-							image: posterUrl,
-							stickerTypeId: 'nominee',
-							imageSource: 'tmdb',
-							addedAt: now
-						}
-					];
+					if (!posterUrl) {
+						console.log('  No poster available, skipping');
+						errors.push(`${nominee.imdbId}: No poster available`);
+						continue;
+					}
 
-					const created = await db.createStickersBatch(nomineeStickers);
-					stickersCreated += created.length;
-
-					// Add tags
-					for (const sticker of created) {
-						tagsCreated += await addAwardTags(
-							db,
-							sticker.id,
-							eventId,
-							eventName,
-							filterYear || 'all',
-							filterAwardType || 'all',
-							nominee.category,
-							'nominee',
-							nominee.imdbId
+					if (dryRun) {
+						const stickerCount = nominee.isWinner ? 4 : 1;
+						console.log(
+							`  Would create ${stickerCount} sticker(s) for "${details.title}"`
 						);
+						stickersCreated += stickerCount;
+						continue;
 					}
 
-					console.log(`  Created sticker for nominee "${details.title}"`);
+					// Create stickers
+					const sourceId = source!.id;
+					const now = new Date().toISOString();
+
+					if (nominee.isWinner) {
+						// Winners get 4 fragment stickers
+						const fragmentGroupId = crypto.randomUUID();
+						const fragmentPositions: FragmentPosition[] = [1, 2, 3, 4];
+						const positionLabels = ['Top Left', 'Top Right', 'Bottom Left', 'Bottom Right'];
+
+						const fragmentStickers: Partial<Sticker>[] = fragmentPositions.map((pos, i) => ({
+							sourceId,
+							name: `${details.title} (${positionLabels[i]})`,
+							image: posterUrl!,
+							stickerTypeId: 'winner',
+							imageSource: 'tmdb',
+							fragmentOf: fragmentGroupId,
+							fragmentPosition: pos,
+							addedAt: now
+						}));
+
+						const created = await db.createStickersBatch(fragmentStickers);
+						stickersCreated += created.length;
+
+						// Add tags to each fragment
+						for (const sticker of created) {
+							tagsCreated += await addAwardTags(
+								db,
+								sticker.id,
+								eventId,
+								eventName,
+								year,
+								filterAwardType || 'all',
+								nominee.category,
+								'winner',
+								nominee.imdbId
+							);
+
+							// Fragment-specific tags
+							if (sticker.fragmentOf) {
+								const fragOfTag = await db.findOrCreateTag('fragment_of', sticker.fragmentOf);
+								await db.addTagToSticker(sticker.id, fragOfTag.id);
+								tagsCreated++;
+
+								if (sticker.fragmentPosition) {
+									const fragPosTag = await db.findOrCreateTag(
+										'fragment_position',
+										String(sticker.fragmentPosition)
+									);
+									await db.addTagToSticker(sticker.id, fragPosTag.id);
+									tagsCreated++;
+								}
+							}
+						}
+
+						console.log(`  Created 4 fragment stickers for winner "${details.title}"`);
+					} else {
+						// Nominees get 1 sticker
+						const nomineeStickers: Partial<Sticker>[] = [
+							{
+								sourceId,
+								name: details.title,
+								image: posterUrl,
+								stickerTypeId: 'nominee',
+								imageSource: 'tmdb',
+								addedAt: now
+							}
+						];
+
+						const created = await db.createStickersBatch(nomineeStickers);
+						stickersCreated += created.length;
+
+						// Add tags to stickers
+						for (const sticker of created) {
+							tagsCreated += await addAwardTags(
+								db,
+								sticker.id,
+								eventId,
+								eventName,
+								year,
+								filterAwardType || 'all',
+								nominee.category,
+								'nominee',
+								nominee.imdbId
+							);
+						}
+
+						console.log(`  Created sticker for nominee "${details.title}"`);
+					}
+
+					// Create provider record to prevent future duplicates
+					await db.createProvider(source!.id, 'movie', 'imdb', nominee.imdbId);
+
+					// Rate limiting pause to avoid API throttling
+					await sleep(100);
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : String(err);
+					console.error(`  Error processing ${nominee.imdbId}: ${msg}`);
+					errors.push(`${nominee.imdbId}: ${msg}`);
 				}
-
-				// Create provider record to prevent future duplicates
-				await db.createProvider(source!.id, 'movie', 'imdb', nominee.imdbId);
-
-				// Rate limiting pause to avoid API throttling
-				await sleep(100);
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : String(err);
-				console.error(`  Error processing ${nominee.imdbId}: ${msg}`);
-				errors.push(`${nominee.imdbId}: ${msg}`);
 			}
+
+			console.log(`Completed ${year}: ${nominees.length - skipped} processed`);
 		}
 
+		const totalNominees = sourcesCreated > 0 ? stickersCreated : 0;
 		const message = dryRun
-			? `Dry run complete: would create ${stickersCreated} stickers from ${totalCount} nominees`
-			: `Created ${stickersCreated} stickers from ${totalCount - skipped - errors.length} nominees`;
+			? `Dry run complete: would create ${sourcesCreated} sources with ${stickersCreated} stickers`
+			: `Created ${sourcesCreated} sources with ${stickersCreated} stickers`;
 
 		console.log(`\n${message}`);
 

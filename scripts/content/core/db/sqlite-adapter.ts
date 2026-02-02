@@ -6,10 +6,171 @@
 import Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import type { DbAdapter } from './db-adapter.js';
-import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType } from '../types.js';
+import type { ID, Source, Sticker, Provider, Tag, ProviderType, ExternalIdType, Collection, CollectionSticker } from '../types.js';
 
 function chrono_now(): string {
 	return new Date().toISOString();
+}
+
+/**
+ * Run database migrations to ensure all required tables exist.
+ * Mirrors the Rust migrations in src-tauri/src/db/connection.rs
+ */
+function runMigrations(db: Database.Database): void {
+	// Create sources table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS sources (
+			id TEXT PRIMARY KEY,
+			source_type TEXT NOT NULL DEFAULT 'movie',
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			cover_image TEXT,
+			wikia_url TEXT,
+			imdb_id TEXT,
+			tmdb_id INTEGER,
+			igdb_id INTEGER,
+			igdb_slug TEXT,
+			sgdb_id INTEGER,
+			anilist_id INTEGER,
+			mal_id INTEGER,
+			sports_type TEXT,
+			sports_db_team_id TEXT,
+			sports_db_league_id TEXT,
+			sports_db_player_id TEXT,
+			sport TEXT,
+			league TEXT,
+			country TEXT,
+			wikidata_id TEXT,
+			scientific_name TEXT,
+			conservation_status TEXT,
+			taxonomic_class TEXT,
+			added_at TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)
+	`);
+
+	// Create stickers table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS stickers (
+			id TEXT PRIMARY KEY,
+			source_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			image TEXT NOT NULL,
+			sticker_type_id TEXT,
+			image_source TEXT,
+			width INTEGER,
+			height INTEGER,
+			fragment_of TEXT,
+			fragment_position INTEGER,
+			added_at TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE
+		)
+	`);
+
+	// Create stickers index
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_stickers_source_id ON stickers(source_id)`);
+
+	// Create providers table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS providers (
+			id TEXT PRIMARY KEY,
+			source_id TEXT NOT NULL,
+			provider_type TEXT NOT NULL,
+			external_id TEXT NOT NULL,
+			external_id_type TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE CASCADE,
+			UNIQUE(provider_type, external_id_type, external_id)
+		)
+	`);
+
+	// Create tags table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS tags (
+			id TEXT PRIMARY KEY,
+			key TEXT NOT NULL,
+			value TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			UNIQUE(key, value)
+		)
+	`);
+
+	// Create sticker_tags junction table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS sticker_tags (
+			sticker_id TEXT NOT NULL,
+			tag_id TEXT NOT NULL,
+			created_at TEXT NOT NULL,
+			PRIMARY KEY (sticker_id, tag_id),
+			FOREIGN KEY (sticker_id) REFERENCES stickers(id) ON DELETE CASCADE,
+			FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+		)
+	`);
+
+	// Create tags indexes
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_tags_key ON tags(key)`);
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_sticker_tags_sticker_id ON sticker_tags(sticker_id)`);
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_sticker_tags_tag_id ON sticker_tags(tag_id)`);
+
+	// Create collection_types table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS collection_types (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			description TEXT NOT NULL DEFAULT '',
+			icon TEXT,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)
+	`);
+
+	// Seed default collection types if empty
+	const typeCount = db.prepare('SELECT COUNT(*) as count FROM collection_types').get() as { count: number };
+	if (typeCount.count === 0) {
+		const now = chrono_now();
+		const insertType = db.prepare(`
+			INSERT INTO collection_types (id, name, description, icon, sort_order, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`);
+		insertType.run('anime', 'Anime', 'Collections featuring anime series and movies', '🎌', 0, now, now);
+		insertType.run('awards', 'Awards', 'Collections featuring award shows and ceremonies', '🏆', 1, now, now);
+		insertType.run('pokemon', 'Pokemon', 'Collections featuring Pokemon from various generations', '⚡', 2, now, now);
+	}
+
+	// Create collections table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS collections (
+			id TEXT PRIMARY KEY,
+			collection_type_id TEXT REFERENCES collection_types(id) ON DELETE SET NULL,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			cover_image TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)
+	`);
+
+	// Create collection_stickers junction table
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS collection_stickers (
+			collection_id TEXT NOT NULL,
+			sticker_id TEXT NOT NULL,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			added_at TEXT NOT NULL,
+			PRIMARY KEY (collection_id, sticker_id),
+			FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+			FOREIGN KEY (sticker_id) REFERENCES stickers(id) ON DELETE CASCADE
+		)
+	`);
+
+	// Create collection indexes
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_collection_stickers_collection_id ON collection_stickers(collection_id)`);
+	db.exec(`CREATE INDEX IF NOT EXISTS idx_collection_stickers_sticker_id ON collection_stickers(sticker_id)`);
 }
 
 export function createSqliteAdapter(dbPath: string): DbAdapter {
@@ -17,6 +178,9 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 
 	// Enable foreign keys
 	db.pragma('foreign_keys = ON');
+
+	// Run migrations to ensure tables exist
+	runMigrations(db);
 
 	return {
 		async providerExists(externalIdType: ExternalIdType, externalId: string): Promise<boolean> {
@@ -122,9 +286,9 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 
 			const insertStmt = db.prepare(`
 				INSERT INTO stickers (
-					id, source_id, name, image, sticker_type_id, rarity_id, image_source,
+					id, source_id, name, image, sticker_type_id, image_source,
 					width, height, fragment_of, fragment_position, added_at, created_at, updated_at
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			`);
 
 			// Use a transaction for atomic batch insert
@@ -138,7 +302,6 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 						sticker.name || '',
 						sticker.image || '',
 						sticker.stickerTypeId || null,
-						sticker.rarityId || null,
 						sticker.imageSource || null,
 						sticker.width || null,
 						sticker.height || null,
@@ -213,6 +376,110 @@ export function createSqliteAdapter(dbPath: string): DbAdapter {
 			`);
 
 			stmt.run(stickerId, tagId, now);
+		},
+
+		async findSourceByTitle(title: string): Promise<Source | null> {
+			const stmt = db.prepare(`
+				SELECT id, source_type, title, description, cover_image
+				FROM sources
+				WHERE title = ?
+			`);
+
+			const row = stmt.get(title) as {
+				id: string;
+				source_type: string;
+				title: string;
+				description: string;
+				cover_image: string | null;
+			} | undefined;
+
+			if (!row) return null;
+
+			return {
+				id: row.id,
+				sourceType: row.source_type as Source['sourceType'],
+				title: row.title,
+				description: row.description,
+				coverImage: row.cover_image || undefined
+			};
+		},
+
+		async findCollectionByTitle(title: string): Promise<Collection | null> {
+			const stmt = db.prepare(`
+				SELECT id, collection_type_id, title, description, cover_image, created_at, updated_at
+				FROM collections
+				WHERE title = ?
+			`);
+
+			const row = stmt.get(title) as {
+				id: string;
+				collection_type_id: string | null;
+				title: string;
+				description: string;
+				cover_image: string | null;
+				created_at: string;
+				updated_at: string;
+			} | undefined;
+
+			if (!row) return null;
+
+			return {
+				id: row.id,
+				collectionTypeId: row.collection_type_id || undefined,
+				title: row.title,
+				description: row.description,
+				coverImage: row.cover_image || undefined,
+				createdAt: row.created_at,
+				updatedAt: row.updated_at
+			};
+		},
+
+		async createCollection(collection: Partial<Collection>): Promise<Collection> {
+			const id = (collection.id as string) || randomUUID();
+			const now = chrono_now();
+
+			const stmt = db.prepare(`
+				INSERT INTO collections (
+					id, collection_type_id, title, description, cover_image, created_at, updated_at
+				) VALUES (?, ?, ?, ?, ?, ?, ?)
+			`);
+
+			stmt.run(
+				id,
+				collection.collectionTypeId || null,
+				collection.title || '',
+				collection.description || '',
+				collection.coverImage || null,
+				now,
+				now
+			);
+
+			return {
+				...collection,
+				id,
+				title: collection.title || '',
+				description: collection.description || '',
+				createdAt: now,
+				updatedAt: now
+			} as Collection;
+		},
+
+		async addStickerToCollection(collectionId: ID, stickerId: ID, sortOrder: number = 0): Promise<CollectionSticker> {
+			const now = chrono_now();
+
+			const stmt = db.prepare(`
+				INSERT OR IGNORE INTO collection_stickers (collection_id, sticker_id, sort_order, added_at)
+				VALUES (?, ?, ?, ?)
+			`);
+
+			stmt.run(collectionId, stickerId, sortOrder, now);
+
+			return {
+				collectionId,
+				stickerId,
+				sortOrder,
+				addedAt: now
+			};
 		},
 
 		close(): void {

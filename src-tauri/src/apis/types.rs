@@ -305,3 +305,64 @@ pub struct ContentDetails {
     /// Production company
     pub production: Option<String>,
 }
+
+// ============================================================================
+// MUSICBRAINZ TYPES
+// ============================================================================
+
+/// MusicBrainz artist search result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MusicBrainzArtistResult {
+    pub mbid: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disambiguation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artist_type: Option<String>,
+    pub score: i32,
+}
+
+/// MusicBrainz release (album) search result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MusicBrainzReleaseResult {
+    pub mbid: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artist_credit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release_group_mbid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover_art_url: Option<String>,
+    pub score: i32,
+}
+
+/// MusicBrainz recording (song) search result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MusicBrainzRecordingResult {
+    pub mbid: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artist_credit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub length_ms: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_release_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release_mbid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release_title: Option<String>,
+    pub score: i32,
+}

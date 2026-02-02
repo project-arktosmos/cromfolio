@@ -13,6 +13,7 @@ pub mod jikan;
 pub mod sports;
 pub mod wikidata;
 pub mod inaturalist;
+pub mod musicbrainz;
 pub mod llm;
 
 pub use client::ApiClient;

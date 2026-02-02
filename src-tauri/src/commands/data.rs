@@ -292,6 +292,18 @@ pub fn get_sticker_ids_by_tag(tag_id: String, db: State<'_, Database>) -> Result
     queries::tags::get_sticker_ids_by_tag_id(&conn, &tag_id)
 }
 
+#[command]
+pub fn get_sticker_names_by_imdb_ids(imdb_ids: Vec<String>, db: State<'_, Database>) -> Result<std::collections::HashMap<String, String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::tags::get_sticker_names_by_tag_values(&conn, "imdb_id", &imdb_ids)
+}
+
+#[command]
+pub fn get_pokemon_common_tag_keys(db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::tags::get_pokemon_common_tag_keys(&conn)
+}
+
 // ============================================================================
 // QUESTIONS (trivia)
 // ============================================================================
@@ -698,6 +710,51 @@ pub fn delete_all_user_stickers(db: State<'_, Database>) -> Result<i64, String> 
     queries::user_stickers::delete_all(&conn)
 }
 
+/// Result for mixable stickers query
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MixableStickerInfo {
+    pub sticker_id: String,
+    pub rarity_id: String,
+    pub count: i64,
+}
+
+#[command]
+pub fn get_mixable_user_stickers(db: State<'_, Database>) -> Result<Vec<MixableStickerInfo>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    let results = queries::user_stickers::get_mixable_stickers(&conn)?;
+    Ok(results
+        .into_iter()
+        .map(|(sticker_id, rarity_id, count)| MixableStickerInfo {
+            sticker_id,
+            rarity_id,
+            count,
+        })
+        .collect())
+}
+
+#[command]
+pub fn get_user_sticker_copy_count_by_rarity(
+    sticker_id: String,
+    rarity_id: String,
+    db: State<'_, Database>,
+) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_stickers::get_copy_count_by_rarity(&conn, &sticker_id, &rarity_id)
+}
+
+#[command]
+pub fn mix_user_stickers(
+    sticker_id: String,
+    current_rarity_id: String,
+    new_rarity_id: String,
+    source_id: String,
+    db: State<'_, Database>,
+) -> Result<UserSticker, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_stickers::mix_stickers(&conn, &sticker_id, &current_rarity_id, &new_rarity_id, &source_id)
+}
+
 // ============================================================================
 // USER COLLECTIONS (user collection progress, stored in _user_collections)
 // ============================================================================
@@ -818,6 +875,110 @@ pub fn delete_user_source(id: String, db: State<'_, Database>) -> Result<bool, S
 pub fn delete_all_user_sources(db: State<'_, Database>) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::user_sources::delete_all(&conn)
+}
+
+// ============================================================================
+// USER PLACED STAMPS (stamps placed on album pages, stored in _user_placed_stamps)
+// ============================================================================
+
+#[command]
+pub fn get_placed_stamps_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::get_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn get_placed_stamps_by_page(collection_id: String, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::get_by_collection_page(&conn, &collection_id, page_index)
+}
+
+#[command]
+pub fn get_placed_stamp(id: String, db: State<'_, Database>) -> Result<Option<UserPlacedStamp>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn place_stamp(placed_stamp: UserPlacedStamp, db: State<'_, Database>) -> Result<UserPlacedStamp, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::create(&conn, &placed_stamp)
+}
+
+#[command]
+pub fn update_placed_stamp(placed_stamp: UserPlacedStamp, db: State<'_, Database>) -> Result<UserPlacedStamp, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::update(&conn, &placed_stamp)
+}
+
+#[command]
+pub fn remove_placed_stamp(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::delete(&conn, &id)
+}
+
+#[command]
+pub fn clear_collection_stamps(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::delete_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn clear_all_placed_stamps(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_placed_stamps::delete_all(&conn)
+}
+
+// ============================================================================
+// USER STICKER PLACEMENTS (stickers "stuck" in albums, stored in _user_sticker_placements)
+// ============================================================================
+
+#[command]
+pub fn get_sticker_placements_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserStickerPlacement>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::get_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn get_all_placed_sticker_ids(db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::get_all_placed_sticker_ids(&conn)
+}
+
+#[command]
+pub fn get_placed_sticker_ids_for_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::get_placed_sticker_ids_for_collection(&conn, &collection_id)
+}
+
+#[command]
+pub fn is_sticker_placed(sticker_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::is_sticker_placed(&conn, &sticker_id)
+}
+
+#[command]
+pub fn place_sticker(placement: UserStickerPlacement, db: State<'_, Database>) -> Result<UserStickerPlacement, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::create(&conn, &placement)
+}
+
+#[command]
+pub fn unstick_sticker(sticker_id: String, collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::delete_by_sticker_collection(&conn, &sticker_id, &collection_id)
+}
+
+#[command]
+pub fn clear_collection_sticker_placements(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::delete_by_collection_id(&conn, &collection_id)
+}
+
+#[command]
+pub fn clear_all_sticker_placements(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_sticker_placements::delete_all(&conn)
 }
 
 // ============================================================================
@@ -1027,6 +1188,42 @@ pub fn delete_stamp_pack_files(app: AppHandle, pack_id: String) -> Result<bool, 
 }
 
 // ============================================================================
+// CLEAR ALL USER DATA
+// ============================================================================
+
+/// Result of clearing all user data
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClearUserDataResult {
+    pub user_stickers_deleted: i64,
+    pub user_collections_deleted: i64,
+    pub user_sources_deleted: i64,
+    pub placed_stamps_deleted: i64,
+    pub sticker_placements_deleted: i64,
+}
+
+/// Clear all user data from all _user tables
+#[command]
+pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResult, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+
+    // Delete in order to respect any potential foreign key constraints
+    let sticker_placements_deleted = queries::user_sticker_placements::delete_all(&conn)?;
+    let placed_stamps_deleted = queries::user_placed_stamps::delete_all(&conn)?;
+    let user_stickers_deleted = queries::user_stickers::delete_all(&conn)?;
+    let user_collections_deleted = queries::user_collections::delete_all(&conn)?;
+    let user_sources_deleted = queries::user_sources::delete_all(&conn)?;
+
+    Ok(ClearUserDataResult {
+        user_stickers_deleted,
+        user_collections_deleted,
+        user_sources_deleted,
+        placed_stamps_deleted,
+        sticker_placements_deleted,
+    })
+}
+
+// ============================================================================
 // UTILITY
 // ============================================================================
 
@@ -1036,5 +1233,310 @@ pub fn get_cwd() -> Result<String, String> {
     std::env::current_dir()
         .map(|p| p.to_string_lossy().to_string())
         .map_err(|e| format!("Failed to get cwd: {}", e))
+}
+
+// ============================================================================
+// COLLECTION EXPORT
+// ============================================================================
+
+use crate::image_cache::cache::{build_cache_path, fetch_and_save_async, ImageCacheState};
+
+/// Result of preparing a collection export
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrepareExportResult {
+    pub export_dir: String,
+    pub collection_json_path: String,
+    pub stickers_copied: usize,
+    pub stickers_fetched: usize,
+    pub stickers_missing: usize,
+}
+
+/// Prepare a collection export by copying cached images and writing collection.json
+#[command]
+pub async fn prepare_collection_export(
+    collection_id: String,
+    app: AppHandle,
+    db: State<'_, Database>,
+    cache_state: State<'_, ImageCacheState>,
+) -> Result<PrepareExportResult, String> {
+    // Get all data from DB first, then release the lock before async operations
+    let (collection, stickers, sticker_tags) = {
+        let conn = db.conn.lock().map_err(|e| e.to_string())?;
+
+        // Get collection
+        let collection = queries::collections::get_by_id(&conn, &collection_id)?
+            .ok_or_else(|| format!("Collection not found: {}", collection_id))?;
+
+        // Get stickers for collection
+        let stickers = queries::collections::get_stickers_for_collection(&conn, &collection_id)?;
+
+        // Fetch tags for all stickers
+        let sticker_ids: Vec<String> = stickers.iter().map(|s| s.id.clone()).collect();
+        let sticker_tags = queries::tags::get_tags_for_stickers(&conn, &sticker_ids)?;
+
+        (collection, stickers, sticker_tags)
+    }; // Lock is released here
+
+    // Create export directory
+    let data_dir = app.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    // Sanitize collection title for directory name
+    let dir_name = collection.title
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+        .collect::<String>();
+    let dir_name = dir_name.trim_matches('-');
+
+    let export_dir = data_dir.join("exports").join(format!("{}-{}", dir_name, &collection_id[..8.min(collection_id.len())]));
+    let stickers_dir = export_dir.join("stickers");
+
+    // Create directories
+    std::fs::create_dir_all(&stickers_dir)
+        .map_err(|e| format!("Failed to create export directory: {}", e))?;
+
+    let mut stickers_copied = 0;
+    let mut stickers_fetched = 0;
+    let mut stickers_missing = 0;
+
+    // Track local filenames for each sticker
+    let mut sticker_local_images: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
+    // Copy each sticker's cached image (fetch if not cached)
+    for sticker in &stickers {
+        if !sticker.image.is_empty() {
+            let mut cache_path = build_cache_path(&cache_state.cache_dir, &sticker.image);
+            let mut was_fetched = false;
+
+            // If not cached, try to fetch and cache it asynchronously
+            if !cache_path.exists() {
+                match fetch_and_save_async(&sticker.image, &cache_state.cache_dir).await {
+                    Ok(cached) => {
+                        cache_path = std::path::PathBuf::from(&cached.local_path);
+                        was_fetched = true;
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to fetch image for sticker {}: {}", sticker.id, e);
+                        stickers_missing += 1;
+                        continue;
+                    }
+                }
+            }
+
+            if cache_path.exists() {
+                // Get extension from cached file
+                let ext = cache_path.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("jpg");
+
+                // Use sticker id as filename
+                let dest_filename = format!("{}.{}", sticker.id, ext);
+                let dest_path = stickers_dir.join(&dest_filename);
+
+                if std::fs::copy(&cache_path, &dest_path).is_ok() {
+                    if was_fetched {
+                        stickers_fetched += 1;
+                    } else {
+                        stickers_copied += 1;
+                    }
+                    // Store the local filename (relative path within export)
+                    sticker_local_images.insert(sticker.id.clone(), format!("stickers/{}", dest_filename));
+                } else {
+                    stickers_missing += 1;
+                }
+            } else {
+                stickers_missing += 1;
+            }
+        } else {
+            stickers_missing += 1;
+        }
+    }
+
+    // Build a map of sticker_id -> tags
+    let mut sticker_tags_map: std::collections::HashMap<String, Vec<Tag>> = std::collections::HashMap::new();
+    for (sticker_id, tag) in sticker_tags {
+        sticker_tags_map.entry(sticker_id).or_default().push(tag);
+    }
+
+    // Build export data structure with local image paths
+    #[derive(serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct StickerExport {
+        #[serde(flatten)]
+        sticker: Sticker,
+        /// Local image path relative to export directory (e.g., "stickers/{id}.jpg")
+        #[serde(skip_serializing_if = "Option::is_none")]
+        local_image: Option<String>,
+        tags: Vec<Tag>,
+    }
+
+    #[derive(serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ExportData {
+        collection: Collection,
+        stickers: Vec<StickerExport>,
+    }
+
+    let stickers_export: Vec<StickerExport> = stickers
+        .into_iter()
+        .map(|sticker| {
+            let tags = sticker_tags_map.remove(&sticker.id).unwrap_or_default();
+            let local_image = sticker_local_images.remove(&sticker.id);
+            StickerExport { sticker, local_image, tags }
+        })
+        .collect();
+
+    let export_data = ExportData {
+        collection: collection.clone(),
+        stickers: stickers_export,
+    };
+
+    // Write collection.json
+    let json_path = export_dir.join("collection.json");
+    let json_content = serde_json::to_string_pretty(&export_data)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+    std::fs::write(&json_path, &json_content)
+        .map_err(|e| format!("Failed to write collection.json: {}", e))?;
+
+    Ok(PrepareExportResult {
+        export_dir: export_dir.to_string_lossy().to_string(),
+        collection_json_path: json_path.to_string_lossy().to_string(),
+        stickers_copied,
+        stickers_fetched,
+        stickers_missing,
+    })
+}
+
+/// Result of creating a torrent file
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTorrentResult {
+    pub torrent_path: String,
+    pub info_hash: String,
+}
+
+/// Create a torrent file for an export directory
+#[command]
+pub async fn create_torrent_for_export(
+    export_dir: String,
+    torrent_name: Option<String>,
+) -> Result<CreateTorrentResult, String> {
+    use librqbit::{create_torrent, CreateTorrentOptions};
+    use std::path::Path;
+
+    let path = Path::new(&export_dir);
+    if !path.exists() {
+        return Err(format!("Export directory does not exist: {}", export_dir));
+    }
+
+    let options = CreateTorrentOptions {
+        name: torrent_name.as_deref(),
+        piece_length: None,
+    };
+
+    let result = create_torrent(path, options)
+        .await
+        .map_err(|e| format!("Failed to create torrent: {}", e))?;
+
+    let torrent_bytes = result.as_bytes()
+        .map_err(|e| format!("Failed to serialize torrent: {}", e))?;
+
+    let info_hash = result.info_hash().as_string();
+
+    // Write torrent file next to the export directory
+    let torrent_path = path.with_extension("torrent");
+    std::fs::write(&torrent_path, &torrent_bytes)
+        .map_err(|e| format!("Failed to write torrent file: {}", e))?;
+
+    Ok(CreateTorrentResult {
+        torrent_path: torrent_path.to_string_lossy().to_string(),
+        info_hash,
+    })
+}
+
+// ============================================================================
+// POKEMON TRIVIA TEMPLATES
+// ============================================================================
+
+#[command]
+pub fn get_all_pokemon_trivia_templates(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::get_all(&conn)
+}
+
+#[command]
+pub fn get_pokemon_trivia_template(id: String, db: State<'_, Database>) -> Result<Option<PokemonTriviaTemplate>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::get_by_id(&conn, &id)
+}
+
+#[command]
+pub fn get_pokemon_trivia_templates_by_tag_key(tag_key: String, db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::get_by_tag_key(&conn, &tag_key)
+}
+
+#[command]
+pub fn get_active_pokemon_trivia_templates(db: State<'_, Database>) -> Result<Vec<PokemonTriviaTemplate>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::get_active(&conn)
+}
+
+#[command]
+pub fn get_pokemon_trivia_template_tag_keys(db: State<'_, Database>) -> Result<Vec<String>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::get_unique_tag_keys(&conn)
+}
+
+#[command]
+pub fn create_pokemon_trivia_template(template: PokemonTriviaTemplate, db: State<'_, Database>) -> Result<PokemonTriviaTemplate, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::create(&conn, &template)
+}
+
+#[command]
+pub fn update_pokemon_trivia_template(template: PokemonTriviaTemplate, db: State<'_, Database>) -> Result<PokemonTriviaTemplate, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::update(&conn, &template)
+}
+
+#[command]
+pub fn delete_pokemon_trivia_template(id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::pokemon_trivia_templates::delete(&conn, &id)
+}
+
+/// Open a directory in the system file explorer
+#[command]
+pub fn open_directory(path: String) -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    Ok(())
 }
 

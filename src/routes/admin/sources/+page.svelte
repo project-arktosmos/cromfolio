@@ -6,6 +6,8 @@
 	import SportsTab from './SportsTab.svelte';
 	import AnimalsTab from './AnimalsTab.svelte';
 	import AwardsTab from './AwardsTab.svelte';
+	import GrammyTab from './GrammyTab.svelte';
+	import GameConsolesTab from './GameConsolesTab.svelte';
 
 	// Source type options for the select dropdown
 	const sourceTypeOptions = [
@@ -15,7 +17,9 @@
 		{ value: 'anime', label: 'Anime' },
 		{ value: 'sports', label: 'Sports' },
 		{ value: 'animals', label: 'Animals' },
-		{ value: 'awards', label: 'Award Lists' }
+		{ value: 'awards', label: 'Award Lists' },
+		{ value: 'grammy', label: 'Grammy Awards' },
+		{ value: 'game-consoles', label: 'Game Consoles' }
 	] as const;
 
 	type SourceType = (typeof sourceTypeOptions)[number]['value'];
@@ -45,5 +49,9 @@
 		<AnimalsTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
 	{:else if sourceType === 'awards'}
 		<AwardsTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'grammy'}
+		<GrammyTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
+	{:else if sourceType === 'game-consoles'}
+		<GameConsolesTab {sourceType} onSourceTypeChange={handleSourceTypeChange} />
 	{/if}
 </div>

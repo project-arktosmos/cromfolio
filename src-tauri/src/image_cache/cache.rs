@@ -89,7 +89,7 @@ pub fn is_cached(cache_dir: &Path, url: &str) -> Option<PathBuf> {
     }
 }
 
-/// Fetch an image from URL and save to disk
+/// Fetch an image from URL and save to disk (blocking version)
 pub fn fetch_and_save(url: &str, cache_dir: &Path) -> Result<CachedImage, String> {
     let path = build_cache_path(cache_dir, url);
 
@@ -115,6 +115,56 @@ pub fn fetch_and_save(url: &str, cache_dir: &Path) -> Result<CachedImage, String
 
     let bytes = response
         .bytes()
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+    let file_size = bytes.len() as u64;
+
+    // Save to disk
+    fs::write(&path, &bytes).map_err(|e| format!("Failed to write file: {}", e))?;
+
+    let hash = generate_url_hash(url);
+    let domain = extract_domain(url);
+    let cached_at = chrono::Utc::now().timestamp_millis();
+
+    Ok(CachedImage {
+        url_hash: hash,
+        original_url: url.to_string(),
+        local_path: path.to_string_lossy().to_string(),
+        source: domain,
+        cached_at,
+        file_size,
+    })
+}
+
+/// Fetch an image from URL and save to disk (async version)
+pub async fn fetch_and_save_async(url: &str, cache_dir: &Path) -> Result<CachedImage, String> {
+    let path = build_cache_path(cache_dir, url);
+
+    // Create parent directories if needed
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+    }
+
+    // Fetch the image using async client
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let response = client
+        .get(url)
+        .header("User-Agent", "Synaxis/1.0")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch image: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP error: {}", response.status()));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
     let file_size = bytes.len() as u64;
 

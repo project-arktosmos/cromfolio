@@ -66,10 +66,26 @@ export function getAwardEvents(): EventInfo[] {
 }
 
 /**
- * Load award data for a specific event
+ * Load award data for a specific event by ID
  */
 export function loadAwardEvent(eventId: string): AwardEvent | null {
 	return AWARD_EVENTS[eventId] ?? null;
+}
+
+/**
+ * Find award event ID by title (case-insensitive, partial match)
+ */
+export function findAwardEventByTitle(title: string): { id: string; data: AwardEvent } | null {
+	const normalizedTitle = title.toLowerCase().trim();
+	for (const [id, name] of Object.entries(EVENT_NAMES)) {
+		if (name.toLowerCase().includes(normalizedTitle) || normalizedTitle.includes(name.toLowerCase())) {
+			const data = AWARD_EVENTS[id];
+			if (data) {
+				return { id, data };
+			}
+		}
+	}
+	return null;
 }
 
 /**

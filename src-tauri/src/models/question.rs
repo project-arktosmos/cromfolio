@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Trivia question entity for source-based trivia games
-/// Each question belongs to a source and has ABC answers
+/// Each question belongs to a source and has a correct answer with multiple wrong answers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Question {
@@ -12,17 +12,13 @@ pub struct Question {
     #[serde(default)]
     pub question_text: String,
 
-    // ABC answer options
-    #[serde(default)]
-    pub answer_a: String,
-    #[serde(default)]
-    pub answer_b: String,
-    #[serde(default)]
-    pub answer_c: String,
-
-    // Correct answer: 'a', 'b', or 'c'
+    // The correct answer text
     #[serde(default)]
     pub correct_answer: String,
+
+    // All wrong answer options (stored as JSON in SQLite)
+    #[serde(default)]
+    pub wrong_answers: Vec<String>,
 
     // Optional difficulty level
     #[serde(default)]

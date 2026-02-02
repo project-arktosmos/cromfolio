@@ -1,6 +1,7 @@
 pub mod collection_types;
 pub mod collections;
 pub mod llm_configs;
+pub mod pokemon_trivia_templates;
 pub mod providers;
 pub mod questions;
 pub mod rarities;
@@ -12,5 +13,7 @@ pub mod sticker_types;
 pub mod stickers;
 pub mod tags;
 pub mod user_collections;
+pub mod user_placed_stamps;
 pub mod user_sources;
+pub mod user_sticker_placements;
 pub mod user_stickers;

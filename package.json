@@ -22,7 +22,8 @@
 		"content:movie": "tsx scripts/content/extract-movie.ts",
 		"content:tv": "tsx scripts/content/extract-tv.ts",
 		"content:awards": "tsx scripts/content/extract-awards.ts",
-		"content:anime": "tsx scripts/content/extract-anime.ts"
+		"content:anime": "tsx scripts/content/extract-anime.ts",
+		"content:pokemon": "tsx scripts/content/extract-pokemon.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

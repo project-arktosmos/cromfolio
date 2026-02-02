@@ -37,7 +37,9 @@
 		{ value: 'anime', label: 'Anime' },
 		{ value: 'sports', label: 'Sports' },
 		{ value: 'animals', label: 'Animals' },
-		{ value: 'awards', label: 'Award Lists' }
+		{ value: 'awards', label: 'Award Lists' },
+		{ value: 'grammy', label: 'Grammy Awards' },
+		{ value: 'game-consoles', label: 'Game Consoles' }
 	] as const;
 
 	type SourceType = (typeof sourceTypeOptions)[number]['value'];

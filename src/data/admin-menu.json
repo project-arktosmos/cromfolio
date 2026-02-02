@@ -21,9 +21,24 @@
 			"path": "/admin/duplicates"
 		},
 		{
+			"id": "export",
+			"label": "Export",
+			"path": "/admin/export"
+		},
+		{
+			"id": "icons",
+			"label": "Icons",
+			"path": "/admin/icons"
+		},
+		{
 			"id": "llama",
 			"label": "Llama",
 			"path": "/admin/llama"
+		},
+		{
+			"id": "pokemon-trivia",
+			"label": "Pokemon Trivia",
+			"path": "/admin/pokemon-trivia"
 		},
 		{
 			"id": "rarity",
@@ -36,16 +51,6 @@
 			"path": "/admin/sources"
 		},
 		{
-			"id": "stamps",
-			"label": "Stamps",
-			"path": "/admin/stamps"
-		},
-		{
-			"id": "telegram-stickers",
-			"label": "Telegram Stickers",
-			"path": "/admin/telegram-stickers"
-		},
-		{
 			"id": "torrent",
 			"label": "Torrent",
 			"path": "/admin/torrent"
@@ -56,9 +61,9 @@
 			"path": "/admin/trivia"
 		},
 		{
-			"id": "whatsapp-stickers",
-			"label": "Whatsapp Stickers",
-			"path": "/admin/whatsapp-stickers"
+			"id": "trivia-awards",
+			"label": "Trivia Awards",
+			"path": "/admin/trivia-awards"
 		},
 		{
 			"id": "wikidata",
@@ -66,5 +71,5 @@
 			"path": "/admin/wikidata"
 		}
 	],
-	"generatedAt": "2026-02-01T12:24:27.010Z"
+	"generatedAt": "2026-02-02T03:03:09.061Z"
 }

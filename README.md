@@ -116,3 +116,24 @@ private collections
 - need to find a proper way to fetch the team and players data
 - make one for each sport, competition and year
 
+### Music Awards
+- collect artist image and album cover for nominees and winners to grammys and the such
+
+
+### Launch Collections
+- Movie and TV awards, 1 per decade
+    - movie posters
+- Billboard albums
+    - collect album covers and artist images
+- pokemon
+    - 1 per gen
+    - pokemon and gym leader art
+    - trivia is by pokemon gen and types, as well as who evolves into who, or from whom
+- digimon
+    - split by anime series
+    - digimon, digidestined and appearing, from wikias maybe
+    - digidestined kids
+    - questions are about gen and evo lines, as well as who trained who in which series
+- dragon ball
+    - one for series (original, z, gt, super, movies)
+    - characters and manga covers

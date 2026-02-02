@@ -72,10 +72,8 @@
 		]);
 		if (stickers.length > 0) {
 			selectedSticker = stickers[0];
-			// If the sticker has a rarityId, load that rarity
-			if (selectedSticker.rarityId) {
-				selectedRarity = await getRarity(selectedSticker.rarityId);
-			}
+			// Stickers don't have inherent rarity - rarity is assigned when acquired
+			selectedRarity = null;
 			// If the sticker has a stickerTypeId, load that sticker type
 			if (selectedSticker.stickerTypeId) {
 				selectedStickerType = await getStickerType(selectedSticker.stickerTypeId);
@@ -95,12 +93,8 @@
 
 	async function selectSticker(sticker: Sticker) {
 		selectedSticker = sticker;
-		// Load the sticker's rarity if it has one
-		if (sticker.rarityId) {
-			selectedRarity = await getRarity(sticker.rarityId);
-		} else {
-			selectedRarity = null;
-		}
+		// Stickers don't have inherent rarity - rarity is assigned when acquired (user_stickers)
+		selectedRarity = null;
 		// Load the sticker's type if it has one
 		if (sticker.stickerTypeId) {
 			selectedStickerType = await getStickerType(sticker.stickerTypeId);

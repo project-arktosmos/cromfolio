@@ -65,11 +65,12 @@ export async function getOwnedStickerIds(): Promise<string[]> {
  * Acquire a sticker (add to user's collection)
  * Duplicates are allowed - each acquisition creates a new record
  */
-export async function acquireSticker(stickerId: ID, sourceId: ID): Promise<UserSticker> {
+export async function acquireSticker(stickerId: ID, sourceId: ID, rarityId?: ID): Promise<UserSticker> {
 	const userSticker: Partial<UserSticker> = {
 		id: '',
 		stickerId: String(stickerId),
 		sourceId: String(sourceId),
+		rarityId: rarityId ? String(rarityId) : undefined,
 		acquiredAt: ''
 	};
 
@@ -102,4 +103,56 @@ export async function deleteUserStickersBySource(sourceId: ID): Promise<boolean>
  */
 export async function deleteAllUserStickers(): Promise<number> {
 	return await invoke<number>('delete_all_user_stickers');
+}
+
+// ============================================================================
+// STICKER MIXING (upgrade rarity by combining duplicates)
+// ============================================================================
+
+/**
+ * Info about a sticker that can be mixed (has 2+ copies of same rarity)
+ */
+export interface MixableStickerInfo {
+	stickerId: string;
+	rarityId: string;
+	count: number;
+}
+
+/**
+ * Get all stickers that can be mixed (have 2+ copies of same sticker and rarity)
+ */
+export async function getMixableStickers(): Promise<MixableStickerInfo[]> {
+	return await invoke<MixableStickerInfo[]>('get_mixable_user_stickers');
+}
+
+/**
+ * Get copy count for a specific sticker and rarity combination
+ */
+export async function getStickerCopyCountByRarity(stickerId: ID, rarityId: ID): Promise<number> {
+	return await invoke<number>('get_user_sticker_copy_count_by_rarity', {
+		stickerId: String(stickerId),
+		rarityId: String(rarityId)
+	});
+}
+
+/**
+ * Mix two stickers of the same type and rarity to create one of higher rarity
+ * @param stickerId - The sticker template ID
+ * @param currentRarityId - The current rarity of the stickers to mix
+ * @param newRarityId - The target rarity for the new sticker
+ * @param sourceId - The source/album ID for the new sticker
+ * @returns The newly created sticker with upgraded rarity
+ */
+export async function mixStickers(
+	stickerId: ID,
+	currentRarityId: ID,
+	newRarityId: ID,
+	sourceId: ID
+): Promise<UserSticker> {
+	return await invoke<UserSticker>('mix_user_stickers', {
+		stickerId: String(stickerId),
+		currentRarityId: String(currentRarityId),
+		newRarityId: String(newRarityId),
+		sourceId: String(sourceId)
+	});
 }

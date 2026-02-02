@@ -13,7 +13,7 @@
 		convertToQuestion
 	} from '$services/trivia-fetch.service';
 	import type { Source, SourceType } from '$types/source.type';
-	import type { Question, CorrectAnswer, Difficulty } from '$types/question.type';
+	import type { Question, Difficulty } from '$types/question.type';
 	import type { FetchedTrivia, TriviaSource } from '$types/trivia-api.type';
 
 	// Collection state
@@ -34,10 +34,8 @@
 	// Form state
 	let isEditing = $state(false);
 	let formQuestionText = $state('');
-	let formAnswerA = $state('');
-	let formAnswerB = $state('');
-	let formAnswerC = $state('');
-	let formCorrectAnswer = $state<CorrectAnswer>('a');
+	let formCorrectAnswer = $state('');
+	let formWrongAnswers = $state<string[]>(['', '']); // Start with 2 empty wrong answers
 	let formDifficulty = $state<Difficulty | ''>('');
 
 	// Fetch trivia state
@@ -59,7 +57,9 @@
 		anime: 'Anime',
 		sports_league: 'Sports',
 		animal: 'Animals',
-		award_list: 'Award Lists'
+		award_list: 'Award Lists',
+		grammy: 'Grammy Awards',
+		game_console: 'Game Consoles'
 	};
 
 	// Source labels
@@ -106,10 +106,8 @@
 	// Reset form
 	function resetForm() {
 		formQuestionText = '';
-		formAnswerA = '';
-		formAnswerB = '';
-		formAnswerC = '';
-		formCorrectAnswer = 'a';
+		formCorrectAnswer = '';
+		formWrongAnswers = ['', ''];
 		formDifficulty = '';
 		isEditing = false;
 		selectedQuestion = null;
@@ -140,10 +138,11 @@
 		} else {
 			selectedQuestion = question;
 			formQuestionText = question.questionText;
-			formAnswerA = question.answerA;
-			formAnswerB = question.answerB;
-			formAnswerC = question.answerC;
 			formCorrectAnswer = question.correctAnswer;
+			// Ensure we have at least 2 wrong answer slots
+			formWrongAnswers = question.wrongAnswers.length >= 2
+				? [...question.wrongAnswers]
+				: [...question.wrongAnswers, ...Array(2 - question.wrongAnswers.length).fill('')];
 			formDifficulty = question.difficulty || '';
 			isEditing = true;
 		}
@@ -151,18 +150,18 @@
 
 	// Add a new question
 	async function addQuestion() {
-		if (!selectedSource || !formQuestionText.trim() || isSaving) return;
-		if (!formAnswerA.trim() || !formAnswerB.trim() || !formAnswerC.trim()) return;
+		if (!selectedSource || !formQuestionText.trim() || !formCorrectAnswer.trim() || isSaving) return;
 
 		isSaving = true;
+		// Filter out empty wrong answers
+		const wrongAnswers = formWrongAnswers.filter((a) => a.trim()).map((a) => a.trim());
+
 		const question: Question = {
 			id: crypto.randomUUID(),
 			sourceId: selectedSource.id,
 			questionText: formQuestionText.trim(),
-			answerA: formAnswerA.trim(),
-			answerB: formAnswerB.trim(),
-			answerC: formAnswerC.trim(),
-			correctAnswer: formCorrectAnswer,
+			correctAnswer: formCorrectAnswer.trim(),
+			wrongAnswers,
 			difficulty: formDifficulty || undefined
 		};
 
@@ -176,17 +175,17 @@
 
 	// Update an existing question
 	async function updateQuestion() {
-		if (!selectedSource || !selectedQuestion || !formQuestionText.trim() || isSaving) return;
-		if (!formAnswerA.trim() || !formAnswerB.trim() || !formAnswerC.trim()) return;
+		if (!selectedSource || !selectedQuestion || !formQuestionText.trim() || !formCorrectAnswer.trim() || isSaving) return;
 
 		isSaving = true;
+		// Filter out empty wrong answers
+		const wrongAnswers = formWrongAnswers.filter((a) => a.trim()).map((a) => a.trim());
+
 		const updatedQuestion: Question = {
 			...selectedQuestion,
 			questionText: formQuestionText.trim(),
-			answerA: formAnswerA.trim(),
-			answerB: formAnswerB.trim(),
-			answerC: formAnswerC.trim(),
-			correctAnswer: formCorrectAnswer,
+			correctAnswer: formCorrectAnswer.trim(),
+			wrongAnswers,
 			difficulty: formDifficulty || undefined
 		};
 
@@ -221,18 +220,28 @@
 		}
 	}
 
-	// Check if form is valid
+	// Check if form is valid (need question text, correct answer, and at least source selected)
 	let isFormValid = $derived(
 		formQuestionText.trim() &&
-			formAnswerA.trim() &&
-			formAnswerB.trim() &&
-			formAnswerC.trim() &&
+			formCorrectAnswer.trim() &&
 			selectedSource
 	);
 
-	// Get answer label color based on correct answer
-	function getAnswerLabelClass(answer: CorrectAnswer): string {
-		return formCorrectAnswer === answer ? 'text-success font-semibold' : '';
+	// Add a new wrong answer slot
+	function addWrongAnswer() {
+		formWrongAnswers = [...formWrongAnswers, ''];
+	}
+
+	// Remove a wrong answer slot
+	function removeWrongAnswer(index: number) {
+		if (formWrongAnswers.length > 1) {
+			formWrongAnswers = formWrongAnswers.filter((_, i) => i !== index);
+		}
+	}
+
+	// Update a wrong answer
+	function updateWrongAnswer(index: number, value: string) {
+		formWrongAnswers = formWrongAnswers.map((a, i) => (i === index ? value : a));
 	}
 
 	// Toggle source selection
@@ -586,18 +595,14 @@
 												<div class="font-medium text-sm line-clamp-2">
 													{question.questionText}
 												</div>
-												<div class="text-xs text-base-content/60 mt-1">
-													<span class={question.correctAnswer === 'a' ? 'text-success' : ''}>
-														A: {question.answerA}
-													</span>
-													<span class="mx-1">|</span>
-													<span class={question.correctAnswer === 'b' ? 'text-success' : ''}>
-														B: {question.answerB}
-													</span>
-													<span class="mx-1">|</span>
-													<span class={question.correctAnswer === 'c' ? 'text-success' : ''}>
-														C: {question.answerC}
-													</span>
+												<div class="text-xs mt-1">
+													<span class="text-success">{question.correctAnswer}</span>
+													{#if question.wrongAnswers.length > 0}
+														{#each question.wrongAnswers as wrong}
+															<span class="mx-1 text-base-content/40">|</span>
+															<span class="text-base-content/60">{wrong}</span>
+														{/each}
+													{/if}
 												</div>
 												{#if question.difficulty}
 													<div class="mt-1">
@@ -668,99 +673,55 @@
 								></textarea>
 							</div>
 
-							<!-- Answer A -->
-							<div class="form-control">
-								<label class="label" for="answer-a">
-									<span class={classNames('label-text', getAnswerLabelClass('a'))}>
-										Answer A *
-										{#if formCorrectAnswer === 'a'}
-											<span class="badge badge-success badge-xs ml-1">Correct</span>
-										{/if}
-									</span>
-								</label>
-								<input
-									id="answer-a"
-									type="text"
-									placeholder="First answer option..."
-									class="input input-bordered w-full"
-									bind:value={formAnswerA}
-								/>
-							</div>
-
-							<!-- Answer B -->
-							<div class="form-control">
-								<label class="label" for="answer-b">
-									<span class={classNames('label-text', getAnswerLabelClass('b'))}>
-										Answer B *
-										{#if formCorrectAnswer === 'b'}
-											<span class="badge badge-success badge-xs ml-1">Correct</span>
-										{/if}
-									</span>
-								</label>
-								<input
-									id="answer-b"
-									type="text"
-									placeholder="Second answer option..."
-									class="input input-bordered w-full"
-									bind:value={formAnswerB}
-								/>
-							</div>
-
-							<!-- Answer C -->
-							<div class="form-control">
-								<label class="label" for="answer-c">
-									<span class={classNames('label-text', getAnswerLabelClass('c'))}>
-										Answer C *
-										{#if formCorrectAnswer === 'c'}
-											<span class="badge badge-success badge-xs ml-1">Correct</span>
-										{/if}
-									</span>
-								</label>
-								<input
-									id="answer-c"
-									type="text"
-									placeholder="Third answer option..."
-									class="input input-bordered w-full"
-									bind:value={formAnswerC}
-								/>
-							</div>
-
 							<!-- Correct Answer -->
 							<div class="form-control">
-								<label class="label">
-									<span class="label-text">Correct Answer *</span>
+								<label class="label" for="correct-answer">
+									<span class="label-text text-success font-semibold">Correct Answer *</span>
 								</label>
-								<div class="flex gap-4">
-									<label class="label cursor-pointer gap-2">
-										<input
-											type="radio"
-											name="correct-answer"
-											class="radio radio-success"
-											value="a"
-											bind:group={formCorrectAnswer}
-										/>
-										<span class="label-text">A</span>
+								<input
+									id="correct-answer"
+									type="text"
+									placeholder="The correct answer..."
+									class="input input-bordered input-success w-full"
+									bind:value={formCorrectAnswer}
+								/>
+							</div>
+
+							<!-- Wrong Answers -->
+							<div class="form-control">
+								<div class="flex items-center justify-between mb-1">
+									<label class="label py-0">
+										<span class="label-text">Wrong Answers</span>
 									</label>
-									<label class="label cursor-pointer gap-2">
-										<input
-											type="radio"
-											name="correct-answer"
-											class="radio radio-success"
-											value="b"
-											bind:group={formCorrectAnswer}
-										/>
-										<span class="label-text">B</span>
-									</label>
-									<label class="label cursor-pointer gap-2">
-										<input
-											type="radio"
-											name="correct-answer"
-											class="radio radio-success"
-											value="c"
-											bind:group={formCorrectAnswer}
-										/>
-										<span class="label-text">C</span>
-									</label>
+									<button
+										type="button"
+										class="btn btn-ghost btn-xs"
+										onclick={addWrongAnswer}
+									>
+										+ Add
+									</button>
+								</div>
+								<div class="space-y-2">
+									{#each formWrongAnswers as answer, index (index)}
+										<div class="flex gap-2">
+											<input
+												type="text"
+												placeholder="Wrong answer {index + 1}..."
+												class="input input-bordered input-sm w-full"
+												value={answer}
+												oninput={(e) => updateWrongAnswer(index, e.currentTarget.value)}
+											/>
+											{#if formWrongAnswers.length > 1}
+												<button
+													type="button"
+													class="btn btn-ghost btn-sm text-error"
+													onclick={() => removeWrongAnswer(index)}
+												>
+													✕
+												</button>
+											{/if}
+										</div>
+									{/each}
 								</div>
 							</div>
 

@@ -11,6 +11,21 @@
 			"path": "/game/player"
 		},
 		{
+			"id": "settings",
+			"label": "Settings",
+			"path": "/game/settings"
+		},
+		{
+			"id": "stamps",
+			"label": "Stamps",
+			"path": "/game/stamps"
+		},
+		{
+			"id": "stickers",
+			"label": "Stickers",
+			"path": "/game/stickers"
+		},
+		{
 			"id": "guess-the-name",
 			"label": "Guess The Name",
 			"path": "/game/guess-the-name",
@@ -29,5 +44,5 @@
 			"group": "Minigames"
 		}
 	],
-	"generatedAt": "2026-02-01T12:24:27.047Z"
+	"generatedAt": "2026-02-02T03:03:09.109Z"
 }

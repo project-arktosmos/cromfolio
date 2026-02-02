@@ -247,6 +247,8 @@ pub fn run() {
             commands::add_tag_to_sticker,
             commands::remove_tag_from_sticker,
             commands::get_sticker_ids_by_tag,
+            commands::get_sticker_names_by_imdb_ids,
+            commands::get_pokemon_common_tag_keys,
             // Collections
             commands::get_all_collections,
             commands::get_collection,
@@ -290,6 +292,11 @@ pub fn run() {
             commands::search_sports_teams,
             commands::search_sports_leagues,
             commands::search_animals,
+            // MusicBrainz search
+            commands::search_musicbrainz_artists,
+            commands::search_musicbrainz_releases,
+            commands::search_musicbrainz_recordings,
+            commands::get_musicbrainz_cover_art,
             // API Fetch commands - Batch fetch
             commands::fetch_source_images,
             // API Fetch commands - Helpers
@@ -317,6 +324,10 @@ pub fn run() {
             commands::delete_user_sticker,
             commands::delete_user_stickers_by_source,
             commands::delete_all_user_stickers,
+            // User Sticker Mixing (upgrade rarity by combining duplicates)
+            commands::get_mixable_user_stickers,
+            commands::get_user_sticker_copy_count_by_rarity,
+            commands::mix_user_stickers,
             // User Collections (game data - _user_collections table)
             commands::get_all_user_collections,
             commands::get_user_collection,
@@ -338,6 +349,26 @@ pub fn run() {
             commands::release_user_source,
             commands::delete_user_source,
             commands::delete_all_user_sources,
+            // Clear all user data at once
+            commands::clear_all_user_data,
+            // User Placed Stamps
+            commands::get_placed_stamps_by_collection,
+            commands::get_placed_stamps_by_page,
+            commands::get_placed_stamp,
+            commands::place_stamp,
+            commands::update_placed_stamp,
+            commands::remove_placed_stamp,
+            commands::clear_collection_stamps,
+            commands::clear_all_placed_stamps,
+            // User Sticker Placements (stickers "stuck" in albums)
+            commands::get_sticker_placements_by_collection,
+            commands::get_all_placed_sticker_ids,
+            commands::get_placed_sticker_ids_for_collection,
+            commands::is_sticker_placed,
+            commands::place_sticker,
+            commands::unstick_sticker,
+            commands::clear_collection_sticker_placements,
+            commands::clear_all_sticker_placements,
             // LLM Configs
             commands::get_all_llm_configs,
             commands::get_llm_config,
@@ -371,6 +402,19 @@ pub fn run() {
             commands::copy_file_to_stamps_dir,
             commands::write_stamp_file,
             commands::delete_stamp_pack_files,
+            // Collection Export
+            commands::prepare_collection_export,
+            commands::create_torrent_for_export,
+            commands::open_directory,
+            // Pokemon Trivia Templates
+            commands::get_all_pokemon_trivia_templates,
+            commands::get_pokemon_trivia_template,
+            commands::get_pokemon_trivia_templates_by_tag_key,
+            commands::get_active_pokemon_trivia_templates,
+            commands::get_pokemon_trivia_template_tag_keys,
+            commands::create_pokemon_trivia_template,
+            commands::update_pokemon_trivia_template,
+            commands::delete_pokemon_trivia_template,
             // Utility
             commands::get_cwd,
         ])

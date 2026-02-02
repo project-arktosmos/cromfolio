@@ -274,3 +274,16 @@ export async function tagCard(cardId: ID, key: string, value: string): Promise<b
 	const result = await addTagToCard(cardId, tag.id);
 	return result !== null;
 }
+
+/**
+ * Get tag keys that are common to ALL Pokemon stickers
+ * A tag key is "common" if every Pokemon sticker has at least one tag with that key
+ */
+export async function getPokemonCommonTagKeys(): Promise<string[]> {
+	try {
+		return await invoke<string[]>('get_pokemon_common_tag_keys');
+	} catch (e) {
+		console.error('[tags.service] getPokemonCommonTagKeys:', e);
+		return [];
+	}
+}

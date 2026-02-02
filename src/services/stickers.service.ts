@@ -61,10 +61,18 @@ export async function updateSticker(sticker: Sticker): Promise<Sticker | null> {
 }
 
 /**
+ * Get a sticker by ID
+ */
+export async function getSticker(id: ID): Promise<Sticker | null> {
+	return await tauriApiService.get<Sticker>('stickers', String(id));
+}
+
+/**
  * Check if a sticker exists in the collection
+ * @deprecated Use getSticker instead
  */
 export async function stickerExists(id: ID): Promise<Sticker | null> {
-	return await tauriApiService.get<Sticker>('stickers', String(id));
+	return getSticker(id);
 }
 
 /**

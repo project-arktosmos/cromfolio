@@ -12,6 +12,10 @@ pub struct UserSticker {
     #[serde(default)]
     pub source_id: String,
 
+    // Rarity of the sticker at time of acquisition
+    #[serde(default)]
+    pub rarity_id: Option<String>,
+
     // Timestamp when the sticker was acquired
     #[serde(default)]
     pub acquired_at: String,

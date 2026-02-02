@@ -3,14 +3,49 @@
  * Uses native fetch - works in both Node.js and browser
  */
 
-import type { TmdbIdResult, ImageItem, CharacterItem } from '../types.js';
+import type { TmdbIdResult, ImageItem, CharacterItem, ContentDetails } from '../types.js';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
 interface TmdbFindResponse {
-	movie_results: Array<{ id: number }>;
-	tv_results: Array<{ id: number }>;
+	movie_results: Array<{
+		id: number;
+		title: string;
+		release_date?: string;
+		poster_path?: string;
+		overview?: string;
+	}>;
+	tv_results: Array<{
+		id: number;
+		name: string;
+		first_air_date?: string;
+		poster_path?: string;
+		overview?: string;
+	}>;
+}
+
+interface TmdbMovieDetails {
+	id: number;
+	title: string;
+	release_date?: string;
+	poster_path?: string;
+	overview?: string;
+	runtime?: number;
+	genres?: Array<{ id: number; name: string }>;
+	vote_average?: number;
+	imdb_id?: string;
+}
+
+interface TmdbTvDetails {
+	id: number;
+	name: string;
+	first_air_date?: string;
+	poster_path?: string;
+	overview?: string;
+	number_of_seasons?: number;
+	genres?: Array<{ id: number; name: string }>;
+	vote_average?: number;
 }
 
 interface TmdbImagesResponse {
@@ -72,6 +107,90 @@ export async function findByImdbId(
 	}
 
 	return null;
+}
+
+/**
+ * Get movie details by TMDB ID
+ */
+export async function getMovieDetails(
+	apiKey: string,
+	tmdbId: number
+): Promise<TmdbMovieDetails> {
+	const url = `${TMDB_BASE_URL}/movie/${tmdbId}?api_key=${apiKey}`;
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+	}
+
+	return response.json();
+}
+
+/**
+ * Get TV show details by TMDB ID
+ */
+export async function getTvDetails(
+	apiKey: string,
+	tmdbId: number
+): Promise<TmdbTvDetails> {
+	const url = `${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${apiKey}`;
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+	}
+
+	return response.json();
+}
+
+/**
+ * Get content details from TMDB using IMDB ID
+ * Returns the same format as OMDB for compatibility
+ */
+export async function getContentDetailsFromTmdb(
+	apiKey: string,
+	imdbId: string
+): Promise<ContentDetails> {
+	// First find the TMDB ID
+	const findResult = await findByImdbId(apiKey, imdbId);
+
+	if (!findResult) {
+		throw new Error(`Content not found in TMDB for IMDB ID: ${imdbId}`);
+	}
+
+	const { tmdbId, mediaType } = findResult;
+
+	if (mediaType === 'movie') {
+		const movie = await getMovieDetails(apiKey, tmdbId);
+		const year = movie.release_date ? movie.release_date.substring(0, 4) : '';
+
+		return {
+			title: movie.title,
+			year,
+			plot: movie.overview,
+			poster: movie.poster_path ? `${TMDB_IMAGE_BASE}/w500${movie.poster_path}` : undefined,
+			runtime: movie.runtime ? `${movie.runtime} min` : undefined,
+			genre: movie.genres?.map((g) => g.name).join(', '),
+			imdbId,
+			imdbRating: movie.vote_average?.toString(),
+			mediaType: 'movie'
+		};
+	} else {
+		const tv = await getTvDetails(apiKey, tmdbId);
+		const year = tv.first_air_date ? tv.first_air_date.substring(0, 4) : '';
+
+		return {
+			title: tv.name,
+			year,
+			plot: tv.overview,
+			poster: tv.poster_path ? `${TMDB_IMAGE_BASE}/w500${tv.poster_path}` : undefined,
+			genre: tv.genres?.map((g) => g.name).join(', '),
+			imdbId,
+			imdbRating: tv.vote_average?.toString(),
+			mediaType: 'series',
+			totalSeasons: tv.number_of_seasons?.toString()
+		};
+	}
 }
 
 /**

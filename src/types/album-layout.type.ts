@@ -80,3 +80,76 @@ export const DEFAULT_PACKING_CONFIG: PackingConfig = {
 export function getPageAspectRatio(): string {
 	return `${DEFAULT_PACKING_CONFIG.pageWidth} / ${DEFAULT_PACKING_CONFIG.pageHeight}`;
 }
+
+// =============================================================================
+// Grid-Based Layout (2-Column) - New System
+// =============================================================================
+
+/**
+ * Configuration for N-column grid packing
+ * Uses A4 aspect ratio with configurable padding and gaps
+ */
+export interface GridPackingConfig {
+	/** Reference page width in units (A4 = 210) */
+	pageWidth: number;
+	/** Reference page height in units (A4 = 297) */
+	pageHeight: number;
+	/** Padding around page content */
+	pagePadding: number;
+	/** Number of columns in the grid */
+	columns: number;
+	/** Horizontal gap between columns */
+	columnGap: number;
+	/** Vertical gap between rows */
+	rowGap: number;
+	/** Height reserved for page number header */
+	headerHeight: number;
+}
+
+/**
+ * A sticker with its calculated scaled dimensions for grid layout
+ */
+export interface GridScaledSticker {
+	sticker: Sticker;
+	/** Scaled height in config units when fitted to column width */
+	scaledHeight: number;
+	/** Original width in pixels */
+	width: number;
+	/** Original height in pixels */
+	height: number;
+}
+
+/**
+ * A row of stickers (1-N stickers per row, based on config.columns)
+ */
+export interface PackedRow {
+	stickers: GridScaledSticker[];
+	/** Height of the row (tallest sticker's scaled height) */
+	rowHeight: number;
+}
+
+/**
+ * A single album page with rows of stickers (N-column grid layout)
+ */
+export interface GridPackedPage {
+	pageIndex: number;
+	rows: PackedRow[];
+	/** Total height used by all rows + gaps */
+	totalHeight: number;
+}
+
+/** Default 2-column packing configuration */
+export const DEFAULT_GRID_PACKING_CONFIG: GridPackingConfig = {
+	pageWidth: 210,
+	pageHeight: 297,
+	pagePadding: 16,
+	columns: 2,
+	columnGap: 8,
+	rowGap: 8,
+	headerHeight: 0
+};
+
+/** Get page aspect ratio for grid layout as CSS string */
+export function getGridPageAspectRatio(): string {
+	return `${DEFAULT_GRID_PACKING_CONFIG.pageWidth} / ${DEFAULT_GRID_PACKING_CONFIG.pageHeight}`;
+}

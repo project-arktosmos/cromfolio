@@ -11,7 +11,9 @@ export type SourceType =
 	| 'anime'
 	| 'sports_league'
 	| 'animal'
-	| 'award_list';
+	| 'award_list'
+	| 'grammy'
+	| 'game_console';
 
 export interface Source {
 	id: ID;

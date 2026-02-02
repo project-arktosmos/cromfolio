@@ -97,6 +97,7 @@ impl Database {
         Self::add_column_if_not_exists(conn, "sources", "source_type", "TEXT NOT NULL DEFAULT 'movie'")?;
 
         // Create stickers table if not exists (formerly blueprints/templates)
+        // Note: rarity is stored on user_stickers (owned stickers), not on sticker templates
         conn.execute(
             "CREATE TABLE IF NOT EXISTS stickers (
                 id TEXT PRIMARY KEY,
@@ -104,7 +105,6 @@ impl Database {
                 name TEXT NOT NULL,
                 image TEXT NOT NULL,
                 sticker_type_id TEXT,
-                rarity_id TEXT REFERENCES rarities(id) ON DELETE SET NULL,
                 image_source TEXT,
                 added_at TEXT,
                 created_at TEXT NOT NULL,
@@ -167,6 +167,9 @@ impl Database {
         // Seed default rarities (WoW-style) if table is empty
         Self::seed_default_rarities(conn)?;
 
+        // Migration: Remove "poor" rarity and fix sort orders
+        Self::migrate_rarities_remove_poor(conn)?;
+
         // Create sticker_types table if not exists (formerly blueprint_types/template_types)
         conn.execute(
             "CREATE TABLE IF NOT EXISTS sticker_types (
@@ -188,15 +191,14 @@ impl Database {
         Self::seed_default_sticker_types(conn)?;
 
         // Create questions table if not exists
+        // New schema: correct_answer is the actual answer text, wrong_answers is a JSON array
         conn.execute(
             "CREATE TABLE IF NOT EXISTS questions (
                 id TEXT PRIMARY KEY,
                 source_id TEXT NOT NULL,
                 question_text TEXT NOT NULL,
-                answer_a TEXT NOT NULL,
-                answer_b TEXT NOT NULL,
-                answer_c TEXT NOT NULL,
-                correct_answer TEXT NOT NULL CHECK(correct_answer IN ('a', 'b', 'c')),
+                correct_answer TEXT NOT NULL,
+                wrong_answers TEXT NOT NULL DEFAULT '[]',
                 difficulty TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -205,6 +207,9 @@ impl Database {
             [],
         )
         .map_err(|e| format!("Failed to create questions table: {}", e))?;
+
+        // Migration: Convert old questions schema to new schema
+        Self::migrate_questions_schema(conn)?;
 
         // Tags tables
         Self::create_tags_tables(conn)?;
@@ -218,34 +223,47 @@ impl Database {
         // User data tables (prefixed with _user for separation)
         Self::create_user_tables(conn)?;
 
+        // Migration: Add rarity_id column to _user_stickers table
+        Self::add_column_if_not_exists(conn, "_user_stickers", "rarity_id", "TEXT REFERENCES rarities(id) ON DELETE SET NULL")?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_stickers_rarity_id ON _user_stickers(rarity_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_stickers rarity_id index: {}", e))?;
+
         // LLM configs table
         Self::create_llm_configs_table(conn)?;
 
         // Stamp packs and stamps tables (service-agnostic imported stickers)
         Self::create_stamp_tables(conn)?;
 
+        // Pokemon trivia templates table
+        Self::create_pokemon_trivia_templates_table(conn)?;
+
         Ok(())
     }
 
     /// Find the database file
     ///
-    /// Looks for app.db in the current directory or parent directories
+    /// Always uses app.db from the project root (not src-tauri/).
+    /// This is the single source of truth for all database operations.
     fn find_database_path() -> Result<PathBuf, String> {
         let cwd = std::env::current_dir()
             .map_err(|e| format!("Failed to get current directory: {}", e))?;
 
-        // Check current directory
-        let db_in_cwd = cwd.join("app.db");
-        if db_in_cwd.exists() {
-            return Ok(db_in_cwd);
-        }
-
-        // Check parent directory (for when running from src-tauri)
+        // ALWAYS check parent directory first (for when running from src-tauri)
+        // This ensures we use ./app.db from project root, not src-tauri/app.db
         if let Some(parent) = cwd.parent() {
             let db_in_parent = parent.join("app.db");
             if db_in_parent.exists() {
                 return Ok(db_in_parent);
             }
+        }
+
+        // Fallback to current directory (when running from project root)
+        let db_in_cwd = cwd.join("app.db");
+        if db_in_cwd.exists() {
+            return Ok(db_in_cwd);
         }
 
         Err(format!(
@@ -373,6 +391,63 @@ impl Database {
         Ok(())
     }
 
+    /// Migrate questions table from old schema (answer_a, answer_b, answer_c, correct_answer as 'a'|'b'|'c')
+    /// to new schema (correct_answer as actual text, wrong_answers as JSON array)
+    fn migrate_questions_schema(conn: &Connection) -> Result<(), String> {
+        // Check if old columns exist (answer_a is the indicator)
+        let mut stmt = conn
+            .prepare("PRAGMA table_info(questions)")
+            .map_err(|e| e.to_string())?;
+
+        let columns: Vec<String> = stmt
+            .query_map([], |row| {
+                let name: String = row.get(1)?;
+                Ok(name)
+            })
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        let has_old_schema = columns.iter().any(|n| n == "answer_a");
+        let has_new_schema = columns.iter().any(|n| n == "wrong_answers");
+
+        // If we have old schema but no new schema, we need to migrate
+        if has_old_schema && !has_new_schema {
+            log::info!("Migrating questions table to new schema...");
+
+            // Add the new wrong_answers column
+            conn.execute(
+                "ALTER TABLE questions ADD COLUMN wrong_answers TEXT NOT NULL DEFAULT '[]'",
+                [],
+            )
+            .map_err(|e| format!("Failed to add wrong_answers column: {}", e))?;
+
+            // Migrate existing data: convert old format to new format
+            // The old correct_answer is 'a', 'b', or 'c' - we need to get the actual answer text
+            // and put the other two answers into wrong_answers
+            conn.execute(
+                "UPDATE questions SET
+                    wrong_answers = json_array(
+                        CASE WHEN correct_answer = 'a' THEN answer_b ELSE answer_a END,
+                        CASE WHEN correct_answer = 'c' THEN answer_b ELSE answer_c END
+                    ),
+                    correct_answer = CASE correct_answer
+                        WHEN 'a' THEN answer_a
+                        WHEN 'b' THEN answer_b
+                        WHEN 'c' THEN answer_c
+                        ELSE correct_answer
+                    END
+                WHERE correct_answer IN ('a', 'b', 'c')",
+                [],
+            )
+            .map_err(|e| format!("Failed to migrate question data: {}", e))?;
+
+            log::info!("Questions table migrated to new schema successfully");
+        }
+
+        Ok(())
+    }
+
     /// Seed default rarities based on WoW item quality system
     fn seed_default_rarities(conn: &Connection) -> Result<(), String> {
         // Check if rarities table is empty
@@ -388,18 +463,16 @@ impl Database {
 
         // WoW-style rarities using Tailwind color palette (500 → 700 gradients)
         let rarities = [
-            // Poor (gray-400 → gray-600)
-            ("poor", "Poor", "#9CA3AF", "#4B5563", 0),
-            // Common (gray-200 → gray-400)
-            ("common", "Common", "#E5E7EB", "#9CA3AF", 1),
+            // Common (gray-400 → gray-600) - lowest quality
+            ("common", "Common", "#9CA3AF", "#4B5563", 0),
             // Uncommon (green-500 → green-700)
-            ("uncommon", "Uncommon", "#22C55E", "#15803D", 2),
+            ("uncommon", "Uncommon", "#22C55E", "#15803D", 1),
             // Rare (blue-500 → blue-700)
-            ("rare", "Rare", "#3B82F6", "#1D4ED8", 3),
+            ("rare", "Rare", "#3B82F6", "#1D4ED8", 2),
             // Epic (purple-500 → purple-700)
-            ("epic", "Epic", "#A855F7", "#7E22CE", 4),
+            ("epic", "Epic", "#A855F7", "#7E22CE", 3),
             // Legendary (orange-500 → orange-700)
-            ("legendary", "Legendary", "#F97316", "#C2410C", 5),
+            ("legendary", "Legendary", "#F97316", "#C2410C", 4),
         ];
 
         for (id, name, color_from, color_to, sort_order) in rarities {
@@ -412,6 +485,53 @@ impl Database {
         }
 
         log::info!("Seeded {} default rarities (WoW-style)", rarities.len());
+        Ok(())
+    }
+
+    /// Migration: Remove "poor" rarity and update sort orders
+    /// Common becomes the lowest quality (sort_order 0)
+    fn migrate_rarities_remove_poor(conn: &Connection) -> Result<(), String> {
+        // Check if "poor" rarity exists
+        let poor_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM rarities WHERE id = 'poor'",
+                [],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !poor_exists {
+            return Ok(()); // Already migrated
+        }
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // Update any user_stickers that reference "poor" to use "common" instead
+        conn.execute(
+            "UPDATE _user_stickers SET rarity_id = 'common' WHERE rarity_id = 'poor'",
+            [],
+        )
+        .map_err(|e| format!("Failed to migrate user_stickers from poor to common: {}", e))?;
+
+        // Delete "poor" rarity
+        conn.execute("DELETE FROM rarities WHERE id = 'poor'", [])
+            .map_err(|e| format!("Failed to delete poor rarity: {}", e))?;
+
+        // Update common to have gray colors and sort_order 0
+        conn.execute(
+            "UPDATE rarities SET color_from = '#9CA3AF', color_to = '#4B5563', sort_order = 0, updated_at = ?1 WHERE id = 'common'",
+            rusqlite::params![now],
+        )
+        .map_err(|e| format!("Failed to update common rarity: {}", e))?;
+
+        // Shift all other sort_orders down by 1
+        conn.execute(
+            "UPDATE rarities SET sort_order = sort_order - 1, updated_at = ?1 WHERE id IN ('uncommon', 'rare', 'epic', 'legendary')",
+            rusqlite::params![now],
+        )
+        .map_err(|e| format!("Failed to update rarity sort orders: {}", e))?;
+
+        log::info!("Migrated rarities: removed 'poor', 'common' is now the lowest quality");
         Ok(())
     }
 
@@ -462,6 +582,7 @@ impl Database {
         let collection_types = [
             ("anime", "Anime", "Collections featuring anime series and movies", "🎌", 0),
             ("awards", "Awards", "Collections featuring award shows and ceremonies", "🏆", 1),
+            ("pokemon", "Pokemon", "Collections featuring Pokemon from various generations", "⚡", 2),
         ];
 
         for (id, name, description, icon, sort_order) in collection_types {
@@ -658,7 +779,73 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create _user_sources source_id index: {}", e))?;
 
-        log::info!("User tables (_user_stickers, _user_collections, _user_sources) created successfully");
+        // _user_placed_stamps table - tracks stamps placed on album pages
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_placed_stamps (
+                id TEXT PRIMARY KEY,
+                stamp_id TEXT NOT NULL,
+                collection_id TEXT NOT NULL,
+                page_index INTEGER NOT NULL,
+                position_x REAL NOT NULL,
+                position_y REAL NOT NULL,
+                scale REAL NOT NULL DEFAULT 1.0,
+                rotation REAL NOT NULL DEFAULT 0,
+                placed_at TEXT NOT NULL,
+                FOREIGN KEY (stamp_id) REFERENCES stamps(id) ON DELETE CASCADE,
+                FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_stamps table: {}", e))?;
+
+        // Indexes for efficient lookups
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_placed_stamps_collection_id ON _user_placed_stamps(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_stamps collection_id index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_placed_stamps_stamp_id ON _user_placed_stamps(stamp_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_stamps stamp_id index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_placed_stamps_collection_page ON _user_placed_stamps(collection_id, page_index)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_placed_stamps collection_page index: {}", e))?;
+
+        // _user_sticker_placements table - tracks which stickers are "stuck" in albums
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_sticker_placements (
+                id TEXT PRIMARY KEY,
+                sticker_id TEXT NOT NULL,
+                collection_id TEXT NOT NULL,
+                placed_at TEXT NOT NULL,
+                FOREIGN KEY (sticker_id) REFERENCES stickers(id) ON DELETE CASCADE,
+                FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+                UNIQUE(sticker_id, collection_id)
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_sticker_placements table: {}", e))?;
+
+        // Indexes for efficient lookups
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_sticker_placements_sticker_id ON _user_sticker_placements(sticker_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_sticker_placements sticker_id index: {}", e))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_sticker_placements_collection_id ON _user_sticker_placements(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_sticker_placements collection_id index: {}", e))?;
+
+        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements) created successfully");
         Ok(())
     }
 
@@ -821,6 +1008,33 @@ impl Database {
         .map_err(|e| format!("Failed to create stamps pack_id index: {}", e))?;
 
         log::info!("Stamp tables (stamp_packs, stamps) created successfully");
+        Ok(())
+    }
+
+    /// Create pokemon_trivia_templates table for storing trivia question templates
+    fn create_pokemon_trivia_templates_table(conn: &Connection) -> Result<(), String> {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS pokemon_trivia_templates (
+                id TEXT PRIMARY KEY,
+                tag_key TEXT NOT NULL,
+                question_template TEXT NOT NULL,
+                answer_template TEXT NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates table: {}", e))?;
+
+        // Index for efficient lookups by tag_key
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_pokemon_trivia_templates_tag_key ON pokemon_trivia_templates(tag_key)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create pokemon_trivia_templates tag_key index: {}", e))?;
+
+        log::info!("Pokemon trivia templates table created successfully");
         Ok(())
     }
 }

@@ -1,5 +1,16 @@
 import type { Sticker } from '$types/sticker.type';
-import type { PackingConfig, PackedPage, PackedColumn, ScaledSticker, FullPageSticker, GroupedFragments } from '$types/album-layout.type';
+import type {
+	PackingConfig,
+	PackedPage,
+	PackedColumn,
+	ScaledSticker,
+	FullPageSticker,
+	GroupedFragments,
+	GridPackingConfig,
+	GridScaledSticker,
+	PackedRow,
+	GridPackedPage
+} from '$types/album-layout.type';
 import type { Tag } from '$types/tag.type';
 
 /** Default dimensions for stickers without width/height (2:3 aspect ratio) */
@@ -238,4 +249,108 @@ export function groupFragmentStickers(
 	}
 
 	return { grouped, nonFragments };
+}
+
+// =============================================================================
+// Grid-Based Layout (N-Column) - New System
+// =============================================================================
+
+/**
+ * Calculate the width of each sticker in the grid layout
+ */
+export function getGridColumnWidth(config: GridPackingConfig): number {
+	const usableWidth = config.pageWidth - 2 * config.pagePadding;
+	const totalGaps = (config.columns - 1) * config.columnGap;
+	return (usableWidth - totalGaps) / config.columns;
+	// For A4 with 2 columns: (210 - 32 - 8) / 2 = 170 / 2 = 85mm per sticker
+}
+
+/**
+ * Calculate the usable page height for rows
+ */
+export function getGridPageHeight(config: GridPackingConfig): number {
+	return config.pageHeight - 2 * config.pagePadding - config.headerHeight;
+	// For A4: 297 - 32 - 0 = 265mm
+}
+
+/**
+ * Calculate the scaled height of a sticker when fit to grid column width
+ */
+export function calculateGridScaledHeight(
+	sticker: Sticker,
+	columnWidth: number
+): number {
+	const { width, height } = getStickerDimensions(sticker);
+	const scaleFactor = columnWidth / width;
+	return height * scaleFactor;
+}
+
+/**
+ * Pack stickers into pages using a row-based grid algorithm.
+ *
+ * Algorithm:
+ * 1. Calculate sticker width based on N-column layout
+ * 2. For each sticker, calculate scaled height
+ * 3. Group stickers into rows of N (or fewer for the last row)
+ * 4. For each row, height = max(sticker heights in row)
+ * 5. Pack rows onto pages until page is full
+ */
+export function packStickersIntoGrid(
+	stickers: Sticker[],
+	config: GridPackingConfig
+): GridPackedPage[] {
+	if (stickers.length === 0) {
+		return [];
+	}
+
+	const columnWidth = getGridColumnWidth(config);
+	const maxPageHeight = getGridPageHeight(config);
+
+	// Step 1: Calculate scaled dimensions for all stickers
+	const scaledStickers: GridScaledSticker[] = stickers.map((sticker) => {
+		const { width, height } = getStickerDimensions(sticker);
+		const scaledHeight = calculateGridScaledHeight(sticker, columnWidth);
+		return { sticker, scaledHeight, width, height };
+	});
+
+	// Step 2: Group into rows of N (config.columns)
+	const rows: PackedRow[] = [];
+	for (let i = 0; i < scaledStickers.length; i += config.columns) {
+		const rowStickers = scaledStickers.slice(i, i + config.columns);
+		const rowHeight = Math.max(...rowStickers.map((s) => s.scaledHeight));
+		rows.push({ stickers: rowStickers, rowHeight });
+	}
+
+	// Step 3: Pack rows onto pages
+	const pages: GridPackedPage[] = [];
+	let pageIndex = 0;
+	let currentPage: GridPackedPage = { pageIndex, rows: [], totalHeight: 0 };
+
+	for (const row of rows) {
+		const gapToAdd = currentPage.rows.length > 0 ? config.rowGap : 0;
+		const heightNeeded = row.rowHeight + gapToAdd;
+
+		if (currentPage.totalHeight + heightNeeded > maxPageHeight) {
+			// Current page is full, start new page
+			if (currentPage.rows.length > 0) {
+				pages.push(currentPage);
+			}
+			pageIndex++;
+			currentPage = { pageIndex, rows: [], totalHeight: 0 };
+		}
+
+		// Add row to current page
+		if (currentPage.rows.length > 0) {
+			currentPage.totalHeight += config.rowGap;
+		}
+		currentPage.rows.push(row);
+		currentPage.totalHeight += row.rowHeight;
+	}
+
+	// Add final page
+	if (currentPage.rows.length > 0) {
+		pages.push(currentPage);
+	}
+
+	return pages;
 }

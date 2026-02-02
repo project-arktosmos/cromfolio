@@ -155,7 +155,7 @@ pub fn get_stickers_for_collection(
 ) -> Result<Vec<Sticker>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT s.id, s.source_id, s.name, s.image, s.sticker_type_id, s.rarity_id,
+            "SELECT s.id, s.source_id, s.name, s.image, s.sticker_type_id,
                     s.image_source, s.width, s.height, s.fragment_of, s.fragment_position,
                     s.added_at, s.created_at, s.updated_at
              FROM stickers s
@@ -236,15 +236,14 @@ fn row_to_sticker(row: &rusqlite::Row) -> Sticker {
         name: row.get(2).unwrap_or_default(),
         image: row.get(3).unwrap_or_default(),
         sticker_type_id: row.get(4).unwrap_or(None),
-        rarity_id: row.get(5).unwrap_or(None),
-        image_source: row.get(6).unwrap_or(None),
-        width: row.get(7).unwrap_or(None),
-        height: row.get(8).unwrap_or(None),
-        fragment_of: row.get(9).unwrap_or(None),
-        fragment_position: row.get(10).unwrap_or(None),
-        added_at: row.get(11).unwrap_or(None),
-        created_at: row.get(12).unwrap_or_default(),
-        updated_at: row.get(13).unwrap_or_default(),
+        image_source: row.get(5).unwrap_or(None),
+        width: row.get(6).unwrap_or(None),
+        height: row.get(7).unwrap_or(None),
+        fragment_of: row.get(8).unwrap_or(None),
+        fragment_position: row.get(9).unwrap_or(None),
+        added_at: row.get(10).unwrap_or(None),
+        created_at: row.get(11).unwrap_or_default(),
+        updated_at: row.get(12).unwrap_or_default(),
     }
 }
 

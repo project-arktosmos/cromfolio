@@ -17,6 +17,7 @@ use crate::apis::{
     sports::SportsDbApi,
     wikidata::WikidataApi,
     inaturalist::InaturalistApi,
+    musicbrainz::MusicBrainzApi,
 };
 
 // ============================================================================
@@ -699,4 +700,93 @@ pub async fn get_llm_defaults(
         lmstudio_base_url: config.lmstudio_base_url
             .unwrap_or_else(|| "http://localhost:1234".to_string()),
     })
+}
+
+// ============================================================================
+// MUSICBRAINZ COMMANDS
+// ============================================================================
+
+#[command]
+pub async fn search_musicbrainz_artists(
+    query: String,
+    limit: Option<i32>,
+    client_state: State<'_, ApiClientState>,
+) -> Result<Vec<MusicBrainzArtistResult>, String> {
+    MusicBrainzApi::search_artists(&client_state.client, &query, limit.unwrap_or(10))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[command]
+pub async fn search_musicbrainz_releases(
+    query: String,
+    limit: Option<i32>,
+    client_state: State<'_, ApiClientState>,
+) -> Result<Vec<MusicBrainzReleaseResult>, String> {
+    let results = MusicBrainzApi::search_releases(&client_state.client, &query, limit.unwrap_or(10))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(first) = results.first() {
+        eprintln!("[MB Search] Query: '{}', First result: '{}', release_group_mbid: {:?}",
+            query, first.title, first.release_group_mbid);
+    }
+
+    Ok(results)
+}
+
+#[command]
+pub async fn search_musicbrainz_recordings(
+    query: String,
+    limit: Option<i32>,
+    client_state: State<'_, ApiClientState>,
+) -> Result<Vec<MusicBrainzRecordingResult>, String> {
+    MusicBrainzApi::search_recordings(&client_state.client, &query, limit.unwrap_or(10))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[command]
+pub async fn get_musicbrainz_cover_art(
+    release_mbid: String,
+    release_group_mbid: Option<String>,
+    client_state: State<'_, ApiClientState>,
+) -> Result<Option<String>, String> {
+    eprintln!("[CoverArt] Fetching for release: {}, release_group: {:?}", release_mbid, release_group_mbid);
+
+    // Try release cover art first
+    match MusicBrainzApi::get_release_cover_art(&client_state.client, &release_mbid).await {
+        Ok(Some(url)) => {
+            eprintln!("[CoverArt] Found release cover: {}", url);
+            return Ok(Some(url));
+        }
+        Ok(None) => {
+            eprintln!("[CoverArt] No release cover art found");
+        }
+        Err(e) => {
+            eprintln!("[CoverArt] Release cover art error: {}", e);
+        }
+    }
+
+    // Fall back to release group cover art
+    if let Some(rg_mbid) = release_group_mbid {
+        eprintln!("[CoverArt] Trying release group: {}", rg_mbid);
+        match MusicBrainzApi::get_release_group_cover_art(&client_state.client, &rg_mbid).await {
+            Ok(Some(url)) => {
+                eprintln!("[CoverArt] Found release group cover: {}", url);
+                return Ok(Some(url));
+            }
+            Ok(None) => {
+                eprintln!("[CoverArt] No release group cover art found");
+                return Ok(None);
+            }
+            Err(e) => {
+                eprintln!("[CoverArt] Release group cover art error: {}", e);
+                return Err(e.to_string());
+            }
+        }
+    }
+
+    eprintln!("[CoverArt] No cover art found (no release group mbid)");
+    Ok(None)
 }

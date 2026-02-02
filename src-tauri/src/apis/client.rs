@@ -64,6 +64,7 @@ impl RateLimiter {
             "anilist" => Self::new(90.0, 1.5),        // 90 per min
             "jikan" => Self::new(3.0, 3.0),           // 3 per sec
             "musicbrainz" => Self::new(1.0, 1.0),     // 1 per sec (strict)
+            "coverartarchive" => Self::new(1.0, 1.0), // 1 per sec (separate from MB)
             "tvmaze" => Self::new(20.0, 2.0),         // 20 per 10 sec
             _ => Self::new(2.0, 2.0),                 // Conservative default
         }

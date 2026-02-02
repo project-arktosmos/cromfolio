@@ -20,7 +20,10 @@ export type ProviderType =
 	| 'anime'
 	| 'sports_team'
 	| 'sports_league'
-	| 'animal';
+	| 'animal'
+	| 'music_artist'
+	| 'music_album'
+	| 'music_recording';
 
 export type ExternalIdType =
 	| 'imdb'
@@ -30,4 +33,5 @@ export type ExternalIdType =
 	| 'anilist'
 	| 'sportsdb_team'
 	| 'sportsdb_league'
-	| 'wikidata';
+	| 'wikidata'
+	| 'musicbrainz';

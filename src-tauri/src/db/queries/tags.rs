@@ -224,6 +224,87 @@ fn row_to_tag(row: &rusqlite::Row) -> Tag {
     }
 }
 
+/// Get sticker names by tag key and value (e.g., key="imdb_id", value="tt1234567")
+/// Returns a map of tag values to sticker names for efficient batch lookups
+pub fn get_sticker_names_by_tag_values(
+    conn: &Connection,
+    key: &str,
+    values: &[String],
+) -> Result<std::collections::HashMap<String, String>, String> {
+    use std::collections::HashMap;
+
+    if values.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    // Build placeholders for IN clause (starting from ?2 since ?1 is the key)
+    let placeholders: Vec<String> = values.iter().enumerate().map(|(i, _)| format!("?{}", i + 2)).collect();
+    let query = format!(
+        "SELECT t.value, s.name
+         FROM stickers s
+         INNER JOIN sticker_tags st ON s.id = st.sticker_id
+         INNER JOIN tags t ON st.tag_id = t.id
+         WHERE t.key = ?1 AND t.value IN ({})
+         AND s.fragment_position IS NULL",  // Exclude fragment stickers, get full stickers only
+        placeholders.join(", ")
+    );
+
+    let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+
+    // Build params: first the key, then all values
+    let mut params: Vec<&dyn rusqlite::ToSql> = Vec::with_capacity(values.len() + 1);
+    params.push(&key);
+    for v in values {
+        params.push(v);
+    }
+
+    let rows = stmt
+        .query_map(rusqlite::params_from_iter(params.iter()), |row| {
+            let tag_value: String = row.get(0)?;
+            let sticker_name: String = row.get(1)?;
+            Ok((tag_value, sticker_name))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut result = HashMap::new();
+    for row in rows {
+        let (tag_value, sticker_name) = row.map_err(|e| e.to_string())?;
+        result.insert(tag_value, sticker_name);
+    }
+
+    Ok(result)
+}
+
 fn chrono_now() -> String {
     chrono::Utc::now().to_rfc3339()
+}
+
+/// Get tag keys used by Pokemon stickers, ordered by coverage (most common first)
+/// Returns keys that appear on at least 50% of Pokemon stickers
+pub fn get_pokemon_common_tag_keys(conn: &Connection) -> Result<Vec<String>, String> {
+    let query = "
+        SELECT t.key
+        FROM tags t
+        INNER JOIN sticker_tags st ON t.id = st.tag_id
+        INNER JOIN stickers s ON st.sticker_id = s.id
+        INNER JOIN sources src ON s.source_id = src.id
+        WHERE src.title LIKE 'Pokemon%'
+        GROUP BY t.key
+        HAVING COUNT(DISTINCT s.id) >= (
+            SELECT COUNT(*) * 0.5
+            FROM stickers s2
+            INNER JOIN sources src2 ON s2.source_id = src2.id
+            WHERE src2.title LIKE 'Pokemon%'
+        )
+        ORDER BY COUNT(DISTINCT s.id) DESC, t.key
+    ";
+
+    let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?;
+
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }

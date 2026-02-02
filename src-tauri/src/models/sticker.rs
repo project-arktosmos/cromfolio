@@ -17,10 +17,6 @@ pub struct Sticker {
     #[serde(default)]
     pub sticker_type_id: Option<String>,
 
-    // Rarity reference
-    #[serde(default)]
-    pub rarity_id: Option<String>,
-
     // Image source metadata
     #[serde(default)]
     pub image_source: Option<String>, // e.g., 'tmdb', 'igdb', 'anilist', 'thesportsdb'
