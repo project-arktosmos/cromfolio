@@ -231,6 +231,17 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create _user_stickers rarity_id index: {}", e))?;
 
+        // Migration: Add collection_id column to _user_stickers table (tracks which collection sticker was earned from)
+        Self::add_column_if_not_exists(conn, "_user_stickers", "collection_id", "TEXT REFERENCES collections(id) ON DELETE SET NULL")?;
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_stickers_collection_id ON _user_stickers(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_stickers collection_id index: {}", e))?;
+
+        // Migration: Backfill collection_id for existing user_stickers from collection_stickers
+        Self::migrate_user_stickers_collection_id(conn)?;
+
         // LLM configs table
         Self::create_llm_configs_table(conn)?;
 
@@ -1411,6 +1422,34 @@ impl Database {
 
         if deleted > 0 {
             log::info!("Removed 'Not Water Type' negation template from pokemon_trivia_templates_v2");
+        }
+
+        Ok(())
+    }
+
+    /// Migration: Backfill collection_id for existing user_stickers
+    /// Looks up which collection each sticker belongs to via collection_stickers table
+    fn migrate_user_stickers_collection_id(conn: &Connection) -> Result<(), String> {
+        // Only update stickers that have NULL collection_id
+        let updated = conn.execute(
+            "UPDATE _user_stickers
+             SET collection_id = (
+                 SELECT cs.collection_id
+                 FROM collection_stickers cs
+                 WHERE cs.sticker_id = _user_stickers.sticker_id
+                 LIMIT 1
+             )
+             WHERE collection_id IS NULL
+             AND EXISTS (
+                 SELECT 1 FROM collection_stickers cs
+                 WHERE cs.sticker_id = _user_stickers.sticker_id
+             )",
+            [],
+        )
+        .map_err(|e| format!("Failed to backfill user_stickers collection_id: {}", e))?;
+
+        if updated > 0 {
+            log::info!("Backfilled collection_id for {} user_stickers", updated);
         }
 
         Ok(())

@@ -100,7 +100,7 @@
 
 		// Acquire all stickers
 		for (const sticker of revealedStickers) {
-			await acquireSticker(sticker.id, sticker.sourceId, commonRarity?.id);
+			await acquireSticker(sticker.id, sticker.sourceId, openingCollection!.id, commonRarity?.id);
 		}
 	}
 

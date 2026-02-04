@@ -182,7 +182,7 @@
 
 		// Acquire all stickers from this pack
 		for (const sticker of packStickers) {
-			await acquireSticker(sticker.id, sticker.sourceId, commonRarity?.id);
+			await acquireSticker(sticker.id, sticker.sourceId, modalState.collectionId!, commonRarity?.id);
 		}
 
 		// Mark pack as opened

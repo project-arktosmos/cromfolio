@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { getAllCollections, getStickersForCollection } from '$services/collections.service';
 	import { getRarityCollection } from '$services/rarities.service';
-	import { getOwnedStickerIds, getAllUserStickers } from '$services/user-stickers.service';
+	import { getAllUserStickers } from '$services/user-stickers.service';
 	import { triviaModalService } from '$services/trivia-modal.service';
 	import type { Collection } from '$types/collection.type';
 	import type { Rarity } from '$types/rarity.type';
@@ -86,44 +86,53 @@
 
 	async function loadCollectionStats() {
 		const counts = new Map<string, CollectionDetailedStats>();
-		const ownedIds = await getOwnedStickerIds();
-		const ownedSet = new Set(ownedIds);
 		const userStickers = await getAllUserStickers();
 
 		const maxSortOrder = rarities.length > 0 ? Math.max(...rarities.map((r) => r.sortOrder)) : 0;
 
-		// Build a map of stickerId -> best rarityId (highest sortOrder)
-		const bestRarityPerSticker = new Map<string, string>();
-		for (const us of userStickers) {
-			const stickerId = String(us.stickerId);
-			const rarityId = us.rarityId ? String(us.rarityId) : '';
-			if (!rarityId) continue;
-
-			const existingRarityId = bestRarityPerSticker.get(stickerId);
-			if (!existingRarityId) {
-				bestRarityPerSticker.set(stickerId, rarityId);
-			} else {
-				const existingRarity = raritiesMap.get(existingRarityId);
-				const newRarity = raritiesMap.get(rarityId);
-				if (newRarity && existingRarity && newRarity.sortOrder > existingRarity.sortOrder) {
-					bestRarityPerSticker.set(stickerId, rarityId);
-				}
-			}
-		}
-
 		for (const collection of collections) {
+			const collectionId = String(collection.id);
 			const collectionStickersData = await getStickersForCollection(collection.id);
-			const collectionStickerIds = new Set(collectionStickersData.map((s) => String(s.id)));
 
-			const ownedInCollection = collectionStickersData.filter((s) => ownedSet.has(String(s.id)));
+			// Filter user stickers to only those earned FROM this collection (by collectionId)
+			const userStickersForCollection = userStickers.filter(
+				(us) => String(us.collectionId) === collectionId
+			);
 
-			// Build rarity breakdown
+			// Get unique owned sticker IDs for this collection
+			const ownedStickerIdsForCollection = new Set(
+				userStickersForCollection.map((us) => String(us.stickerId))
+			);
+
+			const ownedInCollection = collectionStickersData.filter((s) =>
+				ownedStickerIdsForCollection.has(String(s.id))
+			);
+
+			// Build rarity breakdown (only from this collection's user stickers)
 			const rarityBreakdown = new Map<string, number>();
-			for (const us of userStickers) {
-				if (!collectionStickerIds.has(String(us.stickerId))) continue;
+			for (const us of userStickersForCollection) {
 				const rarityId = us.rarityId ? String(us.rarityId) : '';
 				if (rarityId) {
 					rarityBreakdown.set(rarityId, (rarityBreakdown.get(rarityId) ?? 0) + 1);
+				}
+			}
+
+			// Build best rarity per sticker for THIS collection only
+			const bestRarityPerSticker = new Map<string, string>();
+			for (const us of userStickersForCollection) {
+				const stickerId = String(us.stickerId);
+				const rarityId = us.rarityId ? String(us.rarityId) : '';
+				if (!rarityId) continue;
+
+				const existingRarityId = bestRarityPerSticker.get(stickerId);
+				if (!existingRarityId) {
+					bestRarityPerSticker.set(stickerId, rarityId);
+				} else {
+					const existingRarity = raritiesMap.get(existingRarityId);
+					const newRarity = raritiesMap.get(rarityId);
+					if (newRarity && existingRarity && newRarity.sortOrder > existingRarity.sortOrder) {
+						bestRarityPerSticker.set(stickerId, rarityId);
+					}
 				}
 			}
 
@@ -141,7 +150,7 @@
 
 			const maxCompletionScore = collectionStickersData.length * (maxSortOrder + 1);
 
-			counts.set(String(collection.id), {
+			counts.set(collectionId, {
 				total: collectionStickersData.length,
 				owned: ownedInCollection.length,
 				rarityBreakdown,
@@ -182,7 +191,7 @@
 		</div>
 	{:else}
 		<div class="min-h-0 flex-1 overflow-y-auto">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
 				{#each collections as collection (collection.id)}
 					{@const stats = getCollectionStats(collection.id)}
 					{@const isComplete =

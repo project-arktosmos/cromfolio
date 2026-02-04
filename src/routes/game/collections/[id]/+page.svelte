@@ -7,7 +7,6 @@
 	import { getCollection, getStickersForCollection } from '$services/collections.service';
 	import { getCollectionType } from '$services/collection-types.service';
 	import {
-		getOwnedStickerIds,
 		getStickerCopyCount,
 		getAllUserStickers,
 		mixStickers
@@ -156,6 +155,7 @@
 	let userStickersData = $state<UserSticker[]>([]); // Store actual user stickers for mixing
 	let unopenedBoosterPacks = $state(0);
 	let currentPage = $state(0); // 0 = cover, 1+ = content pages
+	let isRefreshing = $state(false); // Loading state for data refresh after modal close
 
 	// Check if current collection is pokemon type
 	let isPokemonCollection = $derived.by(() => {
@@ -346,16 +346,37 @@
 		return unsubscribe;
 	});
 
-	async function refreshAfterTrivia() {
-		await refreshOwnedSet();
-		// Refresh copy counts for all stickers
-		for (const sticker of stickers) {
-			await refreshCopyCount(String(sticker.id));
-		}
-		// Refresh unopened booster pack count
-		if (collection) {
+	async function refreshAllPageData() {
+		if (!collection) return;
+
+		isRefreshing = true;
+
+		try {
+			// Refresh owned stickers set (includes stickerRarityMap, stickerRarityCopyCount, userStickersData)
+			await refreshOwnedSet();
+
+			// Refresh copy counts for all stickers
+			for (const sticker of stickers) {
+				await refreshCopyCount(String(sticker.id));
+			}
+
+			// Refresh global placement counts
+			await refreshGlobalPlacementCounts();
+
+			// Refresh placed sticker IDs for this collection
+			const placedIds = await getPlacedStickerIdsForCollection(collection.id);
+			placedStickerIds = new Set(placedIds);
+
+			// Refresh unopened booster pack count
 			unopenedBoosterPacks = await countUnopenedUserBoosterPacksByCollection(collection.id);
+		} finally {
+			isRefreshing = false;
 		}
+	}
+
+	// Alias for backwards compatibility
+	async function refreshAfterTrivia() {
+		await refreshAllPageData();
 	}
 
 	async function refreshStampPacks() {
@@ -394,11 +415,21 @@
 	}
 
 	async function refreshOwnedSet() {
-		const ids = await getOwnedStickerIds();
-		ownedStickerIds = new Set(ids);
+		if (!collection) return;
 
-		const userStickers = await getAllUserStickers();
-		userStickersData = userStickers; // Store for mixing
+		const collectionId = String(collection.id);
+		const allUserStickers = await getAllUserStickers();
+
+		// Filter to only stickers earned FROM this collection (by collectionId)
+		const userStickers = allUserStickers.filter(
+			(us) => String(us.collectionId) === collectionId
+		);
+
+		userStickersData = userStickers; // Store for mixing (only this collection's stickers)
+
+		// Build owned sticker IDs set from filtered stickers
+		ownedStickerIds = new Set(userStickers.map((us) => String(us.stickerId)));
+
 		const rarityMap = new Map<string, string>();
 		const rarityCopyCount = new Map<string, number>();
 
@@ -1599,8 +1630,14 @@
 							<button
 								class="btn btn-primary btn-sm w-full"
 								onclick={() => triviaModalService.open(collection!)}
+								disabled={isRefreshing}
 							>
-								Play Trivia
+								{#if isRefreshing}
+									<span class="loading loading-spinner loading-xs"></span>
+									Updating...
+								{:else}
+									Play Trivia
+								{/if}
 							</button>
 							<button
 								class="btn btn-secondary btn-sm w-full"
@@ -1611,9 +1648,14 @@
 										'collection-page',
 										refreshAfterTrivia
 									)}
-								disabled={unopenedBoosterPacks === 0}
+								disabled={unopenedBoosterPacks === 0 || isRefreshing}
 							>
-								Open Packs ({unopenedBoosterPacks})
+								{#if isRefreshing}
+									<span class="loading loading-spinner loading-xs"></span>
+									Updating...
+								{:else}
+									Open Packs ({unopenedBoosterPacks})
+								{/if}
 							</button>
 						</div>
 						</div>
@@ -1692,10 +1734,21 @@
 
 			<!-- Sticker Grid Section (grouped by rarity) -->
 			{#if stickers.length > 0}
-				<div class="border-base-300 mt-4 border-t pt-4">
+				<div class="border-base-300 relative mt-4 border-t pt-4">
+					<!-- Loading overlay for sticker grid -->
+					{#if isRefreshing}
+						<div class="bg-base-100/80 absolute inset-0 z-10 flex items-center justify-center rounded-lg">
+							<div class="flex flex-col items-center gap-2">
+								<span class="loading loading-spinner loading-lg"></span>
+								<span class="text-base-content/70 text-sm">Updating stickers...</span>
+							</div>
+						</div>
+					{/if}
 					<div class="mb-4 flex items-center justify-between">
 						<h3 class="text-base-content/70 text-sm font-semibold">
-							{#if ownedGroups.length > 0}
+							{#if isRefreshing}
+								My Stickers (loading...)
+							{:else if ownedGroups.length > 0}
 								My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce((sum, g) => sum + g.count, 0)} total)
 							{:else}
 								My Stickers (0 owned)
@@ -1705,7 +1758,7 @@
 							<button
 								class="btn btn-secondary btn-sm gap-2"
 								onclick={handleMixAll}
-								disabled={isMixing !== null}
+								disabled={isMixing !== null || isRefreshing}
 							>
 								{#if isMixing === 'all'}
 									<span class="loading loading-spinner loading-xs"></span>
@@ -1737,7 +1790,7 @@
 						</div>
 					{:else}
 						<div
-							class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8"
+							class="grid grid-cols-4 gap-3 lg:grid-cols-6 xl:grid-cols-8"
 						>
 							{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
 							{@const groupKey = `${group.stickerId}::${group.rarityId}`}
@@ -1781,7 +1834,7 @@
 												e.stopPropagation();
 												handleMixGroup(group);
 											}}
-											disabled={isMixing !== null}
+											disabled={isMixing !== null || isRefreshing}
 											title="Mix 2 {group.rarity?.name ?? 'copies'} to get {nextRarity.name}"
 										>
 											{#if isMixing === groupKey}

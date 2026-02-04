@@ -5,7 +5,7 @@ use crate::models::UserSticker;
 pub fn get_all(conn: &Connection) -> Result<Vec<UserSticker>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, sticker_id, source_id, rarity_id, acquired_at
+            "SELECT id, sticker_id, source_id, collection_id, rarity_id, acquired_at
              FROM _user_stickers
              ORDER BY acquired_at DESC",
         )
@@ -23,7 +23,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<UserSticker>, String> {
 pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<UserSticker>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, sticker_id, source_id, rarity_id, acquired_at
+            "SELECT id, sticker_id, source_id, collection_id, rarity_id, acquired_at
              FROM _user_stickers
              WHERE source_id = ?1
              ORDER BY acquired_at DESC",
@@ -42,7 +42,7 @@ pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<UserSt
 pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserSticker>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, sticker_id, source_id, rarity_id, acquired_at
+            "SELECT id, sticker_id, source_id, collection_id, rarity_id, acquired_at
              FROM _user_stickers
              WHERE id = ?1",
         )
@@ -120,12 +120,13 @@ pub fn create(conn: &Connection, user_sticker: &UserSticker) -> Result<UserStick
     };
 
     conn.execute(
-        "INSERT INTO _user_stickers (id, sticker_id, source_id, rarity_id, acquired_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO _user_stickers (id, sticker_id, source_id, collection_id, rarity_id, acquired_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             id,
             user_sticker.sticker_id,
             user_sticker.source_id,
+            user_sticker.collection_id,
             user_sticker.rarity_id,
             acquired_at
         ],
@@ -186,8 +187,9 @@ fn row_to_user_sticker(row: &rusqlite::Row) -> UserSticker {
         id: row.get(0).unwrap_or_default(),
         sticker_id: row.get(1).unwrap_or_default(),
         source_id: row.get(2).unwrap_or_default(),
-        rarity_id: row.get(3).unwrap_or_default(),
-        acquired_at: row.get(4).unwrap_or_default(),
+        collection_id: row.get(3).unwrap_or_default(),
+        rarity_id: row.get(4).unwrap_or_default(),
+        acquired_at: row.get(5).unwrap_or_default(),
     }
 }
 
@@ -301,6 +303,7 @@ pub fn mix_stickers(
         id: String::new(),
         sticker_id: sticker_id.to_string(),
         source_id: source_id.to_string(),
+        collection_id: None, // Mixed stickers don't have a specific collection origin
         rarity_id: Some(new_rarity_id.to_string()),
         acquired_at: String::new(),
     };

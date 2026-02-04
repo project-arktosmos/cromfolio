@@ -68,12 +68,14 @@ export async function getOwnedStickerIds(): Promise<string[]> {
 export async function acquireSticker(
 	stickerId: ID,
 	sourceId: ID,
+	collectionId: ID,
 	rarityId?: ID
 ): Promise<UserSticker> {
 	const userSticker: Partial<UserSticker> = {
 		id: '',
 		stickerId: String(stickerId),
 		sourceId: String(sourceId),
+		collectionId: String(collectionId),
 		rarityId: rarityId ? String(rarityId) : undefined,
 		acquiredAt: ''
 	};
