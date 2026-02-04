@@ -1,7 +1,12 @@
 <script lang="ts">
 	import classNames from 'classnames';
-	import { convertFileSrc } from '@tauri-apps/api/core';
 	import type { StampPack, Stamp } from '$types/stamp-pack.type';
+	import {
+		getStampImagePath,
+		isVideoStamp,
+		handleImageError as onImageError,
+		STAMP_FALLBACK_IMAGE
+	} from '$utils/stamp-image';
 
 	interface Props {
 		pack: StampPack;
@@ -25,24 +30,8 @@
 		onpanelleave
 	}: Props = $props();
 
-	// Fallback image
-	const fallbackImage =
-		'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64" rx="4"/><text x="32" y="38" text-anchor="middle" fill="%239CA3AF" font-size="20">?</text></svg>';
-
-	function getStampImagePath(stamp: Stamp): string {
-		if (!stamp.imagePath) return fallbackImage;
-		// Skip animated TGS files for now (they need lottie)
-		if (stamp.imagePath.endsWith('.tgs')) return fallbackImage;
-		const filePath = `${stampsDataDir}/${stamp.imagePath}`;
-		return convertFileSrc(filePath);
-	}
-
-	function isVideoStamp(stamp: Stamp): boolean {
-		return stamp.imagePath?.endsWith('.webm') ?? false;
-	}
-
 	function handleImageError(e: Event) {
-		(e.target as HTMLImageElement).src = fallbackImage;
+		onImageError(e, STAMP_FALLBACK_IMAGE);
 	}
 
 	let computedClasses = $derived(
@@ -69,7 +58,7 @@
 			>
 				{#if isVideoStamp(stamp)}
 					<video
-						src={getStampImagePath(stamp)}
+						src={getStampImagePath(stamp, stampsDataDir)}
 						class="h-full w-full object-contain"
 						autoplay
 						loop
@@ -78,7 +67,7 @@
 					></video>
 				{:else}
 					<img
-						src={getStampImagePath(stamp)}
+						src={getStampImagePath(stamp, stampsDataDir)}
 						alt={stamp.emojis || 'Stamp'}
 						class="h-full w-full object-contain"
 						onerror={handleImageError}

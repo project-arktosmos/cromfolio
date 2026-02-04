@@ -1,6 +1,12 @@
 <script lang="ts">
-	import { convertFileSrc } from '@tauri-apps/api/core';
 	import type { Stamp } from '$types/stamp-pack.type';
+	import {
+		getStampImagePath,
+		isVideoStamp,
+		handleImageError as onImageError,
+		STAMP_FALLBACK_IMAGE
+	} from '$utils/stamp-image';
+	import CursorPlacement from './CursorPlacement.svelte';
 
 	interface Props {
 		stamp: Stamp;
@@ -14,35 +20,18 @@
 	const BASE_SIZE = 64;
 	let size = $derived(BASE_SIZE * scale);
 
-	// Fallback image
-	const fallbackImage =
-		'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64" rx="4"/><text x="32" y="38" text-anchor="middle" fill="%239CA3AF" font-size="20">?</text></svg>';
-
-	function getStampImagePath(): string {
-		if (!stamp.imagePath) return fallbackImage;
-		// Skip animated TGS files for now (they need lottie)
-		if (stamp.imagePath.endsWith('.tgs')) return fallbackImage;
-		const filePath = `${stampsDataDir}/${stamp.imagePath}`;
-		return convertFileSrc(filePath);
-	}
-
-	function isVideoStamp(): boolean {
-		return stamp.imagePath?.endsWith('.webm') ?? false;
-	}
+	let imagePath = $derived(getStampImagePath(stamp, stampsDataDir));
+	let isVideo = $derived(isVideoStamp(stamp));
 
 	function handleImageError(e: Event) {
-		(e.target as HTMLImageElement).src = fallbackImage;
+		onImageError(e, STAMP_FALLBACK_IMAGE);
 	}
 </script>
 
-<div
-	class="pointer-events-none fixed z-[100]"
-	style="left: {mousePosition.x - size / 2}px; top: {mousePosition.y -
-		size / 2}px; width: {size}px; height: {size}px;"
->
-	{#if isVideoStamp()}
+<CursorPlacement {mousePosition} {size}>
+	{#if isVideo}
 		<video
-			src={getStampImagePath()}
+			src={imagePath}
 			class="h-full w-full object-contain opacity-80 drop-shadow-lg"
 			autoplay
 			loop
@@ -51,15 +40,10 @@
 		></video>
 	{:else}
 		<img
-			src={getStampImagePath()}
+			src={imagePath}
 			alt="Placing stamp"
 			class="h-full w-full object-contain opacity-80 drop-shadow-lg"
 			onerror={handleImageError}
 		/>
 	{/if}
-	<div
-		class="text-base-content/70 bg-base-200/80 absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded px-2 py-0.5 text-xs"
-	>
-		Click to place • Scroll to resize • ESC to cancel
-	</div>
-</div>
+</CursorPlacement>

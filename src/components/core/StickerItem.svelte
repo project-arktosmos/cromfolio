@@ -1,6 +1,7 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import type { Sticker, FragmentPosition } from '$types/sticker.type';
+	import { handleImageError as onImageError, STICKER_FALLBACK_IMAGE } from '$utils/stamp-image';
 
 	interface Props {
 		sticker: Sticker;
@@ -11,12 +12,8 @@
 
 	let { sticker, bgColor = '#8b5cf6', borderColor, classes = '' }: Props = $props();
 
-	// Fallback image as data URI
-	const fallbackImage =
-		'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23374151" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="%239CA3AF" font-size="16">?</text></svg>';
-
 	function handleImageError(e: Event) {
-		(e.target as HTMLImageElement).src = fallbackImage;
+		onImageError(e, STICKER_FALLBACK_IMAGE);
 	}
 
 	let bgStyle = $derived(

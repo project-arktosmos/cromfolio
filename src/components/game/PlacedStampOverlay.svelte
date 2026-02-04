@@ -1,8 +1,13 @@
 <script lang="ts">
-	import classNames from 'classnames';
-	import { convertFileSrc } from '@tauri-apps/api/core';
 	import type { UserPlacedStamp } from '$types/user-placed-stamp.type';
 	import type { Stamp } from '$types/stamp-pack.type';
+	import {
+		getStampImagePath,
+		isVideoStamp,
+		handleImageError as onImageError,
+		STAMP_FALLBACK_IMAGE
+	} from '$utils/stamp-image';
+	import PlacedOverlay from './PlacedOverlay.svelte';
 
 	interface Props {
 		placedStamps: UserPlacedStamp[];
@@ -24,79 +29,45 @@
 		onstampremove
 	}: Props = $props();
 
-	// Fallback image
-	const fallbackImage =
-		'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64" rx="4"/><text x="32" y="38" text-anchor="middle" fill="%239CA3AF" font-size="20">?</text></svg>';
-
-	function getStampImagePath(stampId: string): string {
-		const stamp = stampImages.get(stampId);
-		if (!stamp?.imagePath) return fallbackImage;
-		// Skip animated TGS files for now (they need lottie)
-		if (stamp.imagePath.endsWith('.tgs')) return fallbackImage;
-		const filePath = `${stampsDataDir}/${stamp.imagePath}`;
-		return convertFileSrc(filePath);
+	function getImagePath(stampId: string): string {
+		return getStampImagePath(stampImages.get(stampId), stampsDataDir);
 	}
 
-	function isVideoStamp(stampId: string): boolean {
-		const stamp = stampImages.get(stampId);
-		return stamp?.imagePath?.endsWith('.webm') ?? false;
+	function isVideo(stampId: string): boolean {
+		return isVideoStamp(stampImages.get(stampId));
 	}
 
 	function handleImageError(e: Event) {
-		(e.target as HTMLImageElement).src = fallbackImage;
+		onImageError(e, STAMP_FALLBACK_IMAGE);
 	}
-
-	function handleRemoveClick(e: MouseEvent, placedStamp: UserPlacedStamp) {
-		e.stopPropagation();
-		onstampremove?.(placedStamp);
-	}
-
-	let computedClasses = $derived(classNames('absolute inset-0 z-[999] overflow-hidden pointer-events-none', classes));
 </script>
 
-<div class={computedClasses}>
-	{#each placedStamps as placedStamp (placedStamp.id)}
+<PlacedOverlay
+	items={placedStamps}
+	{editable}
+	{classes}
+	onitemclick={onstampclick}
+	onitemremove={onstampremove}
+>
+	{#snippet children(placedStamp)}
 		{@const stamp = stampImages.get(String(placedStamp.stampId))}
 		{@const stampId = String(placedStamp.stampId)}
-		<div
-			class={classNames('group absolute h-12 w-12', {
-				'hover:ring-primary pointer-events-auto cursor-pointer rounded hover:ring-2': editable
-			})}
-			style="
-				left: {placedStamp.positionX}%;
-				top: {placedStamp.positionY}%;
-				transform: translate(-50%, -50%) scale({placedStamp.scale}) rotate({placedStamp.rotation}deg);
-			"
-			onclick={() => editable && onstampclick?.(placedStamp)}
-			role={editable ? 'button' : 'img'}
-			tabindex={editable ? 0 : -1}
-		>
-			{#if isVideoStamp(stampId)}
-				<video
-					src={getStampImagePath(stampId)}
-					class="h-full w-full object-contain drop-shadow-md"
-					autoplay
-					loop
-					muted
-					playsinline
-				></video>
-			{:else}
-				<img
-					src={getStampImagePath(stampId)}
-					alt={stamp?.emojis || 'Placed stamp'}
-					class="h-full w-full object-contain drop-shadow-md"
-					onerror={handleImageError}
-				/>
-			{/if}
-			{#if editable}
-				<button
-					class="bg-error text-error-content absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold opacity-0 transition-opacity group-hover:opacity-100"
-					onclick={(e) => handleRemoveClick(e, placedStamp)}
-					title="Remove stamp"
-				>
-					×
-				</button>
-			{/if}
-		</div>
-	{/each}
-</div>
+		{#if isVideo(stampId)}
+			<video
+				src={getImagePath(stampId)}
+				class="h-full w-full object-contain drop-shadow-md"
+				autoplay
+				loop
+				muted
+				playsinline
+			></video>
+		{:else}
+			<img
+				src={getImagePath(stampId)}
+				alt={stamp?.emojis || 'Placed stamp'}
+				class="h-full w-full object-contain drop-shadow-md"
+				onerror={handleImageError}
+			/>
+		{/if}
+	{/snippet}
+</PlacedOverlay>

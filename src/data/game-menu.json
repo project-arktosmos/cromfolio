@@ -1,20 +1,4 @@
 {
-	"items": [
-		{
-			"id": "collections",
-			"label": "Collections",
-			"path": "/"
-		},
-		{
-			"id": "rewards",
-			"label": "Rewards",
-			"path": "/rewards"
-		},
-		{
-			"id": "settings",
-			"label": "Settings",
-			"path": "/settings"
-		}
-	],
-	"generatedAt": "2026-02-04T22:37:51.428Z"
+	"items": [],
+	"generatedAt": "2026-02-04T23:20:02.857Z"
 }

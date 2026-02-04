@@ -176,10 +176,6 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<div class="mb-6">
-		<h1 class="text-3xl font-bold">Collections</h1>
-		<p class="text-base-content/70 mt-1">Browse your collections</p>
-	</div>
 
 	{#if isLoading}
 		<div class="flex justify-center p-8">
@@ -191,7 +187,7 @@
 		</div>
 	{:else}
 		<div class="min-h-0 flex-1 overflow-y-auto">
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
 				{#each collections as collection (collection.id)}
 					{@const stats = getCollectionStats(collection.id)}
 					{@const isComplete =
