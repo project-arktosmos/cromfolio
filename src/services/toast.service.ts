@@ -28,6 +28,10 @@ function createToastStore() {
 		update((toasts) => toasts.filter((t) => t.id !== id));
 	}
 
+	function updateMessage(id: string, message: string) {
+		update((toasts) => toasts.map((t) => (t.id === id ? { ...t, message } : t)));
+	}
+
 	function clear() {
 		update(() => []);
 	}
@@ -36,6 +40,7 @@ function createToastStore() {
 		subscribe,
 		add,
 		remove,
+		updateMessage,
 		clear,
 		success: (message: string, duration?: number) =>
 			add(message, 'success' as ThemeColors, duration),

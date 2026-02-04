@@ -16,11 +16,6 @@
 			"path": "/game/player"
 		},
 		{
-			"id": "pokemon-trivia",
-			"label": "Pokemon Trivia",
-			"path": "/game/pokemon-trivia"
-		},
-		{
 			"id": "settings",
 			"label": "Settings",
 			"path": "/game/settings"
@@ -36,5 +31,5 @@
 			"path": "/game/stickers"
 		}
 	],
-	"generatedAt": "2026-02-02T19:01:24.458Z"
+	"generatedAt": "2026-02-04T20:31:32.987Z"
 }

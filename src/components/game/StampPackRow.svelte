@@ -1,26 +1,32 @@
 <script lang="ts">
 	import classNames from 'classnames';
-	import { convertFileSrc } from '@tauri-apps/api/core';
 	import type { StampPack } from '$types/stamp-pack.type';
 
 	interface Props {
 		stampPacks: StampPack[];
-		stampsDataDir: string;
+		coverUrls?: Map<string, string>;
 		classes?: string;
 		onpackhover?: (pack: StampPack, event: MouseEvent) => void;
 		onpackleave?: () => void;
 	}
 
-	let { stampPacks, stampsDataDir, classes = '', onpackhover, onpackleave }: Props = $props();
+	let {
+		stampPacks,
+		coverUrls = new Map(),
+		classes = '',
+		onpackhover,
+		onpackleave
+	}: Props = $props();
 
 	// Fallback image
 	const fallbackImage =
 		'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect fill="%23374151" width="64" height="64" rx="8"/><text x="32" y="38" text-anchor="middle" fill="%239CA3AF" font-size="24">📦</text></svg>';
 
-	function getTrayImagePath(pack: StampPack): string {
-		if (!pack.trayImage) return fallbackImage;
-		const filePath = `${stampsDataDir}/${pack.trayImage}`;
-		return convertFileSrc(filePath);
+	function getCoverImage(pack: StampPack): string {
+		// Use pre-computed cover URL if available
+		const coverUrl = coverUrls.get(pack.id);
+		if (coverUrl) return coverUrl;
+		return fallbackImage;
 	}
 
 	function handleImageError(e: Event) {
@@ -44,7 +50,7 @@
 			title={pack.name}
 		>
 			<img
-				src={getTrayImagePath(pack)}
+				src={getCoverImage(pack)}
 				alt={pack.name}
 				class="h-full w-full rounded-lg object-cover"
 				onerror={handleImageError}

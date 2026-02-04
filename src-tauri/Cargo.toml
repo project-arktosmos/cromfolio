@@ -41,6 +41,8 @@ dotenvy = "0.15"
 librqbit = "8.1"
 tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
+regex = "1"
+zip = "2"
 
 # EVM
 revm = { version = "19", default-features = false, features = ["std", "serde"] }

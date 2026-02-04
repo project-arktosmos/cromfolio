@@ -19,7 +19,8 @@ const initialState: BoosterPackModalState = {
 };
 
 function createBoosterPackModalService() {
-	const { subscribe, set, update } = writable<BoosterPackModalState>(initialState);
+	const { subscribe, set } = writable<BoosterPackModalState>(initialState);
+	let onCloseCallback: (() => void) | null = null;
 
 	return {
 		subscribe,
@@ -29,8 +30,10 @@ function createBoosterPackModalService() {
 		 * @param collectionId - The collection to open packs from
 		 * @param packCount - Number of packs to open
 		 * @param earnedFrom - Source of the packs (e.g., 'pokemon-trivia')
+		 * @param onClose - Optional callback to run when the modal closes
 		 */
-		open(collectionId: ID, packCount: number, earnedFrom: string = '') {
+		open(collectionId: ID, packCount: number, earnedFrom: string = '', onClose?: () => void) {
+			onCloseCallback = onClose ?? null;
 			set({
 				isOpen: true,
 				collectionId,
@@ -40,10 +43,14 @@ function createBoosterPackModalService() {
 		},
 
 		/**
-		 * Close the modal
+		 * Close the modal and run the onClose callback if set
 		 */
 		close() {
 			set(initialState);
+			if (onCloseCallback) {
+				onCloseCallback();
+				onCloseCallback = null;
+			}
 		}
 	};
 }

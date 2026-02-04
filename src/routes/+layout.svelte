@@ -3,6 +3,7 @@
 	import '$services/i18n';
 	import PokemonTriviaModal from '$components/core/PokemonTriviaModal.svelte';
 	import BoosterPackRevealModal from '$components/core/BoosterPackRevealModal.svelte';
+	import StampsModal from '$components/core/StampsModal.svelte';
 
 	let { children } = $props();
 </script>
@@ -10,3 +11,4 @@
 {@render children?.()}
 <PokemonTriviaModal />
 <BoosterPackRevealModal />
+<StampsModal />

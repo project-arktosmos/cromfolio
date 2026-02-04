@@ -13,6 +13,8 @@ export interface AnswerSelectionResult {
 	correct: PokemonWithTags | null;
 	wrong: PokemonWithTags[];
 	message: string;
+	/** For negation questions, the target value that wrong answers have (e.g., "Fire" for "NOT Fire type") */
+	targetValue?: string;
 }
 
 /**
@@ -79,6 +81,9 @@ function isMinQuestion(questionTemplate: string): boolean {
  * Select answers for superlative/comparison questions
  * Finds Pokemon with highest or lowest stat value
  *
+ * For pokedex-number with "earliest/first" questions, this randomizes the correct answer
+ * so any Pokemon (except the last 5) can be the answer, with wrong answers having higher values.
+ *
  * @param candidates - Array of Pokemon candidates
  * @param primaryAttribute - The stat attribute to compare
  * @param questionTemplate - Question text to determine max/min direction
@@ -108,13 +113,42 @@ export function selectSuperlativeAnswers(
 		return { correct: null, wrong: [], message: 'Not enough Pokemon with this stat' };
 	}
 
-	const correct = withValues[0].pokemon;
-	const wrong: PokemonWithTags[] = [];
+	// Randomize which Pokemon is "correct" - any Pokemon except the last 5 can be the answer
+	// Wrong answers must have "worse" values than the correct one
+	// (lower values for max questions, higher values for min questions)
+	// This prevents questions from always having the same predictable answer
+	const eligibleForCorrect = withValues.slice(0, Math.max(1, withValues.length - 5));
+	const correctEntry = eligibleForCorrect[Math.floor(Math.random() * eligibleForCorrect.length)];
+	const correct = correctEntry.pokemon;
 
-	// Pick 3 others that have different values (to avoid ties being "wrong")
-	for (let i = 1; i < withValues.length && wrong.length < 3; i++) {
-		if (withValues[i].value !== withValues[0].value) {
-			wrong.push(withValues[i].pokemon);
+	// Wrong answers: Pokemon with "worse" values than the correct one
+	// For max questions (sorted desc), wrong answers have lower values (appear later in sorted list)
+	// For min questions (sorted asc), wrong answers have higher values (appear later in sorted list)
+	const wrong: PokemonWithTags[] = [];
+	for (const entry of withValues) {
+		if (wrong.length >= 3) break;
+		if (entry.pokemon.id !== correct.id) {
+			// For max questions: entry.value < correctEntry.value (worse = lower)
+			// For min questions: entry.value > correctEntry.value (worse = higher)
+			const isWorse = isMin ? entry.value > correctEntry.value : entry.value < correctEntry.value;
+			if (isWorse) {
+				wrong.push(entry.pokemon);
+			}
+		}
+	}
+
+	// If we don't have enough wrong answers with worse values, fall back to any different Pokemon
+	// But avoid adding Pokemon with the same value as correct (ties shouldn't be "wrong")
+	if (wrong.length < 3) {
+		for (const entry of withValues) {
+			if (wrong.length >= 3) break;
+			if (
+				entry.pokemon.id !== correct.id &&
+				!wrong.includes(entry.pokemon) &&
+				entry.value !== correctEntry.value
+			) {
+				wrong.push(entry.pokemon);
+			}
 		}
 	}
 
@@ -122,7 +156,7 @@ export function selectSuperlativeAnswers(
 	return {
 		correct,
 		wrong,
-		message: `\u2713 ${correct.name} has ${direction} ${primaryAttribute}: ${withValues[0].value}`
+		message: `\u2713 ${correct.name} has ${direction} ${primaryAttribute}: ${correctEntry.value}`
 	};
 }
 
@@ -214,7 +248,8 @@ export function selectNegationAnswers(
 	return {
 		correct,
 		wrong,
-		message: `\u2713 ${correct.name} is NOT ${targetValue}, others are`
+		message: `\u2713 ${correct.name} is NOT ${targetValue}, others are`,
+		targetValue
 	};
 }
 

@@ -3,6 +3,8 @@ mod commands;
 mod db;
 mod image_cache;
 mod models;
+mod telegram;
+mod whatsapp;
 
 use apis::{
     client::ApiClientState,
@@ -67,6 +69,12 @@ pub fn run() {
 
         let api_config = ApiConfigState::new(ApiConfig::from_env());
         app.manage(api_config);
+
+        // Initialize Telegram import state
+        app.manage(telegram::TelegramImportState::new());
+
+        // Initialize WhatsApp import state
+        app.manage(whatsapp::WhatsappImportState::new());
 
         // Build custom menu (desktop only)
         #[cfg(desktop)]
@@ -335,6 +343,16 @@ pub fn run() {
             commands::copy_file_to_stamps_dir,
             commands::write_stamp_file,
             commands::delete_stamp_pack_files,
+            // Telegram Import (background import)
+            telegram::commands::start_telegram_import,
+            telegram::commands::get_telegram_import_progress,
+            telegram::commands::cancel_telegram_import,
+            telegram::commands::reset_telegram_import,
+            // WhatsApp Import (background import)
+            whatsapp::commands::start_whatsapp_import,
+            whatsapp::commands::get_whatsapp_import_progress,
+            whatsapp::commands::cancel_whatsapp_import,
+            whatsapp::commands::reset_whatsapp_import,
             // Pokemon Trivia Templates V2 (read-only for game)
             commands::get_all_pokemon_trivia_templates_v2,
             commands::get_pokemon_trivia_template_v2,

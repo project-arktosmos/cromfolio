@@ -51,7 +51,7 @@
 		onstampremove?.(placedStamp);
 	}
 
-	let computedClasses = $derived(classNames('absolute inset-0 overflow-hidden', classes));
+	let computedClasses = $derived(classNames('absolute inset-0 z-[999] overflow-hidden pointer-events-none', classes));
 </script>
 
 <div class={computedClasses}>

@@ -23,11 +23,11 @@
 	} from '$types/game-state.type';
 
 	// Import trivia components
-	import DifficultySelect from '../../routes/game/pokemon-trivia/components/DifficultySelect.svelte';
-	import GamePlayHeader from '../../routes/game/pokemon-trivia/components/GamePlayHeader.svelte';
-	import TimerBar from '../../routes/game/pokemon-trivia/components/TimerBar.svelte';
-	import QuestionCard from '../../routes/game/pokemon-trivia/components/QuestionCard.svelte';
-	import GameOver from '../../routes/game/pokemon-trivia/components/GameOver.svelte';
+	import DifficultySelect from '$components/trivia/DifficultySelect.svelte';
+	import GamePlayHeader from '$components/trivia/GamePlayHeader.svelte';
+	import TimerBar from '$components/trivia/TimerBar.svelte';
+	import QuestionCard from '$components/trivia/QuestionCard.svelte';
+	import GameOver from '$components/trivia/GameOver.svelte';
 
 	// Difficulty configuration - lives-based gameplay
 	const DIFFICULTY_CONFIGS: Record<GameDifficulty, DifficultyConfig> = {
@@ -220,7 +220,19 @@
 
 		currentTemplate = selectedTemplate;
 		correctPokemon = selectionResult.correct;
-		currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, correctPokemon);
+
+		// For negation questions, use targetValue for placeholder replacement instead of correct Pokemon's value
+		// This ensures "Which is NOT Fire type?" shows "Fire" (the target), not the correct Pokemon's type
+		if (selectedTemplate.templateType === 'negation' && selectionResult.targetValue) {
+			const pokemonWithTargetValue = {
+				...correctPokemon,
+				tags: { ...correctPokemon.tags, [selectedTemplate.primaryAttribute]: selectionResult.targetValue }
+			};
+			currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, pokemonWithTargetValue);
+		} else {
+			currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, correctPokemon);
+		}
+
 		const correctAnswerText = getAnswerValue(correctPokemon, selectedTemplate.answerTemplate);
 
 		const wrongAnswersList = selectionResult.wrong.slice(0, wrongAnswerCount);
