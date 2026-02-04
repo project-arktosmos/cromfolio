@@ -12,9 +12,7 @@
 		mixStickers
 	} from '$services/user-stickers.service';
 	import { getRarityCollection } from '$services/rarities.service';
-	import { sourceExists } from '$services/sources.service';
-	import { getStickerType } from '$services/sticker-types.service';
-	import { getTagsBySticker, getTagsForStickers } from '$services/tags.service';
+	import { getTagsForStickers } from '$services/tags.service';
 	import {
 		getAllStampPacks,
 		getStampsByPack,
@@ -48,8 +46,6 @@
 	import type { CollectionType } from '$types/collection-type.type';
 	import type { Sticker } from '$types/sticker.type';
 	import type { Rarity } from '$types/rarity.type';
-	import type { Source } from '$types/source.type';
-	import type { StickerTypeEntity } from '$types/sticker-type-entity.type';
 	import type { Tag } from '$types/tag.type';
 	import type { GridPackedPage, GroupedFragments } from '$types/album-layout.type';
 	import type { UserSticker } from '$types/user-sticker.type';
@@ -63,7 +59,6 @@
 		groupFragmentStickers
 	} from '$utils/album-packing';
 	import StickerItem from '$components/core/StickerItem.svelte';
-	import StickerPreview from '$components/core/StickerPreview.svelte';
 	import StampPackRow from '$components/game/StampPackRow.svelte';
 	import StampHoverPanel from '$components/game/StampHoverPanel.svelte';
 	import CursorStamp from '$components/game/CursorStamp.svelte';
@@ -198,13 +193,6 @@
 		// Sort by rarity sortOrder
 		return Array.from(counts.values()).sort((a, b) => a.rarity.sortOrder - b.rarity.sortOrder);
 	});
-
-	// Hover preview state
-	let hoveredSticker = $state<Sticker | null>(null);
-	let mousePosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
-	let previewSource = $state<Source | null>(null);
-	let previewStickerType = $state<StickerTypeEntity | null>(null);
-	let previewTags = $state<Tag[]>([]);
 
 	// Stamp placement state
 	let stampPacks = $state<StampPack[]>([]);
@@ -784,31 +772,6 @@
 		}
 	}
 
-	async function handleStickerMouseEnter(sticker: Sticker) {
-		hoveredSticker = sticker;
-		const [source, stickerType, tags] = await Promise.all([
-			sticker.sourceId ? sourceExists(sticker.sourceId) : Promise.resolve(null),
-			sticker.stickerTypeId ? getStickerType(sticker.stickerTypeId) : Promise.resolve(null),
-			getTagsBySticker(sticker.id)
-		]);
-		if (hoveredSticker?.id === sticker.id) {
-			previewSource = source;
-			previewStickerType = stickerType;
-			previewTags = tags;
-		}
-	}
-
-	function handleStickerMouseMove(event: MouseEvent) {
-		mousePosition = { x: event.clientX, y: event.clientY };
-	}
-
-	function handleStickerMouseLeave() {
-		hoveredSticker = null;
-		previewSource = null;
-		previewStickerType = null;
-		previewTags = [];
-	}
-
 	async function handleStickerClick(sticker: Sticker) {
 		if (!collection) return;
 
@@ -1107,7 +1070,7 @@
 			<div class="alert alert-error max-w-md">
 				<span>Collection not found</span>
 			</div>
-			<button class="btn btn-primary" onclick={() => goto('/game/collections')}>
+			<button class="btn btn-primary" onclick={() => goto('/')}>
 				Back to Collections
 			</button>
 		</div>
@@ -1323,9 +1286,6 @@
 															{ 'opacity-50 grayscale': !owned }
 														)}
 														onclick={() => handleStickerClick(sticker)}
-														onmouseenter={() => handleStickerMouseEnter(sticker)}
-														onmousemove={handleStickerMouseMove}
-														onmouseleave={handleStickerMouseLeave}
 														role="button"
 														tabindex="0"
 													>
@@ -1421,9 +1381,6 @@
 																{ 'opacity-50 grayscale': !owned }
 															)}
 															onclick={() => handleStickerClick(sticker)}
-															onmouseenter={() => handleStickerMouseEnter(sticker)}
-															onmousemove={handleStickerMouseMove}
-															onmouseleave={handleStickerMouseLeave}
 															role="button"
 															tabindex="0"
 														>
@@ -1557,9 +1514,6 @@
 																'opacity-50 grayscale': !owned
 															})}
 															onclick={() => handleStickerClick(fragment)}
-															onmouseenter={() => handleStickerMouseEnter(fragment)}
-															onmousemove={handleStickerMouseMove}
-															onmouseleave={handleStickerMouseLeave}
 															role="button"
 															tabindex="0"
 														>
@@ -1746,9 +1700,6 @@
 									{ 'ring-success ring-2': placed },
 									{ 'ring-primary/50 ring-1': !placed }
 								)}
-								onmouseenter={() => handleStickerMouseEnter(group.sticker)}
-								onmousemove={handleStickerMouseMove}
-								onmouseleave={handleStickerMouseLeave}
 							>
 								<div class="aspect-[3/4] p-2">
 									<StickerItem
@@ -1836,24 +1787,6 @@
 		</div>
 	{/if}
 </div>
-
-<!-- Hover Preview -->
-{#if hoveredSticker}
-	{@const rarity = getStickerRarity(hoveredSticker)}
-	<div
-		class="pointer-events-none fixed z-50"
-		style="left: {mousePosition.x + 16}px; top: {mousePosition.y + 16}px; max-width: 400px;"
-	>
-		<StickerPreview
-			sticker={hoveredSticker}
-			{rarity}
-			stickerType={previewStickerType}
-			source={previewSource}
-			tags={previewTags}
-			classes="shadow-2xl"
-		/>
-	</div>
-{/if}
 
 <!-- Stamp Hover Panel -->
 {#if hoveredPack && hoveredPackStamps.length > 0}

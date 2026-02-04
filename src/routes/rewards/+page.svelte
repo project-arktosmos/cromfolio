@@ -169,7 +169,7 @@
 				</svg>
 				<span>No collections to earn rewards from yet. Start collecting stickers first!</span>
 			</div>
-			<a href="/game/collections" class="btn btn-primary">Browse Collections</a>
+			<a href="/" class="btn btn-primary">Browse Collections</a>
 		</div>
 	{:else}
 		<!-- Summary Stats -->

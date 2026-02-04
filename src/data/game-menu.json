@@ -3,18 +3,18 @@
 		{
 			"id": "collections",
 			"label": "Collections",
-			"path": "/game/collections"
+			"path": "/"
 		},
 		{
 			"id": "rewards",
 			"label": "Rewards",
-			"path": "/game/rewards"
+			"path": "/rewards"
 		},
 		{
 			"id": "settings",
 			"label": "Settings",
-			"path": "/game/settings"
+			"path": "/settings"
 		}
 	],
-	"generatedAt": "2026-02-04T22:24:45.271Z"
+	"generatedAt": "2026-02-04T22:37:51.428Z"
 }
