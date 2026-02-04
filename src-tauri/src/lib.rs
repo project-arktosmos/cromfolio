@@ -314,6 +314,13 @@ pub fn run() {
             commands::delete_user_booster_packs_by_collection,
             commands::delete_all_user_booster_packs,
             commands::get_unopened_user_booster_packs_summary,
+            // User Collection Rewards (time-based rewards for collections with stickers)
+            commands::get_eligible_reward_collections,
+            commands::get_all_user_collection_rewards,
+            commands::get_user_collection_reward,
+            commands::claim_collection_reward,
+            commands::delete_user_collection_reward,
+            commands::delete_all_user_collection_rewards,
             // User Placed Icons (icons placed on album pages)
             commands::get_placed_icons_by_collection,
             commands::get_placed_icons_by_page,

@@ -1007,7 +1007,26 @@ impl Database {
         )
         .map_err(|e| format!("Failed to create _user_booster_packs opened_at index: {}", e))?;
 
-        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements, _user_placed_icons, _user_player, _user_game_stats, _user_booster_packs) created successfully");
+        // _user_collection_rewards table - tracks when rewards were last claimed per collection
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _user_collection_rewards (
+                id TEXT PRIMARY KEY,
+                collection_id TEXT NOT NULL UNIQUE,
+                last_claimed_at TEXT NOT NULL,
+                FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+            )",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_collection_rewards table: {}", e))?;
+
+        // Index for efficient lookups by collection_id
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_collection_rewards_collection_id ON _user_collection_rewards(collection_id)",
+            [],
+        )
+        .map_err(|e| format!("Failed to create _user_collection_rewards collection_id index: {}", e))?;
+
+        log::info!("User tables (_user_stickers, _user_collections, _user_sources, _user_placed_stamps, _user_sticker_placements, _user_placed_icons, _user_player, _user_game_stats, _user_booster_packs, _user_collection_rewards) created successfully");
         Ok(())
     }
 

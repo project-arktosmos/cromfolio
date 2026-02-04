@@ -1,35 +1,20 @@
 {
 	"items": [
 		{
-			"id": "booster-pack",
-			"label": "Booster Pack",
-			"path": "/game/booster-pack"
-		},
-		{
 			"id": "collections",
 			"label": "Collections",
 			"path": "/game/collections"
 		},
 		{
-			"id": "player",
-			"label": "Player",
-			"path": "/game/player"
+			"id": "rewards",
+			"label": "Rewards",
+			"path": "/game/rewards"
 		},
 		{
 			"id": "settings",
 			"label": "Settings",
 			"path": "/game/settings"
-		},
-		{
-			"id": "stamps",
-			"label": "Stamps",
-			"path": "/game/stamps"
-		},
-		{
-			"id": "stickers",
-			"label": "Stickers",
-			"path": "/game/stickers"
 		}
 	],
-	"generatedAt": "2026-02-04T21:20:14.940Z"
+	"generatedAt": "2026-02-04T22:24:45.271Z"
 }

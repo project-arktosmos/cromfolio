@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import GameSidebar from '$components/core/GameSidebar.svelte';
+	import classNames from 'classnames';
+	import { page } from '$app/stores';
 	import ToastContainer from '$components/core/ToastContainer.svelte';
 	import menuData from '$data/game-menu.json';
 	import { getUnopenedUserBoosterPacksSummary } from '$services/user-booster-packs.service';
@@ -8,6 +9,18 @@
 	import { boosterPackModalService } from '$services/booster-pack-modal.service';
 	import type { BoosterPackSummary } from '$types/user-booster-pack.type';
 	import type { Collection } from '$types/collection.type';
+
+	let currentPath = $derived($page.url.pathname);
+
+	function isActive(itemPath: string): boolean {
+		return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+	}
+
+	function getNavLinkClasses(itemPath: string): string {
+		return classNames('btn btn-ghost btn-sm', {
+			'btn-active': isActive(itemPath)
+		});
+	}
 
 	let { children } = $props();
 
@@ -75,12 +88,17 @@
 <div class="flex h-screen flex-col">
 	<div class="navbar bg-base-300">
 		<div class="navbar-start">
-			<span class="text-lg font-bold">cromfolio</span>
+			<a href="/game" class="btn btn-ghost text-lg font-bold">Cromfolio</a>
 		</div>
-		<div class="navbar-end">
+		<div class="navbar-end gap-2">
+			{#each menuData.items as item (item.id)}
+				<a href={item.path} class={getNavLinkClasses(item.path)}>
+					{item.label}
+				</a>
+			{/each}
 			{#if collectionsWithPacks.length > 0}
 				<select
-					class="select select-bordered select-sm mr-4"
+					class="select select-bordered select-sm"
 					bind:value={selectedValue}
 					onchange={handleSelectChange}
 				>
@@ -92,19 +110,12 @@
 					{/each}
 				</select>
 			{/if}
-			<div class="border-2 border-purple-500 rounded p-2">
-				<button class="btn btn-sm" disabled>button</button>
-			</div>
 		</div>
 	</div>
 
-	<div class="flex flex-1 overflow-hidden">
-		<GameSidebar items={menuData.items} />
-
-		<main class="bg-base-100 flex flex-1 flex-col overflow-y-auto p-6">
-			{@render children?.()}
-		</main>
-	</div>
+	<main class="bg-base-100 flex flex-1 flex-col overflow-y-auto">
+		{@render children?.()}
+	</main>
 </div>
 
 <ToastContainer />

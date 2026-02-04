@@ -156,6 +156,7 @@
 	let unopenedBoosterPacks = $state(0);
 	let currentPage = $state(0); // 0 = cover, 1+ = content pages
 	let isRefreshing = $state(false); // Loading state for data refresh after modal close
+	let showStickersModal = $state(false); // Mobile modal for My Stickers
 
 	// Check if current collection is pokemon type
 	let isPokemonCollection = $derived.by(() => {
@@ -1096,7 +1097,7 @@
 	}
 </script>
 
-<div class="container mx-auto p-4">
+<div class="w-full h-full p-4 overflow-hidden">
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
 			<span class="loading loading-spinner loading-lg"></span>
@@ -1115,11 +1116,11 @@
 		{@const totalWinnerPages = getTotalWinnerPages()}
 		{@const totalPages = getTotalPages()}
 
-		<div class="flex flex-col gap-4">
-			<!-- Main content grid: Album + Stats -->
-			<div class="grid grid-cols-3 gap-4">
-				<!-- Album View (cols 1-2) -->
-				<div class="col-span-2 h-[70vh] rounded-lg p-4">
+		<div class="flex flex-col gap-4 h-full overflow-hidden">
+			<!-- Main content grid: Album + My Stickers -->
+			<div class="flex flex-col gap-4 flex-1 min-h-0 md:grid md:grid-cols-3">
+				<!-- Album View (col 1) -->
+				<div class="order-1 w-full md:col-span-1 flex-shrink-0 md:h-full min-h-0 rounded-lg overflow-hidden">
 					{#if stickers.length === 0}
 						<div class="flex h-full items-center justify-center">
 							<div class="alert alert-info max-w-md">
@@ -1131,7 +1132,7 @@
 						{@const coverPlacedIcons = getPlacedIconsForPage(-1)}
 						{@const genInfo = getRegionForCollection(collection)}
 						<!-- Carousel Container -->
-						<div class="flex flex-col h-full border-2 border-orange-500">
+						<div class="flex flex-col h-full">
 						<!-- Icons and Stamps Row -->
 						<div class="flex items-center gap-4 p-2">
 							<div>
@@ -1171,7 +1172,8 @@
 							</div>
 						</div>
 						<!-- Sliding Carousel -->
-						<div class="flex-1 w-full overflow-hidden border-2 border-blue-500">
+						<div class="flex-1 flex items-center justify-center overflow-hidden">
+						<div class="w-full md:w-auto md:h-full md:max-w-full overflow-hidden" style="aspect-ratio: {PAGE_ASPECT};">
 							<div
 								class="flex h-full transition-transform duration-300 ease-in-out"
 								style="transform: translateX(-{currentPage * 100}%);"
@@ -1603,6 +1605,7 @@
 							{/each}
 							</div>
 						</div>
+						</div>
 						<!-- Pagination Controls -->
 						{#if totalPages > 1}
 							<div class="flex items-center justify-center gap-2 py-2">
@@ -1626,7 +1629,7 @@
 							</div>
 						{/if}
 						<!-- Actions Row -->
-						<div class="grid grid-cols-2 gap-2 p-2 border-2 border-green-500">
+						<div class="grid grid-cols-2 gap-2 p-2">
 							<button
 								class="btn btn-primary btn-sm w-full"
 								onclick={() => triviaModalService.open(collection!)}
@@ -1662,79 +1665,21 @@
 					{/if}
 				</div>
 
-				<!-- Stats Panel (col 3) -->
-				<div class="bg-base-200 rounded-lg p-4">
-					<div class="mb-4 flex items-center justify-between">
-						<h2 class="text-lg font-bold">{collection.title}</h2>
-						<button class="btn btn-ghost btn-sm" onclick={() => goto('/game/collections')}>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-5 w-5"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					{#if collection.description}
-						<p class="text-base-content/70 mb-4 text-sm">{collection.description}</p>
-					{/if}
-
-					<!-- Collection Stats -->
-					<div class="mb-4">
-						<h3 class="text-base-content/70 mb-2 text-sm font-semibold">Collection Progress</h3>
-						<div class="flex items-center gap-2">
-							<progress
-								class="progress progress-primary w-full"
-								value={ownedStickerIds.size}
-								max={stickers.length}
-							></progress>
-							<span class="text-xs">
-								{ownedStickerIds.size}/{stickers.length}
-							</span>
-						</div>
-					</div>
-
-					<!-- Rarity Breakdown -->
-					{#if rarityCounts.length > 0}
-						<div class="mb-4">
-							<h3 class="text-base-content/70 mb-2 text-sm font-semibold">By Rarity</h3>
-							<div class="space-y-2">
-								{#each rarityCounts as { total, owned, rarity }}
-									<div class="flex items-center gap-2">
-										<div
-											class="h-3 w-3 rounded-full"
-											style="background: linear-gradient(135deg, {rarity.colorFrom}, {rarity.colorTo});"
-										></div>
-										<span class="text-xs">{rarity.name}</span>
-										<span class="text-base-content/50 ml-auto text-xs">{owned}/{total}</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
-					<!-- Dev Button -->
+				<!-- My Stickers Button (mobile only) -->
+				<div class="order-2 w-full md:hidden p-2">
 					<button
-						class="btn btn-ghost btn-xs mt-2 w-full opacity-50"
-						onclick={devAwardBoosterPacks}
+						class="btn btn-primary w-full gap-2"
+						onclick={() => showStickersModal = true}
 					>
-						(dev) get x10 booster packs
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+						</svg>
+						My Stickers ({ownedGroups.length})
 					</button>
 				</div>
-			</div>
 
-			<!-- Sticker Grid Section (grouped by rarity) -->
-			{#if stickers.length > 0}
-				<div class="border-base-300 relative mt-4 border-t pt-4">
+				<!-- My Stickers Panel (cols 2-3, desktop only) -->
+				<div class="hidden md:block order-3 w-full md:col-span-2 bg-base-200 rounded-lg p-4 overflow-y-auto flex-1 md:h-full min-h-0 relative">
 					<!-- Loading overlay for sticker grid -->
 					{#if isRefreshing}
 						<div class="bg-base-100/80 absolute inset-0 z-10 flex items-center justify-center rounded-lg">
@@ -1789,9 +1734,7 @@
 							</div>
 						</div>
 					{:else}
-						<div
-							class="grid grid-cols-4 gap-3 lg:grid-cols-6 xl:grid-cols-8"
-						>
+						<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
 							{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
 							{@const groupKey = `${group.stickerId}::${group.rarityId}`}
 							{@const placed = placedStickerIds.has(group.stickerId)}
@@ -1889,7 +1832,7 @@
 						</div>
 					{/if}
 				</div>
-			{/if}
+			</div>
 		</div>
 	{/if}
 </div>
@@ -1955,3 +1898,130 @@
 		scale={iconPlacementScale}
 	/>
 {/if}
+
+<!-- My Stickers Modal (mobile only) - Full screen slide up -->
+<div
+	class={classNames(
+		'fixed inset-0 z-50 md:hidden bg-base-100 flex flex-col transition-transform duration-300 ease-out',
+		showStickersModal ? 'translate-y-0' : 'translate-y-full'
+	)}
+	style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
+>
+	<!-- Header -->
+	<div class="flex items-center justify-between p-4 border-b border-base-300 flex-shrink-0">
+		<h3 class="text-lg font-bold">
+			{#if isRefreshing}
+				My Stickers (loading...)
+			{:else if ownedGroups.length > 0}
+				My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce((sum, g) => sum + g.count, 0)} total)
+			{:else}
+				My Stickers (0 owned)
+			{/if}
+		</h3>
+		<button
+			class="btn btn-sm btn-circle btn-ghost"
+			onclick={() => showStickersModal = false}
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		</button>
+	</div>
+
+	<!-- Mix All Button -->
+	{#if mixableGroups.length > 0}
+		<div class="p-4 border-b border-base-300 flex-shrink-0">
+			<button
+				class="btn btn-secondary btn-sm w-full gap-2"
+				onclick={handleMixAll}
+				disabled={isMixing !== null || isRefreshing}
+			>
+				{#if isMixing === 'all'}
+					<span class="loading loading-spinner loading-xs"></span>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+					</svg>
+				{/if}
+				Mix All ({mixableGroups.length})
+			</button>
+		</div>
+	{/if}
+
+	<!-- Content -->
+	<div class="flex-1 overflow-y-auto p-4">
+		{#if ownedGroups.length === 0}
+			<div class="flex items-center justify-center h-full">
+				<div class="text-base-content/50 text-sm">
+					Play trivia or open booster packs to collect stickers!
+				</div>
+			</div>
+		{:else}
+			<div class="grid grid-cols-3 gap-2">
+				{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
+					{@const groupKey = `${group.stickerId}::${group.rarityId}`}
+					{@const placed = placedStickerIds.has(group.stickerId)}
+					{@const canMix = canMixGroup(group)}
+					{@const nextRarity = getGroupNextRarity(group)}
+					<div
+						class={classNames(
+							'card bg-base-200 relative overflow-hidden shadow-sm',
+							{ 'ring-success ring-2': placed },
+							{ 'ring-primary/50 ring-1': !placed }
+						)}
+					>
+						<div class="aspect-[3/4] p-1">
+							<StickerItem
+								sticker={group.sticker}
+								bgColor={group.rarity?.colorFrom ?? '#6B7280'}
+								borderColor={group.rarity?.colorTo}
+								classes="w-full h-full"
+							/>
+						</div>
+						<div class="p-1 pt-0">
+							<p class="truncate text-center text-[9px] font-medium" title={group.sticker.name}>
+								{group.sticker.name}
+							</p>
+							{#if group.rarity}
+								<div
+									class="badge badge-xs mt-0.5 w-full justify-center"
+									style="background: linear-gradient(135deg, {group.rarity.colorFrom}, {group.rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
+								>
+									{group.rarity.name}
+								</div>
+							{/if}
+							{#if canMix && nextRarity}
+								<button
+									class="btn btn-secondary btn-xs mt-0.5 w-full gap-1"
+									onclick={(e) => {
+										e.stopPropagation();
+										handleMixGroup(group);
+									}}
+									disabled={isMixing !== null || isRefreshing}
+								>
+									{#if isMixing === groupKey}
+										<span class="loading loading-spinner loading-xs"></span>
+									{:else}
+										Mix
+									{/if}
+								</button>
+							{/if}
+						</div>
+						{#if group.count > 1}
+							<div class="badge badge-primary badge-xs absolute right-1 top-1 font-bold">
+								x{group.count}
+							</div>
+						{/if}
+						{#if placed}
+							<div class="badge badge-success badge-xs absolute left-1 top-1 gap-0.5">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								</svg>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
+</div>

@@ -50,39 +50,35 @@
 	);
 </script>
 
-<div class={classNames('h-full w-full p-2', classes)} style={bgStyle}>
-	<div class="relative h-full w-full overflow-hidden">
-		<div class="absolute left-0 right-0 top-0 z-10 bg-white/90">
-			<span class="block truncate text-center text-[10px] font-medium text-black"
-				>{sticker.name}</span
-			>
-		</div>
+<div class={classNames('flex h-fit w-full flex-col', classes)} style={bgStyle}>
+	<div class="bg-white/90">
+		<span class="block truncate text-center text-[10px] font-medium leading-none text-black"
+			>{sticker.name}</span
+		>
+	</div>
+	<div class="overflow-hidden">
 		{#if isFragment}
-			<!-- Fragment sticker: show only one quadrant of the image -->
-			<div class="h-full w-full overflow-hidden">
-				<img
-					src={sticker.image}
-					alt={sticker.name}
-					class="h-full w-full object-contain"
-					style={fragmentStyle}
-					onerror={handleImageError}
-				/>
-			</div>
-		{:else}
-			<!-- Normal sticker: show full image -->
 			<img
 				src={sticker.image}
 				alt={sticker.name}
-				class="h-full w-full object-contain"
+				class="w-full"
+				style={fragmentStyle}
+				onerror={handleImageError}
+			/>
+		{:else}
+			<img
+				src={sticker.image}
+				alt={sticker.name}
+				class="w-full"
 				onerror={handleImageError}
 			/>
 		{/if}
-		{#if sticker.sourceName}
-			<div class="absolute bottom-0 left-0 right-0 z-10 bg-white/90">
-				<span class="block truncate text-center text-[8px] font-medium text-black"
-					>{sticker.sourceName}</span
-				>
-			</div>
-		{/if}
 	</div>
+	{#if sticker.sourceName}
+		<div class="bg-white/90">
+			<span class="block truncate text-center text-[8px] font-medium leading-none text-black"
+				>{sticker.sourceName}</span
+			>
+		</div>
+	{/if}
 </div>

@@ -7,6 +7,11 @@
 		userSourcesDeleted: number;
 		placedStampsDeleted: number;
 		stickerPlacementsDeleted: number;
+		placedIconsDeleted: number;
+		gameStatsDeleted: number;
+		boosterPacksDeleted: number;
+		collectionRewardsDeleted: number;
+		playerReset: boolean;
 	}
 
 	let isClearing = $state(false);
@@ -36,7 +41,11 @@
 			result.userCollectionsDeleted +
 			result.userSourcesDeleted +
 			result.placedStampsDeleted +
-			result.stickerPlacementsDeleted
+			result.stickerPlacementsDeleted +
+			result.placedIconsDeleted +
+			result.gameStatsDeleted +
+			result.boosterPacksDeleted +
+			result.collectionRewardsDeleted
 		);
 	}
 </script>
@@ -148,7 +157,12 @@
 							{clearResult.userCollectionsDeleted} collections,
 							{clearResult.userSourcesDeleted} sources,
 							{clearResult.placedStampsDeleted} placed stamps,
-							{clearResult.stickerPlacementsDeleted} sticker placements.
+							{clearResult.stickerPlacementsDeleted} sticker placements,
+							{clearResult.placedIconsDeleted} placed icons,
+							{clearResult.gameStatsDeleted} game stats,
+							{clearResult.boosterPacksDeleted} booster packs,
+							{clearResult.collectionRewardsDeleted} collection rewards.
+							{#if clearResult.playerReset}Player profile reset.{/if}
 						</p>
 					</div>
 				</div>

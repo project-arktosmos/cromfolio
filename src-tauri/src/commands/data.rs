@@ -1062,6 +1062,7 @@ pub struct ClearUserDataResult {
     pub placed_icons_deleted: i64,
     pub game_stats_deleted: i64,
     pub booster_packs_deleted: i64,
+    pub collection_rewards_deleted: i64,
     pub player_reset: bool,
 }
 
@@ -1079,6 +1080,7 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
     let user_sources_deleted = queries::user_sources::delete_all(&conn)?;
     let game_stats_deleted = queries::user_game_stats::delete_all(&conn)?;
     let booster_packs_deleted = queries::user_booster_packs::delete_all(&conn)?;
+    let collection_rewards_deleted = queries::user_collection_rewards::delete_all(&conn)?;
     let player_reset = queries::user_player::reset(&conn).is_ok();
 
     Ok(ClearUserDataResult {
@@ -1090,6 +1092,7 @@ pub fn clear_all_user_data(db: State<'_, Database>) -> Result<ClearUserDataResul
         placed_icons_deleted,
         game_stats_deleted,
         booster_packs_deleted,
+        collection_rewards_deleted,
         player_reset,
     })
 }
@@ -1265,5 +1268,71 @@ pub fn get_pokemon_trivia_template_v2_types(db: State<'_, Database>) -> Result<V
 pub fn get_pokemon_trivia_template_v2_attributes(db: State<'_, Database>) -> Result<Vec<String>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::pokemon_trivia_templates_v2::get_unique_primary_attributes(&conn)
+}
+
+// ============================================================================
+// USER COLLECTION REWARDS (time-based rewards for collections with stickers)
+// ============================================================================
+
+use crate::models::{UserCollectionReward, EligibleRewardCollection};
+
+/// Get all collections where user has at least 1 sticker, with reward eligibility info
+#[command]
+pub fn get_eligible_reward_collections(db: State<'_, Database>) -> Result<Vec<EligibleRewardCollection>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_collection_rewards::get_eligible_collections(&conn)
+}
+
+/// Get all user collection rewards (tracking records)
+#[command]
+pub fn get_all_user_collection_rewards(db: State<'_, Database>) -> Result<Vec<UserCollectionReward>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_collection_rewards::get_all(&conn)
+}
+
+/// Get a user collection reward by collection ID
+#[command]
+pub fn get_user_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<Option<UserCollectionReward>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_collection_rewards::get_by_collection_id(&conn, &collection_id)
+}
+
+/// Claim all accumulated rewards for a collection - awards booster packs and updates the claim timestamp
+/// Returns all the earned booster packs
+#[command]
+pub fn claim_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+
+    // First check if user can claim (has stickers and enough time passed)
+    let eligible = queries::user_collection_rewards::get_eligible_collections(&conn)?;
+    let collection_eligible = eligible.iter().find(|c| c.collection_id == collection_id);
+
+    match collection_eligible {
+        Some(ec) if ec.can_claim && ec.claimable_count > 0 => {
+            // Update the claim timestamp
+            queries::user_collection_rewards::claim_reward(&conn, &collection_id)?;
+
+            // Award all accumulated booster packs
+            let packs = queries::user_booster_packs::create_batch(&conn, ec.claimable_count, &collection_id, "timed-reward")?;
+
+            Ok(packs)
+        }
+        Some(_) => Err("Reward not available yet - please wait for cooldown".to_string()),
+        None => Err("Collection not eligible for rewards - need at least 1 sticker".to_string()),
+    }
+}
+
+/// Delete a user collection reward by collection ID
+#[command]
+pub fn delete_user_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_collection_rewards::delete_by_collection_id(&conn, &collection_id)
+}
+
+/// Delete all user collection rewards
+#[command]
+pub fn delete_all_user_collection_rewards(db: State<'_, Database>) -> Result<i64, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    queries::user_collection_rewards::delete_all(&conn)
 }
 

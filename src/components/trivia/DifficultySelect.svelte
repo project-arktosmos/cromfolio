@@ -11,24 +11,10 @@
 
 	const dispatch = createEventDispatcher<{
 		select: GameDifficulty;
-		back: void;
 	}>();
 </script>
 
 <div class="flex flex-col items-center gap-6">
-	<button class="btn btn-ghost btn-sm gap-2 self-start" onclick={() => dispatch('back')}>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			class="h-4 w-4"
-			fill="none"
-			viewBox="0 0 24 24"
-			stroke="currentColor"
-		>
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-		</svg>
-		Back to Collections
-	</button>
-
 	<div class="text-center">
 		<h2 class="text-2xl font-bold">{collectionTitle}</h2>
 		<p class="text-base-content/70">Select difficulty to begin</p>

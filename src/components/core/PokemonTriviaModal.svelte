@@ -396,7 +396,6 @@
 						collectionTitle={modalState.collection.title}
 						configs={DIFFICULTY_CONFIGS}
 						on:select={handleDifficultySelect}
-						on:back={handleClose}
 					/>
 				{:else if viewState === 'playing' || viewState === 'question-result'}
 					<div class="flex flex-col items-center gap-6">

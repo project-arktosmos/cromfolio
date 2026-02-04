@@ -10,6 +10,7 @@ pub mod sticker_types;
 pub mod stickers;
 pub mod tags;
 pub mod user_booster_packs;
+pub mod user_collection_rewards;
 pub mod user_collections;
 pub mod user_game_stats;
 pub mod user_placed_icons;
