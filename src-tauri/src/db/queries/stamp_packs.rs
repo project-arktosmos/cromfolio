@@ -36,7 +36,7 @@ pub fn get_by_source(conn: &Connection, source: &str) -> Result<Vec<StampPack>, 
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<StampPack>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<StampPack>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, source, name, author, tray_image, pack_file, sticker_count, created_at, updated_at
@@ -56,20 +56,13 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<StampPack>, Strin
 }
 
 pub fn create(conn: &Connection, pack: &StampPack) -> Result<StampPack, String> {
-    let id = if pack.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        pack.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
         "INSERT INTO stamp_packs (
-            id, source, name, author, tray_image, pack_file, sticker_count, created_at, updated_at
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            source, name, author, tray_image, pack_file, sticker_count, created_at, updated_at
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
-            id,
             pack.source,
             pack.name,
             pack.author,
@@ -81,6 +74,8 @@ pub fn create(conn: &Connection, pack: &StampPack) -> Result<StampPack, String> 
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(StampPack {
         id,
@@ -116,7 +111,7 @@ pub fn update(conn: &Connection, pack: &StampPack) -> Result<StampPack, String> 
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM stamp_packs WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

@@ -28,7 +28,7 @@ export async function getAllPokemonTriviaTemplates(): Promise<PokemonTriviaTempl
 export async function getPokemonTriviaTemplate(id: ID): Promise<PokemonTriviaTemplate | null> {
 	try {
 		return await invoke<PokemonTriviaTemplate | null>('get_pokemon_trivia_template', {
-			id: String(id)
+			id
 		});
 	} catch (e) {
 		console.error(`[pokemon-trivia-templates.service] getPokemonTriviaTemplate(${id}):`, e);
@@ -112,7 +112,7 @@ export async function updatePokemonTriviaTemplate(
  */
 export async function deletePokemonTriviaTemplate(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_pokemon_trivia_template', { id: String(id) });
+		return await invoke<boolean>('delete_pokemon_trivia_template', { id });
 	} catch (e) {
 		console.error(`[pokemon-trivia-templates.service] deletePokemonTriviaTemplate(${id}):`, e);
 		return false;
@@ -141,7 +141,7 @@ export async function getAllPokemonTriviaTemplatesV2(): Promise<PokemonTriviaTem
 export async function getPokemonTriviaTemplateV2(id: ID): Promise<PokemonTriviaTemplateV2 | null> {
 	try {
 		return await invoke<PokemonTriviaTemplateV2 | null>('get_pokemon_trivia_template_v2', {
-			id: String(id)
+			id
 		});
 	} catch (e) {
 		console.error(`[pokemon-trivia-templates.service] getPokemonTriviaTemplateV2(${id}):`, e);
@@ -280,7 +280,7 @@ export async function updatePokemonTriviaTemplateV2(
  */
 export async function deletePokemonTriviaTemplateV2(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_pokemon_trivia_template_v2', { id: String(id) });
+		return await invoke<boolean>('delete_pokemon_trivia_template_v2', { id });
 	} catch (e) {
 		console.error(`[pokemon-trivia-templates.service] deletePokemonTriviaTemplateV2(${id}):`, e);
 		return false;

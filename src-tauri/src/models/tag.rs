@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Tag {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
     pub key: String,
     #[serde(default)]
@@ -23,9 +23,9 @@ pub struct Tag {
 #[serde(rename_all = "camelCase")]
 pub struct StickerTag {
     #[serde(default)]
-    pub sticker_id: String,
+    pub sticker_id: i64,
     #[serde(default)]
-    pub tag_id: String,
+    pub tag_id: i64,
 
     // Timestamp
     #[serde(default)]

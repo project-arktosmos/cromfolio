@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserGameStats {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     /// The type of game (e.g., "pokemon-trivia", "guess-the-name")
     #[serde(default)]
     pub game_type: String,

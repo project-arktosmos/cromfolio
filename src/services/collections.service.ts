@@ -29,7 +29,7 @@ export async function getAllCollections(): Promise<Collection[]> {
  */
 export async function getCollection(id: ID): Promise<Collection | null> {
 	try {
-		return await invoke<Collection | null>('get_collection', { id: String(id) });
+		return await invoke<Collection | null>('get_collection', { id });
 	} catch (e) {
 		console.error(`[collections.service] getCollection(${id}):`, e);
 		return null;
@@ -67,7 +67,7 @@ export async function updateCollection(collection: Collection): Promise<Collecti
  */
 export async function deleteCollection(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_collection', { id: String(id) });
+		return await invoke<boolean>('delete_collection', { id });
 	} catch (e) {
 		console.error(`[collections.service] deleteCollection(${id}):`, e);
 		return false;
@@ -88,8 +88,8 @@ export async function addStickerToCollection(
 ): Promise<CollectionSticker | null> {
 	try {
 		return await invoke<CollectionSticker>('add_sticker_to_collection', {
-			collectionId: String(collectionId),
-			stickerId: String(stickerId),
+			collectionId,
+			stickerId,
 			sortOrder
 		});
 	} catch (e) {
@@ -110,8 +110,8 @@ export async function removeStickerFromCollection(
 ): Promise<boolean> {
 	try {
 		return await invoke<boolean>('remove_sticker_from_collection', {
-			collectionId: String(collectionId),
-			stickerId: String(stickerId)
+			collectionId,
+			stickerId
 		});
 	} catch (e) {
 		console.error(
@@ -128,7 +128,7 @@ export async function removeStickerFromCollection(
 export async function getStickersForCollection(collectionId: ID): Promise<Sticker[]> {
 	try {
 		return await invoke<Sticker[]>('get_stickers_for_collection', {
-			collectionId: String(collectionId)
+			collectionId
 		});
 	} catch (e) {
 		console.error(`[collections.service] getStickersForCollection(${collectionId}):`, e);

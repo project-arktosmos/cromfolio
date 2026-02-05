@@ -61,7 +61,7 @@ pub struct TelegramImportProgress {
     pub errors: Vec<String>,
     pub started_at: Option<i64>,
     pub finished_at: Option<i64>,
-    pub result_pack_id: Option<String>,
+    pub result_pack_id: Option<i64>,
 }
 
 impl Default for TelegramImportProgress {

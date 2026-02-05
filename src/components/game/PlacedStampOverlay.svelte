@@ -11,7 +11,7 @@
 
 	interface Props {
 		placedStamps: UserPlacedStamp[];
-		stampImages: Map<string, Stamp>; // stampId -> Stamp for image lookup
+		stampImages: Map<number, Stamp>; // stampId -> Stamp for image lookup
 		stampsDataDir: string;
 		editable?: boolean;
 		classes?: string;
@@ -29,11 +29,11 @@
 		onstampremove
 	}: Props = $props();
 
-	function getImagePath(stampId: string): string {
+	function getImagePath(stampId: number): string {
 		return getStampImagePath(stampImages.get(stampId), stampsDataDir);
 	}
 
-	function isVideo(stampId: string): boolean {
+	function isVideo(stampId: number): boolean {
 		return isVideoStamp(stampImages.get(stampId));
 	}
 
@@ -50,8 +50,8 @@
 	onitemremove={onstampremove}
 >
 	{#snippet children(placedStamp)}
-		{@const stamp = stampImages.get(String(placedStamp.stampId))}
-		{@const stampId = String(placedStamp.stampId)}
+		{@const stampId = placedStamp.stampId as number}
+		{@const stamp = stampImages.get(stampId)}
 		{#if isVideo(stampId)}
 			<video
 				src={getImagePath(stampId)}

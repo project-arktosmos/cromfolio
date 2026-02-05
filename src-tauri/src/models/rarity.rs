@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Rarity {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
     pub name: String,
     /// First color of the gradient (hex format, e.g., "#FF5733")

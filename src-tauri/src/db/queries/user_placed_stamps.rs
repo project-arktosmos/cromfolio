@@ -2,7 +2,7 @@ use rusqlite::{params, Connection};
 use crate::models::UserPlacedStamp;
 
 /// Get all placed stamps for a collection
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Vec<UserPlacedStamp>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Vec<UserPlacedStamp>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, stamp_id, collection_id, page_index, position_x, position_y, scale, rotation, placed_at
@@ -21,7 +21,7 @@ pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Ve
 }
 
 /// Get placed stamps for a specific page in a collection
-pub fn get_by_collection_page(conn: &Connection, collection_id: &str, page_index: i32) -> Result<Vec<UserPlacedStamp>, String> {
+pub fn get_by_collection_page(conn: &Connection, collection_id: i64, page_index: i32) -> Result<Vec<UserPlacedStamp>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, stamp_id, collection_id, page_index, position_x, position_y, scale, rotation, placed_at
@@ -40,7 +40,7 @@ pub fn get_by_collection_page(conn: &Connection, collection_id: &str, page_index
 }
 
 /// Get a single placed stamp by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserPlacedStamp>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserPlacedStamp>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, stamp_id, collection_id, page_index, position_x, position_y, scale, rotation, placed_at
@@ -61,12 +61,6 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserPlacedStamp>,
 
 /// Create a new placed stamp
 pub fn create(conn: &Connection, placed_stamp: &UserPlacedStamp) -> Result<UserPlacedStamp, String> {
-    let id = if placed_stamp.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        placed_stamp.id.clone()
-    };
-
     let placed_at = if placed_stamp.placed_at.is_empty() {
         chrono_now()
     } else {
@@ -76,10 +70,9 @@ pub fn create(conn: &Connection, placed_stamp: &UserPlacedStamp) -> Result<UserP
     let scale = if placed_stamp.scale == 0.0 { 1.0 } else { placed_stamp.scale };
 
     conn.execute(
-        "INSERT INTO _user_placed_stamps (id, stamp_id, collection_id, page_index, position_x, position_y, scale, rotation, placed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO _user_placed_stamps (stamp_id, collection_id, page_index, position_x, position_y, scale, rotation, placed_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
-            id,
             placed_stamp.stamp_id,
             placed_stamp.collection_id,
             placed_stamp.page_index,
@@ -91,6 +84,8 @@ pub fn create(conn: &Connection, placed_stamp: &UserPlacedStamp) -> Result<UserP
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserPlacedStamp {
         id,
@@ -120,7 +115,7 @@ pub fn update(conn: &Connection, placed_stamp: &UserPlacedStamp) -> Result<UserP
 }
 
 /// Delete a placed stamp by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_placed_stamps WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -129,7 +124,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete all placed stamps for a collection
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_placed_stamps WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;

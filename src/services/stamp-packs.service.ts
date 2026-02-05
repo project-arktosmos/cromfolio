@@ -40,7 +40,7 @@ export async function getStampPacksBySource(source: string): Promise<StampPack[]
  */
 export async function getStampPack(id: ID): Promise<StampPack | null> {
 	try {
-		return await invoke<StampPack | null>('get_stamp_pack', { id: String(id) });
+		return await invoke<StampPack | null>('get_stamp_pack', { id });
 	} catch (e) {
 		console.error(`[stamp-packs.service] getStampPack(${id}):`, e);
 		return null;
@@ -52,7 +52,7 @@ export async function getStampPack(id: ID): Promise<StampPack | null> {
  * @param stampPack - Pack data. If id is provided, it will be used; otherwise backend generates one.
  */
 export async function createStampPack(
-	stampPack: Omit<StampPack, 'createdAt' | 'updatedAt'> & { id?: string }
+	stampPack: Omit<StampPack, 'createdAt' | 'updatedAt'> & { id?: number }
 ): Promise<StampPack | null> {
 	try {
 		return await invoke<StampPack>('create_stamp_pack', { stampPack });
@@ -79,7 +79,7 @@ export async function updateStampPack(stampPack: StampPack): Promise<StampPack |
  */
 export async function deleteStampPack(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_stamp_pack', { id: String(id) });
+		return await invoke<boolean>('delete_stamp_pack', { id });
 	} catch (e) {
 		console.error(`[stamp-packs.service] deleteStampPack(${id}):`, e);
 		return false;
@@ -107,7 +107,7 @@ export async function getAllStamps(): Promise<Stamp[]> {
  */
 export async function getStampsByPack(packId: ID): Promise<Stamp[]> {
 	try {
-		return await invoke<Stamp[]>('get_stamps_by_pack', { packId: String(packId) });
+		return await invoke<Stamp[]>('get_stamps_by_pack', { packId });
 	} catch (e) {
 		console.error(`[stamp-packs.service] getStampsByPack(${packId}):`, e);
 		return [];
@@ -119,7 +119,7 @@ export async function getStampsByPack(packId: ID): Promise<Stamp[]> {
  */
 export async function getStamp(id: ID): Promise<Stamp | null> {
 	try {
-		return await invoke<Stamp | null>('get_stamp', { id: String(id) });
+		return await invoke<Stamp | null>('get_stamp', { id });
 	} catch (e) {
 		console.error(`[stamp-packs.service] getStamp(${id}):`, e);
 		return null;
@@ -157,7 +157,7 @@ export async function createStampsBatch(
  */
 export async function deleteStamp(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_stamp', { id: String(id) });
+		return await invoke<boolean>('delete_stamp', { id });
 	} catch (e) {
 		console.error(`[stamp-packs.service] deleteStamp(${id}):`, e);
 		return false;
@@ -169,7 +169,7 @@ export async function deleteStamp(id: ID): Promise<boolean> {
  */
 export async function deleteStampsByPack(packId: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_stamps_by_pack', { packId: String(packId) });
+		return await invoke<boolean>('delete_stamps_by_pack', { packId });
 	} catch (e) {
 		console.error(`[stamp-packs.service] deleteStampsByPack(${packId}):`, e);
 		return false;

@@ -39,7 +39,7 @@ pub fn get_unopened(conn: &Connection) -> Result<Vec<UserBoosterPack>, String> {
 }
 
 /// Get all unopened booster packs for a specific collection
-pub fn get_unopened_by_collection(conn: &Connection, collection_id: &str) -> Result<Vec<UserBoosterPack>, String> {
+pub fn get_unopened_by_collection(conn: &Connection, collection_id: i64) -> Result<Vec<UserBoosterPack>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, earned_from, earned_at, opened_at
@@ -58,7 +58,7 @@ pub fn get_unopened_by_collection(conn: &Connection, collection_id: &str) -> Res
 }
 
 /// Get booster packs by collection ID (both opened and unopened)
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Vec<UserBoosterPack>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Vec<UserBoosterPack>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, earned_from, earned_at, opened_at
@@ -77,7 +77,7 @@ pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Ve
 }
 
 /// Get a specific booster pack by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserBoosterPack>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserBoosterPack>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, earned_from, earned_at, opened_at
@@ -97,7 +97,7 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserBoosterPack>,
 }
 
 /// Count unopened booster packs for a collection
-pub fn count_unopened_by_collection(conn: &Connection, collection_id: &str) -> Result<i64, String> {
+pub fn count_unopened_by_collection(conn: &Connection, collection_id: i64) -> Result<i64, String> {
     conn.query_row(
         "SELECT COUNT(*) FROM _user_booster_packs WHERE collection_id = ?1 AND opened_at IS NULL",
         params![collection_id],
@@ -118,12 +118,6 @@ pub fn count_unopened(conn: &Connection) -> Result<i64, String> {
 
 /// Create a new booster pack (award to user)
 pub fn create(conn: &Connection, booster_pack: &UserBoosterPack) -> Result<UserBoosterPack, String> {
-    let id = if booster_pack.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        booster_pack.id.clone()
-    };
-
     let earned_at = if booster_pack.earned_at.is_empty() {
         chrono_now()
     } else {
@@ -131,10 +125,9 @@ pub fn create(conn: &Connection, booster_pack: &UserBoosterPack) -> Result<UserB
     };
 
     conn.execute(
-        "INSERT INTO _user_booster_packs (id, collection_id, earned_from, earned_at, opened_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO _user_booster_packs (collection_id, earned_from, earned_at, opened_at)
+         VALUES (?1, ?2, ?3, ?4)",
         params![
-            id,
             booster_pack.collection_id,
             booster_pack.earned_from,
             earned_at,
@@ -142,6 +135,8 @@ pub fn create(conn: &Connection, booster_pack: &UserBoosterPack) -> Result<UserB
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserBoosterPack {
         id,
@@ -151,23 +146,23 @@ pub fn create(conn: &Connection, booster_pack: &UserBoosterPack) -> Result<UserB
 }
 
 /// Create multiple booster packs at once
-pub fn create_batch(conn: &Connection, count: i64, collection_id: &str, earned_from: &str) -> Result<Vec<UserBoosterPack>, String> {
+pub fn create_batch(conn: &Connection, count: i64, collection_id: i64, earned_from: &str) -> Result<Vec<UserBoosterPack>, String> {
     let now = chrono_now();
     let mut created = Vec::new();
 
     for _ in 0..count {
-        let id = uuid::Uuid::new_v4().to_string();
-
         conn.execute(
-            "INSERT INTO _user_booster_packs (id, collection_id, earned_from, earned_at, opened_at)
-             VALUES (?1, ?2, ?3, ?4, NULL)",
-            params![id, collection_id, earned_from, now],
+            "INSERT INTO _user_booster_packs (collection_id, earned_from, earned_at, opened_at)
+             VALUES (?1, ?2, ?3, NULL)",
+            params![collection_id, earned_from, now],
         )
         .map_err(|e| e.to_string())?;
 
+        let id = conn.last_insert_rowid();
+
         created.push(UserBoosterPack {
             id,
-            collection_id: collection_id.to_string(),
+            collection_id,
             earned_from: earned_from.to_string(),
             earned_at: now.clone(),
             opened_at: None,
@@ -178,7 +173,7 @@ pub fn create_batch(conn: &Connection, count: i64, collection_id: &str, earned_f
 }
 
 /// Mark a booster pack as opened
-pub fn mark_opened(conn: &Connection, id: &str) -> Result<UserBoosterPack, String> {
+pub fn mark_opened(conn: &Connection, id: i64) -> Result<UserBoosterPack, String> {
     let now = chrono_now();
 
     let rows_affected = conn
@@ -198,7 +193,7 @@ pub fn mark_opened(conn: &Connection, id: &str) -> Result<UserBoosterPack, Strin
 
 /// Mark multiple booster packs as opened (up to specified count for a collection)
 /// Returns the IDs of the packs that were opened
-pub fn mark_opened_batch(conn: &Connection, collection_id: &str, count: i64) -> Result<Vec<String>, String> {
+pub fn mark_opened_batch(conn: &Connection, collection_id: i64, count: i64) -> Result<Vec<i64>, String> {
     let now = chrono_now();
 
     // Get the IDs of unopened packs for this collection
@@ -211,7 +206,7 @@ pub fn mark_opened_batch(conn: &Connection, collection_id: &str, count: i64) -> 
         )
         .map_err(|e| e.to_string())?;
 
-    let ids: Vec<String> = stmt
+    let ids: Vec<i64> = stmt
         .query_map(params![collection_id, count], |row| row.get(0))
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
@@ -230,7 +225,7 @@ pub fn mark_opened_batch(conn: &Connection, collection_id: &str, count: i64) -> 
 }
 
 /// Delete a booster pack by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_booster_packs WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -239,7 +234,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete all booster packs for a collection
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_booster_packs WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;
@@ -258,7 +253,7 @@ pub fn delete_all(conn: &Connection) -> Result<i64, String> {
 
 /// Get summary of unopened packs grouped by collection
 /// Returns tuples of (collection_id, count)
-pub fn get_unopened_summary(conn: &Connection) -> Result<Vec<(String, i64)>, String> {
+pub fn get_unopened_summary(conn: &Connection) -> Result<Vec<(i64, i64)>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT collection_id, COUNT(*) as cnt
@@ -272,7 +267,7 @@ pub fn get_unopened_summary(conn: &Connection) -> Result<Vec<(String, i64)>, Str
     let rows = stmt
         .query_map([], |row| {
             Ok((
-                row.get::<_, String>(0)?,
+                row.get::<_, i64>(0)?,
                 row.get::<_, i64>(1)?,
             ))
         })

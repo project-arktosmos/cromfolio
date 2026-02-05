@@ -22,7 +22,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Collection>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_type(conn: &Connection, collection_type_id: &str) -> Result<Vec<Collection>, String> {
+pub fn get_by_type(conn: &Connection, collection_type_id: i64) -> Result<Vec<Collection>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_type_id, title, description, region, cover_image, created_at, updated_at
@@ -40,7 +40,7 @@ pub fn get_by_type(conn: &Connection, collection_type_id: &str) -> Result<Vec<Co
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Collection>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Collection>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_type_id, title, description, region, cover_image, created_at, updated_at
@@ -60,20 +60,16 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Collection>, Stri
 }
 
 pub fn create(conn: &Connection, collection: &Collection) -> Result<Collection, String> {
-    let id = if collection.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        collection.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO collections (id, collection_type_id, title, description, region, cover_image, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        params![id, collection.collection_type_id, collection.title, collection.description, collection.region, collection.cover_image, now, now],
+        "INSERT INTO collections (collection_type_id, title, description, region, cover_image, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![collection.collection_type_id, collection.title, collection.description, collection.region, collection.cover_image, now, now],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Collection {
         id,
@@ -99,7 +95,7 @@ pub fn update(conn: &Connection, collection: &Collection) -> Result<Collection, 
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM collections WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -113,8 +109,8 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 
 pub fn add_sticker_to_collection(
     conn: &Connection,
-    collection_id: &str,
-    sticker_id: &str,
+    collection_id: i64,
+    sticker_id: i64,
     sort_order: i32,
 ) -> Result<CollectionSticker, String> {
     let now = chrono_now();
@@ -127,8 +123,8 @@ pub fn add_sticker_to_collection(
     .map_err(|e| e.to_string())?;
 
     Ok(CollectionSticker {
-        collection_id: collection_id.to_string(),
-        sticker_id: sticker_id.to_string(),
+        collection_id,
+        sticker_id,
         sort_order,
         added_at: now,
     })
@@ -136,8 +132,8 @@ pub fn add_sticker_to_collection(
 
 pub fn remove_sticker_from_collection(
     conn: &Connection,
-    collection_id: &str,
-    sticker_id: &str,
+    collection_id: i64,
+    sticker_id: i64,
 ) -> Result<bool, String> {
     let rows_affected = conn
         .execute(
@@ -151,7 +147,7 @@ pub fn remove_sticker_from_collection(
 
 pub fn get_stickers_for_collection(
     conn: &Connection,
-    collection_id: &str,
+    collection_id: i64,
 ) -> Result<Vec<Sticker>, String> {
     let mut stmt = conn
         .prepare(
@@ -176,8 +172,8 @@ pub fn get_stickers_for_collection(
 
 pub fn get_sticker_ids_for_collection(
     conn: &Connection,
-    collection_id: &str,
-) -> Result<Vec<String>, String> {
+    collection_id: i64,
+) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT sticker_id FROM collection_stickers WHERE collection_id = ?1",
@@ -194,7 +190,7 @@ pub fn get_sticker_ids_for_collection(
 
 pub fn get_collections_for_sticker(
     conn: &Connection,
-    sticker_id: &str,
+    sticker_id: i64,
 ) -> Result<Vec<Collection>, String> {
     let mut stmt = conn
         .prepare(

@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserPlacedStamp {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub stamp_id: String,
+    pub stamp_id: i64,
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
     #[serde(default)]
     pub page_index: i32,
     #[serde(default)]

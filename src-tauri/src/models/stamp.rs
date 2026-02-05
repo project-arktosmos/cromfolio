@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Stamp {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     /// Reference to the stamp pack this stamp belongs to
     #[serde(default)]
-    pub pack_id: String,
+    pub pack_id: i64,
     /// Path to the sticker image (relative to app data dir)
     #[serde(default)]
     pub image_path: String,

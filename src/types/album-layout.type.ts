@@ -1,3 +1,4 @@
+import type { ID } from '$types/core.type';
 import type { Sticker } from '$types/sticker.type';
 
 /**
@@ -57,7 +58,7 @@ export interface FullPageSticker {
 /** A grouped set of fragment stickers (4 fragments that form one complete image) */
 export interface GroupedFragments {
 	/** The shared fragmentOf ID that links these fragments */
-	fragmentId: string;
+	fragmentId: ID;
 	/** The 4 fragment stickers, keyed by position (1-4) */
 	fragments: Map<1 | 2 | 3 | 4, Sticker>;
 	/** Page index in the album */

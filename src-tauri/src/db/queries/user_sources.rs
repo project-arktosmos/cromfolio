@@ -20,7 +20,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<UserSource>, String> {
 }
 
 /// Get a specific user source by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserSource>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserSource>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, source_id, acquired_at
@@ -40,7 +40,7 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserSource>, Stri
 }
 
 /// Check if user owns a specific source
-pub fn owns_source(conn: &Connection, source_id: &str) -> Result<bool, String> {
+pub fn owns_source(conn: &Connection, source_id: i64) -> Result<bool, String> {
     let count: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM _user_sources WHERE source_id = ?1",
@@ -53,7 +53,7 @@ pub fn owns_source(conn: &Connection, source_id: &str) -> Result<bool, String> {
 }
 
 /// Get all owned source IDs
-pub fn get_owned_source_ids(conn: &Connection) -> Result<Vec<String>, String> {
+pub fn get_owned_source_ids(conn: &Connection) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT source_id FROM _user_sources")
         .map_err(|e| e.to_string())?;
@@ -69,15 +69,9 @@ pub fn get_owned_source_ids(conn: &Connection) -> Result<Vec<String>, String> {
 /// Create a new user source (acquire a source)
 pub fn create(conn: &Connection, user_source: &UserSource) -> Result<UserSource, String> {
     // Check if already owned
-    if owns_source(conn, &user_source.source_id)? {
+    if owns_source(conn, user_source.source_id)? {
         return Err("Source already owned".to_string());
     }
-
-    let id = if user_source.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        user_source.id.clone()
-    };
 
     let acquired_at = if user_source.acquired_at.is_empty() {
         chrono_now()
@@ -86,11 +80,13 @@ pub fn create(conn: &Connection, user_source: &UserSource) -> Result<UserSource,
     };
 
     conn.execute(
-        "INSERT INTO _user_sources (id, source_id, acquired_at)
-         VALUES (?1, ?2, ?3)",
-        params![id, user_source.source_id, acquired_at],
+        "INSERT INTO _user_sources (source_id, acquired_at)
+         VALUES (?1, ?2)",
+        params![user_source.source_id, acquired_at],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserSource {
         id,
@@ -100,7 +96,7 @@ pub fn create(conn: &Connection, user_source: &UserSource) -> Result<UserSource,
 }
 
 /// Delete a user source by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_sources WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -109,7 +105,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete a user source by source_id
-pub fn delete_by_source_id(conn: &Connection, source_id: &str) -> Result<bool, String> {
+pub fn delete_by_source_id(conn: &Connection, source_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_sources WHERE source_id = ?1", params![source_id])
         .map_err(|e| e.to_string())?;

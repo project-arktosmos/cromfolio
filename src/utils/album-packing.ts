@@ -12,6 +12,7 @@ import type {
 	GridPackedPage
 } from '$types/album-layout.type';
 import type { Tag } from '$types/tag.type';
+import type { ID } from '$types/core.type';
 
 /** Default dimensions for stickers without width/height (2:3 aspect ratio) */
 const DEFAULT_WIDTH = 200;
@@ -186,13 +187,13 @@ export function packStickersIntoPages(stickers: Sticker[], config: PackingConfig
  */
 export function separateWinnerStickers(
 	stickers: Sticker[],
-	stickerTagsMap: Map<string, Tag[]>
+	stickerTagsMap: Map<ID, Tag[]>
 ): { regular: Sticker[]; winners: Sticker[] } {
 	const regular: Sticker[] = [];
 	const winners: Sticker[] = [];
 
 	for (const sticker of stickers) {
-		const tags = stickerTagsMap.get(String(sticker.id)) ?? [];
+		const tags = stickerTagsMap.get(sticker.id) ?? [];
 		const isWinner = tags.some((tag) => tag.key === 'award_status' && tag.value === 'winner');
 
 		if (isWinner) {
@@ -228,7 +229,7 @@ export function groupFragmentStickers(
 	stickers: Sticker[],
 	startingPageIndex: number
 ): { grouped: GroupedFragments[]; nonFragments: Sticker[] } {
-	const fragmentGroups = new Map<string, Map<1 | 2 | 3 | 4, Sticker>>();
+	const fragmentGroups = new Map<ID, Map<1 | 2 | 3 | 4, Sticker>>();
 	const nonFragments: Sticker[] = [];
 
 	for (const sticker of stickers) {

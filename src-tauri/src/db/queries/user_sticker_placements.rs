@@ -2,7 +2,7 @@ use rusqlite::{params, Connection};
 use crate::models::UserStickerPlacement;
 
 /// Get all sticker placements for a collection
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Vec<UserStickerPlacement>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Vec<UserStickerPlacement>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, sticker_id, collection_id, placed_at
@@ -21,7 +21,7 @@ pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Ve
 }
 
 /// Get all placed sticker IDs (globally)
-pub fn get_all_placed_sticker_ids(conn: &Connection) -> Result<Vec<String>, String> {
+pub fn get_all_placed_sticker_ids(conn: &Connection) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT DISTINCT sticker_id FROM _user_sticker_placements")
         .map_err(|e| e.to_string())?;
@@ -35,7 +35,7 @@ pub fn get_all_placed_sticker_ids(conn: &Connection) -> Result<Vec<String>, Stri
 }
 
 /// Get placed sticker IDs for a specific collection
-pub fn get_placed_sticker_ids_for_collection(conn: &Connection, collection_id: &str) -> Result<Vec<String>, String> {
+pub fn get_placed_sticker_ids_for_collection(conn: &Connection, collection_id: i64) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT sticker_id FROM _user_sticker_placements WHERE collection_id = ?1"
@@ -51,7 +51,7 @@ pub fn get_placed_sticker_ids_for_collection(conn: &Connection, collection_id: &
 }
 
 /// Check if a sticker is placed anywhere
-pub fn is_sticker_placed(conn: &Connection, sticker_id: &str) -> Result<bool, String> {
+pub fn is_sticker_placed(conn: &Connection, sticker_id: i64) -> Result<bool, String> {
     let count: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM _user_sticker_placements WHERE sticker_id = ?1",
@@ -64,7 +64,7 @@ pub fn is_sticker_placed(conn: &Connection, sticker_id: &str) -> Result<bool, St
 }
 
 /// Get the number of times a sticker is placed globally (across all collections)
-pub fn get_placement_count(conn: &Connection, sticker_id: &str) -> Result<i64, String> {
+pub fn get_placement_count(conn: &Connection, sticker_id: i64) -> Result<i64, String> {
     conn.query_row(
         "SELECT COUNT(*) FROM _user_sticker_placements WHERE sticker_id = ?1",
         params![sticker_id],
@@ -75,7 +75,7 @@ pub fn get_placement_count(conn: &Connection, sticker_id: &str) -> Result<i64, S
 
 /// Get placement counts for all stickers (sticker_id -> count)
 /// Returns only stickers that have at least one placement
-pub fn get_all_placement_counts(conn: &Connection) -> Result<Vec<(String, i64)>, String> {
+pub fn get_all_placement_counts(conn: &Connection) -> Result<Vec<(i64, i64)>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT sticker_id, COUNT(*) as cnt
@@ -87,7 +87,7 @@ pub fn get_all_placement_counts(conn: &Connection) -> Result<Vec<(String, i64)>,
     let rows = stmt
         .query_map([], |row| {
             Ok((
-                row.get::<_, String>(0)?,
+                row.get::<_, i64>(0)?,
                 row.get::<_, i64>(1)?,
             ))
         })
@@ -98,7 +98,7 @@ pub fn get_all_placement_counts(conn: &Connection) -> Result<Vec<(String, i64)>,
 }
 
 /// Get placement by sticker and collection
-pub fn get_by_sticker_collection(conn: &Connection, sticker_id: &str, collection_id: &str) -> Result<Option<UserStickerPlacement>, String> {
+pub fn get_by_sticker_collection(conn: &Connection, sticker_id: i64, collection_id: i64) -> Result<Option<UserStickerPlacement>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, sticker_id, collection_id, placed_at
@@ -119,12 +119,6 @@ pub fn get_by_sticker_collection(conn: &Connection, sticker_id: &str, collection
 
 /// Place a sticker in a collection (create placement)
 pub fn create(conn: &Connection, placement: &UserStickerPlacement) -> Result<UserStickerPlacement, String> {
-    let id = if placement.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        placement.id.clone()
-    };
-
     let placed_at = if placement.placed_at.is_empty() {
         chrono_now()
     } else {
@@ -132,16 +126,17 @@ pub fn create(conn: &Connection, placement: &UserStickerPlacement) -> Result<Use
     };
 
     conn.execute(
-        "INSERT INTO _user_sticker_placements (id, sticker_id, collection_id, placed_at)
-         VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO _user_sticker_placements (sticker_id, collection_id, placed_at)
+         VALUES (?1, ?2, ?3)",
         params![
-            id,
             placement.sticker_id,
             placement.collection_id,
             placed_at
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserStickerPlacement {
         id,
@@ -151,7 +146,7 @@ pub fn create(conn: &Connection, placement: &UserStickerPlacement) -> Result<Use
 }
 
 /// Unstick a sticker from a collection
-pub fn delete_by_sticker_collection(conn: &Connection, sticker_id: &str, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_sticker_collection(conn: &Connection, sticker_id: i64, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute(
             "DELETE FROM _user_sticker_placements WHERE sticker_id = ?1 AND collection_id = ?2",
@@ -163,7 +158,7 @@ pub fn delete_by_sticker_collection(conn: &Connection, sticker_id: &str, collect
 }
 
 /// Delete all placements for a collection
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_sticker_placements WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;

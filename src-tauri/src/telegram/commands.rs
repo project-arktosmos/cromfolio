@@ -179,9 +179,9 @@ fn run_telegram_import(
         progress.total = sticker_set.stickers.len();
     }
 
-    // Generate pack ID
-    let pack_id = uuid::Uuid::new_v4().to_string();
-    let stamps_dir = data_dir.join("stamps").join(&pack_id);
+    // Generate directory ID (UUID for file storage path)
+    let dir_id = uuid::Uuid::new_v4().to_string();
+    let stamps_dir = data_dir.join("stamps").join(&dir_id);
 
     // Create stamps directory
     if let Err(e) = std::fs::create_dir_all(&stamps_dir) {
@@ -193,8 +193,8 @@ fn run_telegram_import(
         return;
     }
 
-    // Download stickers
-    let mut downloaded_stickers: Vec<(String, String, Option<String>)> = Vec::new();
+    // Download stickers - (image_path, emoji)
+    let mut downloaded_stickers: Vec<(String, Option<String>)> = Vec::new();
 
     for sticker in &sticker_set.stickers {
         // Check for cancellation
@@ -278,12 +278,8 @@ fn run_telegram_import(
         }
 
         // Track success
-        let image_path = format!("{}/{}", pack_id, filename);
-        downloaded_stickers.push((
-            uuid::Uuid::new_v4().to_string(),
-            image_path,
-            sticker.emoji.clone(),
-        ));
+        let image_path = format!("{}/{}", dir_id, filename);
+        downloaded_stickers.push((image_path, sticker.emoji.clone()));
 
         if let Ok(mut progress) = progress_arc.lock() {
             progress.completed += 1;
@@ -311,12 +307,12 @@ fn run_telegram_import(
     let now = chrono::Utc::now().to_rfc3339();
 
     // Lock database and create records
-    let db_result = (|| -> Result<(), String> {
+    let db_result = (|| -> Result<i64, String> {
         let conn = db_conn.lock().map_err(|e| e.to_string())?;
 
-        // Create stamp pack
+        // Create stamp pack (id: 0 means database will auto-generate)
         let stamp_pack = StampPack {
-            id: pack_id.clone(),
+            id: 0,
             source: "telegram".to_string(),
             name: sticker_set.title.clone(),
             author: pack_name.clone(),
@@ -327,14 +323,15 @@ fn run_telegram_import(
             updated_at: now.clone(),
         };
 
-        queries::stamp_packs::create(&conn, &stamp_pack)?;
+        let created_pack = queries::stamp_packs::create(&conn, &stamp_pack)?;
+        let pack_id = created_pack.id;
 
-        // Create stamps
+        // Create stamps (id: 0 means database will auto-generate)
         let stamps: Vec<Stamp> = downloaded_stickers
             .iter()
-            .map(|(id, image_path, emoji)| Stamp {
-                id: id.clone(),
-                pack_id: pack_id.clone(),
+            .map(|(image_path, emoji)| Stamp {
+                id: 0,
+                pack_id,
                 image_path: image_path.clone(),
                 emojis: emoji.clone(),
                 created_at: now.clone(),
@@ -343,13 +340,13 @@ fn run_telegram_import(
 
         queries::stamps::create_batch(&conn, &stamps)?;
 
-        Ok(())
+        Ok(pack_id)
     })();
 
     // Update final status
     if let Ok(mut progress) = progress_arc.lock() {
         match db_result {
-            Ok(()) => {
+            Ok(pack_id) => {
                 progress.status = TelegramImportStatus::Completed;
                 progress.result_pack_id = Some(pack_id);
             }

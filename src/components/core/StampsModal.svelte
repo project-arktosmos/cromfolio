@@ -69,7 +69,7 @@
 	let stampsDataDir = $state('');
 
 	// Lottie animation references for thumbnails
-	let lottieThumbAnims: SvelteMap<string, AnimationItem> = new SvelteMap();
+	let lottieThumbAnims: SvelteMap<number, AnimationItem> = new SvelteMap();
 
 	// Telegram import state
 	let telegramUrl = $state('');
@@ -433,10 +433,9 @@
 					? files[0].name.replace(/\.[^.]+$/, '')
 					: `Imported Pack ${allPacks.length + 1}`;
 
-			const packId = crypto.randomUUID();
-
+			// Create pack with id: 0 to let database auto-generate ID
 			const createdPack = await createStampPack({
-				id: packId,
+				id: 0,
 				source: 'telegram',
 				name: packName,
 				author: 'File Import',
@@ -449,9 +448,12 @@
 				throw new Error('Failed to create stamp pack in database');
 			}
 
+			// Use a UUID for the directory name (file storage)
+			const dirId = crypto.randomUUID();
+
 			const stampsToCreate = [];
 			for (const { filename, data } of validFiles) {
-				const imagePath = await writeStampFile(packId, filename, data);
+				const imagePath = await writeStampFile(dirId, filename, data);
 				stampsToCreate.push({
 					packId: createdPack.id,
 					imagePath,
@@ -875,7 +877,12 @@
 		}
 
 		try {
-			await deleteStampPackFiles(pack.id);
+			// Get directory ID from stamp image path (format: "{dirId}/{filename}")
+			const stamps = await getStampsByPack(pack.id);
+			if (stamps.length > 0 && stamps[0].imagePath) {
+				const dirId = stamps[0].imagePath.split('/')[0];
+				await deleteStampPackFiles(dirId);
+			}
 			await deleteStampPack(pack.id);
 
 			allPacks = allPacks.filter((p) => p.id !== pack.id);

@@ -14,7 +14,7 @@ export interface WhatsappImportProgress {
 	errors: string[];
 	startedAt: number | null;
 	finishedAt: number | null;
-	resultPackIds: string[];
+	resultPackIds: number[];
 }
 
 /**

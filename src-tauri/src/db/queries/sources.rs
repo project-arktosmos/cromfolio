@@ -24,7 +24,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Source>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Source>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Source>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, source_type, title, description, cover_image, wikia_url,
@@ -50,17 +50,11 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Source>, String> 
 }
 
 pub fn create(conn: &Connection, source: &Source) -> Result<Source, String> {
-    let id = if source.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        source.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
         "INSERT INTO sources (
-            id, source_type, title, description, cover_image, wikia_url,
+            source_type, title, description, cover_image, wikia_url,
             imdb_id, tmdb_id, igdb_id, igdb_slug, sgdb_id,
             anilist_id, mal_id,
             sports_type, sports_db_team_id, sports_db_league_id, sports_db_player_id,
@@ -68,16 +62,15 @@ pub fn create(conn: &Connection, source: &Source) -> Result<Source, String> {
             wikidata_id, scientific_name, conservation_status, taxonomic_class,
             added_at, created_at, updated_at
          ) VALUES (
-            ?1, ?2, ?3, ?4, ?5, ?6,
-            ?7, ?8, ?9, ?10, ?11,
-            ?12, ?13,
-            ?14, ?15, ?16, ?17,
-            ?18, ?19, ?20,
-            ?21, ?22, ?23, ?24,
-            ?25, ?26, ?27
+            ?1, ?2, ?3, ?4, ?5,
+            ?6, ?7, ?8, ?9, ?10,
+            ?11, ?12,
+            ?13, ?14, ?15, ?16,
+            ?17, ?18, ?19,
+            ?20, ?21, ?22, ?23,
+            ?24, ?25, ?26
          )",
         params![
-            id,
             source.source_type.to_string(),
             source.title,
             source.description,
@@ -107,6 +100,8 @@ pub fn create(conn: &Connection, source: &Source) -> Result<Source, String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Source {
         id,
@@ -167,7 +162,7 @@ pub fn update(conn: &Connection, source: &Source) -> Result<Source, String> {
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM sources WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

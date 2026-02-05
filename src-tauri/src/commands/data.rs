@@ -29,9 +29,9 @@ pub fn get_all_sources(db: State<'_, Database>) -> Result<Vec<Source>, String> {
 }
 
 #[command]
-pub fn get_source(id: String, db: State<'_, Database>) -> Result<Option<Source>, String> {
+pub fn get_source(id: i64, db: State<'_, Database>) -> Result<Option<Source>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::sources::get_by_id(&conn, &id)
+    queries::sources::get_by_id(&conn, id)
 }
 
 #[command]
@@ -47,9 +47,9 @@ pub fn update_source(source: Source, db: State<'_, Database>) -> Result<Source, 
 }
 
 #[command]
-pub fn delete_source(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_source(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::sources::delete(&conn, &id)
+    queries::sources::delete(&conn, id)
 }
 
 // ============================================================================
@@ -63,15 +63,15 @@ pub fn get_all_stickers(db: State<'_, Database>) -> Result<Vec<Sticker>, String>
 }
 
 #[command]
-pub fn get_stickers_by_source(source_id: String, db: State<'_, Database>) -> Result<Vec<Sticker>, String> {
+pub fn get_stickers_by_source(source_id: i64, db: State<'_, Database>) -> Result<Vec<Sticker>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stickers::get_by_source_id(&conn, &source_id)
+    queries::stickers::get_by_source_id(&conn, source_id)
 }
 
 #[command]
-pub fn get_sticker(id: String, db: State<'_, Database>) -> Result<Option<Sticker>, String> {
+pub fn get_sticker(id: i64, db: State<'_, Database>) -> Result<Option<Sticker>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stickers::get_by_id(&conn, &id)
+    queries::stickers::get_by_id(&conn, id)
 }
 
 #[command]
@@ -87,15 +87,15 @@ pub fn update_sticker(sticker: Sticker, db: State<'_, Database>) -> Result<Stick
 }
 
 #[command]
-pub fn delete_sticker(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_sticker(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stickers::delete(&conn, &id)
+    queries::stickers::delete(&conn, id)
 }
 
 #[command]
-pub fn delete_stickers_by_source(source_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_stickers_by_source(source_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stickers::delete_by_source_id(&conn, &source_id)
+    queries::stickers::delete_by_source_id(&conn, source_id)
 }
 
 #[command]
@@ -115,9 +115,9 @@ pub fn get_all_rarities(db: State<'_, Database>) -> Result<Vec<Rarity>, String> 
 }
 
 #[command]
-pub fn get_rarity(id: String, db: State<'_, Database>) -> Result<Option<Rarity>, String> {
+pub fn get_rarity(id: i64, db: State<'_, Database>) -> Result<Option<Rarity>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::rarities::get_by_id(&conn, &id)
+    queries::rarities::get_by_id(&conn, id)
 }
 
 #[command]
@@ -133,9 +133,9 @@ pub fn update_rarity(rarity: Rarity, db: State<'_, Database>) -> Result<Rarity, 
 }
 
 #[command]
-pub fn delete_rarity(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_rarity(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::rarities::delete(&conn, &id)
+    queries::rarities::delete(&conn, id)
 }
 
 // ============================================================================
@@ -149,9 +149,9 @@ pub fn get_all_sticker_types(db: State<'_, Database>) -> Result<Vec<StickerTypeE
 }
 
 #[command]
-pub fn get_sticker_type(id: String, db: State<'_, Database>) -> Result<Option<StickerTypeEntity>, String> {
+pub fn get_sticker_type(id: i64, db: State<'_, Database>) -> Result<Option<StickerTypeEntity>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::sticker_types::get_by_id(&conn, &id)
+    queries::sticker_types::get_by_id(&conn, id)
 }
 
 #[command]
@@ -179,9 +179,9 @@ pub fn update_sticker_type(sticker_type: StickerTypeEntity, db: State<'_, Databa
 }
 
 #[command]
-pub fn delete_sticker_type(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_sticker_type(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::sticker_types::delete(&conn, &id)
+    queries::sticker_types::delete(&conn, id)
 }
 
 // ============================================================================
@@ -195,9 +195,9 @@ pub fn get_all_tags(db: State<'_, Database>) -> Result<Vec<Tag>, String> {
 }
 
 #[command]
-pub fn get_tag(id: String, db: State<'_, Database>) -> Result<Option<Tag>, String> {
+pub fn get_tag(id: i64, db: State<'_, Database>) -> Result<Option<Tag>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::get_by_id(&conn, &id)
+    queries::tags::get_by_id(&conn, id)
 }
 
 #[command]
@@ -219,9 +219,9 @@ pub fn update_tag(tag: Tag, db: State<'_, Database>) -> Result<Tag, String> {
 }
 
 #[command]
-pub fn delete_tag(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_tag(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::delete(&conn, &id)
+    queries::tags::delete(&conn, id)
 }
 
 // ============================================================================
@@ -229,27 +229,27 @@ pub fn delete_tag(id: String, db: State<'_, Database>) -> Result<bool, String> {
 // ============================================================================
 
 #[command]
-pub fn get_tags_by_sticker(sticker_id: String, db: State<'_, Database>) -> Result<Vec<Tag>, String> {
+pub fn get_tags_by_sticker(sticker_id: i64, db: State<'_, Database>) -> Result<Vec<Tag>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::get_by_sticker_id(&conn, &sticker_id)
+    queries::tags::get_by_sticker_id(&conn, sticker_id)
 }
 
 #[command]
-pub fn add_tag_to_sticker(sticker_id: String, tag_id: String, db: State<'_, Database>) -> Result<StickerTag, String> {
+pub fn add_tag_to_sticker(sticker_id: i64, tag_id: i64, db: State<'_, Database>) -> Result<StickerTag, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::add_tag_to_sticker(&conn, &sticker_id, &tag_id)
+    queries::tags::add_tag_to_sticker(&conn, sticker_id, tag_id)
 }
 
 #[command]
-pub fn remove_tag_from_sticker(sticker_id: String, tag_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn remove_tag_from_sticker(sticker_id: i64, tag_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::remove_tag_from_sticker(&conn, &sticker_id, &tag_id)
+    queries::tags::remove_tag_from_sticker(&conn, sticker_id, tag_id)
 }
 
 #[command]
-pub fn get_sticker_ids_by_tag(tag_id: String, db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn get_sticker_ids_by_tag(tag_id: i64, db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::get_sticker_ids_by_tag_id(&conn, &tag_id)
+    queries::tags::get_sticker_ids_by_tag_id(&conn, tag_id)
 }
 
 #[command]
@@ -273,12 +273,12 @@ pub fn get_random_pokemon_with_tags(db: State<'_, Database>) -> Result<Option<qu
 #[command]
 pub fn get_random_pokemon_by_generation(
     generation: String,
-    exclude_id: String,
+    exclude_id: i64,
     limit: usize,
     db: State<'_, Database>
 ) -> Result<Vec<queries::tags::PokemonWithTags>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::tags::get_random_pokemon_by_generation(&conn, &generation, &exclude_id, limit)
+    queries::tags::get_random_pokemon_by_generation(&conn, &generation, exclude_id, limit)
 }
 
 // ============================================================================
@@ -292,9 +292,9 @@ pub fn get_all_collections(db: State<'_, Database>) -> Result<Vec<Collection>, S
 }
 
 #[command]
-pub fn get_collection(id: String, db: State<'_, Database>) -> Result<Option<Collection>, String> {
+pub fn get_collection(id: i64, db: State<'_, Database>) -> Result<Option<Collection>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::get_by_id(&conn, &id)
+    queries::collections::get_by_id(&conn, id)
 }
 
 #[command]
@@ -310,48 +310,48 @@ pub fn update_collection(collection: Collection, db: State<'_, Database>) -> Res
 }
 
 #[command]
-pub fn delete_collection(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_collection(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::delete(&conn, &id)
+    queries::collections::delete(&conn, id)
 }
 
 #[command]
 pub fn add_sticker_to_collection(
-    collection_id: String,
-    sticker_id: String,
+    collection_id: i64,
+    sticker_id: i64,
     sort_order: i32,
     db: State<'_, Database>,
 ) -> Result<CollectionSticker, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::add_sticker_to_collection(&conn, &collection_id, &sticker_id, sort_order)
+    queries::collections::add_sticker_to_collection(&conn, collection_id, sticker_id, sort_order)
 }
 
 #[command]
 pub fn remove_sticker_from_collection(
-    collection_id: String,
-    sticker_id: String,
+    collection_id: i64,
+    sticker_id: i64,
     db: State<'_, Database>,
 ) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::remove_sticker_from_collection(&conn, &collection_id, &sticker_id)
+    queries::collections::remove_sticker_from_collection(&conn, collection_id, sticker_id)
 }
 
 #[command]
 pub fn get_stickers_for_collection(
-    collection_id: String,
+    collection_id: i64,
     db: State<'_, Database>,
 ) -> Result<Vec<Sticker>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::get_stickers_for_collection(&conn, &collection_id)
+    queries::collections::get_stickers_for_collection(&conn, collection_id)
 }
 
 #[command]
 pub fn get_collections_by_type(
-    collection_type_id: String,
+    collection_type_id: i64,
     db: State<'_, Database>,
 ) -> Result<Vec<Collection>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collections::get_by_type(&conn, &collection_type_id)
+    queries::collections::get_by_type(&conn, collection_type_id)
 }
 
 // ============================================================================
@@ -365,9 +365,9 @@ pub fn get_all_collection_types(db: State<'_, Database>) -> Result<Vec<Collectio
 }
 
 #[command]
-pub fn get_collection_type(id: String, db: State<'_, Database>) -> Result<Option<CollectionType>, String> {
+pub fn get_collection_type(id: i64, db: State<'_, Database>) -> Result<Option<CollectionType>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collection_types::get_by_id(&conn, &id)
+    queries::collection_types::get_by_id(&conn, id)
 }
 
 #[command]
@@ -383,9 +383,9 @@ pub fn update_collection_type(collection_type: CollectionType, db: State<'_, Dat
 }
 
 #[command]
-pub fn delete_collection_type(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_collection_type(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::collection_types::delete(&conn, &id)
+    queries::collection_types::delete(&conn, id)
 }
 
 // ============================================================================
@@ -399,37 +399,37 @@ pub fn get_all_user_stickers(db: State<'_, Database>) -> Result<Vec<UserSticker>
 }
 
 #[command]
-pub fn get_user_stickers_by_source(source_id: String, db: State<'_, Database>) -> Result<Vec<UserSticker>, String> {
+pub fn get_user_stickers_by_source(source_id: i64, db: State<'_, Database>) -> Result<Vec<UserSticker>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::get_by_source_id(&conn, &source_id)
+    queries::user_stickers::get_by_source_id(&conn, source_id)
 }
 
 #[command]
-pub fn get_user_sticker(id: String, db: State<'_, Database>) -> Result<Option<UserSticker>, String> {
+pub fn get_user_sticker(id: i64, db: State<'_, Database>) -> Result<Option<UserSticker>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::get_by_id(&conn, &id)
+    queries::user_stickers::get_by_id(&conn, id)
 }
 
 #[command]
-pub fn user_owns_sticker(sticker_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn user_owns_sticker(sticker_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::owns_sticker(&conn, &sticker_id)
+    queries::user_stickers::owns_sticker(&conn, sticker_id)
 }
 
 #[command]
-pub fn get_user_sticker_copy_count(sticker_id: String, db: State<'_, Database>) -> Result<i64, String> {
+pub fn get_user_sticker_copy_count(sticker_id: i64, db: State<'_, Database>) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::get_copy_count(&conn, &sticker_id)
+    queries::user_stickers::get_copy_count(&conn, sticker_id)
 }
 
 #[command]
-pub fn get_user_unique_sticker_count_by_source(source_id: String, db: State<'_, Database>) -> Result<i64, String> {
+pub fn get_user_unique_sticker_count_by_source(source_id: i64, db: State<'_, Database>) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::get_unique_count_by_source(&conn, &source_id)
+    queries::user_stickers::get_unique_count_by_source(&conn, source_id)
 }
 
 #[command]
-pub fn get_user_owned_sticker_ids(db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn get_user_owned_sticker_ids(db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::user_stickers::get_owned_sticker_ids(&conn)
 }
@@ -441,21 +441,21 @@ pub fn acquire_user_sticker(user_sticker: UserSticker, db: State<'_, Database>) 
 }
 
 #[command]
-pub fn release_user_sticker(sticker_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn release_user_sticker(sticker_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::delete_by_sticker_id(&conn, &sticker_id)
+    queries::user_stickers::delete_by_sticker_id(&conn, sticker_id)
 }
 
 #[command]
-pub fn delete_user_sticker(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_sticker(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::delete(&conn, &id)
+    queries::user_stickers::delete(&conn, id)
 }
 
 #[command]
-pub fn delete_user_stickers_by_source(source_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_stickers_by_source(source_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::delete_by_source_id(&conn, &source_id)
+    queries::user_stickers::delete_by_source_id(&conn, source_id)
 }
 
 #[command]
@@ -468,8 +468,8 @@ pub fn delete_all_user_stickers(db: State<'_, Database>) -> Result<i64, String> 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MixableStickerInfo {
-    pub sticker_id: String,
-    pub rarity_id: String,
+    pub sticker_id: i64,
+    pub rarity_id: Option<i64>,
     pub count: i64,
 }
 
@@ -489,24 +489,24 @@ pub fn get_mixable_user_stickers(db: State<'_, Database>) -> Result<Vec<MixableS
 
 #[command]
 pub fn get_user_sticker_copy_count_by_rarity(
-    sticker_id: String,
-    rarity_id: String,
+    sticker_id: i64,
+    rarity_id: Option<i64>,
     db: State<'_, Database>,
 ) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::get_copy_count_by_rarity(&conn, &sticker_id, &rarity_id)
+    queries::user_stickers::get_copy_count_by_rarity(&conn, sticker_id, rarity_id)
 }
 
 #[command]
 pub fn mix_user_stickers(
-    sticker_id: String,
-    current_rarity_id: String,
-    new_rarity_id: String,
-    source_id: String,
+    sticker_id: i64,
+    current_rarity_id: Option<i64>,
+    new_rarity_id: i64,
+    source_id: i64,
     db: State<'_, Database>,
 ) -> Result<UserSticker, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_stickers::mix_stickers(&conn, &sticker_id, &current_rarity_id, &new_rarity_id, &source_id)
+    queries::user_stickers::mix_stickers(&conn, sticker_id, current_rarity_id, new_rarity_id, source_id)
 }
 
 // ============================================================================
@@ -520,15 +520,15 @@ pub fn get_all_user_collections(db: State<'_, Database>) -> Result<Vec<UserColle
 }
 
 #[command]
-pub fn get_user_collection(id: String, db: State<'_, Database>) -> Result<Option<UserCollection>, String> {
+pub fn get_user_collection(id: i64, db: State<'_, Database>) -> Result<Option<UserCollection>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collections::get_by_id(&conn, &id)
+    queries::user_collections::get_by_id(&conn, id)
 }
 
 #[command]
-pub fn get_user_collection_by_collection_id(collection_id: String, db: State<'_, Database>) -> Result<Option<UserCollection>, String> {
+pub fn get_user_collection_by_collection_id(collection_id: i64, db: State<'_, Database>) -> Result<Option<UserCollection>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collections::get_by_collection_id(&conn, &collection_id)
+    queries::user_collections::get_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -556,21 +556,21 @@ pub fn update_user_collection(user_collection: UserCollection, db: State<'_, Dat
 }
 
 #[command]
-pub fn mark_user_collection_completed(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn mark_user_collection_completed(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collections::mark_completed(&conn, &collection_id)
+    queries::user_collections::mark_completed(&conn, collection_id)
 }
 
 #[command]
-pub fn delete_user_collection(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_collection(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collections::delete(&conn, &id)
+    queries::user_collections::delete(&conn, id)
 }
 
 #[command]
-pub fn delete_user_collection_by_collection_id(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_collection_by_collection_id(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collections::delete_by_collection_id(&conn, &collection_id)
+    queries::user_collections::delete_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -590,19 +590,19 @@ pub fn get_all_user_sources(db: State<'_, Database>) -> Result<Vec<UserSource>, 
 }
 
 #[command]
-pub fn get_user_source(id: String, db: State<'_, Database>) -> Result<Option<UserSource>, String> {
+pub fn get_user_source(id: i64, db: State<'_, Database>) -> Result<Option<UserSource>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sources::get_by_id(&conn, &id)
+    queries::user_sources::get_by_id(&conn, id)
 }
 
 #[command]
-pub fn user_owns_source(source_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn user_owns_source(source_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sources::owns_source(&conn, &source_id)
+    queries::user_sources::owns_source(&conn, source_id)
 }
 
 #[command]
-pub fn get_user_owned_source_ids(db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn get_user_owned_source_ids(db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::user_sources::get_owned_source_ids(&conn)
 }
@@ -614,15 +614,15 @@ pub fn acquire_user_source(user_source: UserSource, db: State<'_, Database>) -> 
 }
 
 #[command]
-pub fn release_user_source(source_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn release_user_source(source_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sources::delete_by_source_id(&conn, &source_id)
+    queries::user_sources::delete_by_source_id(&conn, source_id)
 }
 
 #[command]
-pub fn delete_user_source(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_source(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sources::delete(&conn, &id)
+    queries::user_sources::delete(&conn, id)
 }
 
 #[command]
@@ -636,21 +636,21 @@ pub fn delete_all_user_sources(db: State<'_, Database>) -> Result<i64, String> {
 // ============================================================================
 
 #[command]
-pub fn get_placed_stamps_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
+pub fn get_placed_stamps_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_stamps::get_by_collection_id(&conn, &collection_id)
+    queries::user_placed_stamps::get_by_collection_id(&conn, collection_id)
 }
 
 #[command]
-pub fn get_placed_stamps_by_page(collection_id: String, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
+pub fn get_placed_stamps_by_page(collection_id: i64, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedStamp>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_stamps::get_by_collection_page(&conn, &collection_id, page_index)
+    queries::user_placed_stamps::get_by_collection_page(&conn, collection_id, page_index)
 }
 
 #[command]
-pub fn get_placed_stamp(id: String, db: State<'_, Database>) -> Result<Option<UserPlacedStamp>, String> {
+pub fn get_placed_stamp(id: i64, db: State<'_, Database>) -> Result<Option<UserPlacedStamp>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_stamps::get_by_id(&conn, &id)
+    queries::user_placed_stamps::get_by_id(&conn, id)
 }
 
 #[command]
@@ -666,15 +666,15 @@ pub fn update_placed_stamp(placed_stamp: UserPlacedStamp, db: State<'_, Database
 }
 
 #[command]
-pub fn remove_placed_stamp(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn remove_placed_stamp(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_stamps::delete(&conn, &id)
+    queries::user_placed_stamps::delete(&conn, id)
 }
 
 #[command]
-pub fn clear_collection_stamps(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn clear_collection_stamps(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_stamps::delete_by_collection_id(&conn, &collection_id)
+    queries::user_placed_stamps::delete_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -688,27 +688,27 @@ pub fn clear_all_placed_stamps(db: State<'_, Database>) -> Result<i64, String> {
 // ============================================================================
 
 #[command]
-pub fn get_sticker_placements_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserStickerPlacement>, String> {
+pub fn get_sticker_placements_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserStickerPlacement>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::get_by_collection_id(&conn, &collection_id)
+    queries::user_sticker_placements::get_by_collection_id(&conn, collection_id)
 }
 
 #[command]
-pub fn get_all_placed_sticker_ids(db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn get_all_placed_sticker_ids(db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::user_sticker_placements::get_all_placed_sticker_ids(&conn)
 }
 
 #[command]
-pub fn get_placed_sticker_ids_for_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn get_placed_sticker_ids_for_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::get_placed_sticker_ids_for_collection(&conn, &collection_id)
+    queries::user_sticker_placements::get_placed_sticker_ids_for_collection(&conn, collection_id)
 }
 
 #[command]
-pub fn is_sticker_placed(sticker_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn is_sticker_placed(sticker_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::is_sticker_placed(&conn, &sticker_id)
+    queries::user_sticker_placements::is_sticker_placed(&conn, sticker_id)
 }
 
 #[command]
@@ -718,15 +718,15 @@ pub fn place_sticker(placement: UserStickerPlacement, db: State<'_, Database>) -
 }
 
 #[command]
-pub fn unstick_sticker(sticker_id: String, collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn unstick_sticker(sticker_id: i64, collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::delete_by_sticker_collection(&conn, &sticker_id, &collection_id)
+    queries::user_sticker_placements::delete_by_sticker_collection(&conn, sticker_id, collection_id)
 }
 
 #[command]
-pub fn clear_collection_sticker_placements(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn clear_collection_sticker_placements(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::delete_by_collection_id(&conn, &collection_id)
+    queries::user_sticker_placements::delete_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -736,13 +736,13 @@ pub fn clear_all_sticker_placements(db: State<'_, Database>) -> Result<i64, Stri
 }
 
 #[command]
-pub fn get_sticker_placement_count(sticker_id: String, db: State<'_, Database>) -> Result<i64, String> {
+pub fn get_sticker_placement_count(sticker_id: i64, db: State<'_, Database>) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_sticker_placements::get_placement_count(&conn, &sticker_id)
+    queries::user_sticker_placements::get_placement_count(&conn, sticker_id)
 }
 
 #[command]
-pub fn get_all_sticker_placement_counts(db: State<'_, Database>) -> Result<Vec<(String, i64)>, String> {
+pub fn get_all_sticker_placement_counts(db: State<'_, Database>) -> Result<Vec<(i64, i64)>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     queries::user_sticker_placements::get_all_placement_counts(&conn)
 }
@@ -764,9 +764,9 @@ pub fn get_stamp_packs_by_source(source: String, db: State<'_, Database>) -> Res
 }
 
 #[command]
-pub fn get_stamp_pack(id: String, db: State<'_, Database>) -> Result<Option<StampPack>, String> {
+pub fn get_stamp_pack(id: i64, db: State<'_, Database>) -> Result<Option<StampPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamp_packs::get_by_id(&conn, &id)
+    queries::stamp_packs::get_by_id(&conn, id)
 }
 
 #[command]
@@ -782,9 +782,9 @@ pub fn update_stamp_pack(stamp_pack: StampPack, db: State<'_, Database>) -> Resu
 }
 
 #[command]
-pub fn delete_stamp_pack(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_stamp_pack(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamp_packs::delete(&conn, &id)
+    queries::stamp_packs::delete(&conn, id)
 }
 
 // ============================================================================
@@ -798,15 +798,15 @@ pub fn get_all_stamps(db: State<'_, Database>) -> Result<Vec<Stamp>, String> {
 }
 
 #[command]
-pub fn get_stamps_by_pack(pack_id: String, db: State<'_, Database>) -> Result<Vec<Stamp>, String> {
+pub fn get_stamps_by_pack(pack_id: i64, db: State<'_, Database>) -> Result<Vec<Stamp>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamps::get_by_pack_id(&conn, &pack_id)
+    queries::stamps::get_by_pack_id(&conn, pack_id)
 }
 
 #[command]
-pub fn get_stamp(id: String, db: State<'_, Database>) -> Result<Option<Stamp>, String> {
+pub fn get_stamp(id: i64, db: State<'_, Database>) -> Result<Option<Stamp>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamps::get_by_id(&conn, &id)
+    queries::stamps::get_by_id(&conn, id)
 }
 
 #[command]
@@ -822,15 +822,15 @@ pub fn create_stamps_batch(stamps: Vec<Stamp>, db: State<'_, Database>) -> Resul
 }
 
 #[command]
-pub fn delete_stamp(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_stamp(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamps::delete(&conn, &id)
+    queries::stamps::delete(&conn, id)
 }
 
 #[command]
-pub fn delete_stamps_by_pack(pack_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_stamps_by_pack(pack_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::stamps::delete_by_pack_id(&conn, &pack_id)
+    queries::stamps::delete_by_pack_id(&conn, pack_id)
 }
 
 // ============================================================================
@@ -999,21 +999,21 @@ pub fn delete_all_user_game_stats(db: State<'_, Database>) -> Result<i64, String
 // ============================================================================
 
 #[command]
-pub fn get_placed_icons_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
+pub fn get_placed_icons_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_icons::get_by_collection_id(&conn, &collection_id)
+    queries::user_placed_icons::get_by_collection_id(&conn, collection_id)
 }
 
 #[command]
-pub fn get_placed_icons_by_page(collection_id: String, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
+pub fn get_placed_icons_by_page(collection_id: i64, page_index: i32, db: State<'_, Database>) -> Result<Vec<UserPlacedIcon>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_icons::get_by_collection_page(&conn, &collection_id, page_index)
+    queries::user_placed_icons::get_by_collection_page(&conn, collection_id, page_index)
 }
 
 #[command]
-pub fn get_placed_icon(id: String, db: State<'_, Database>) -> Result<Option<UserPlacedIcon>, String> {
+pub fn get_placed_icon(id: i64, db: State<'_, Database>) -> Result<Option<UserPlacedIcon>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_icons::get_by_id(&conn, &id)
+    queries::user_placed_icons::get_by_id(&conn, id)
 }
 
 #[command]
@@ -1029,15 +1029,15 @@ pub fn update_placed_icon(placed_icon: UserPlacedIcon, db: State<'_, Database>) 
 }
 
 #[command]
-pub fn remove_placed_icon(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn remove_placed_icon(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_icons::delete(&conn, &id)
+    queries::user_placed_icons::delete(&conn, id)
 }
 
 #[command]
-pub fn clear_collection_icons(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn clear_collection_icons(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_placed_icons::delete_by_collection_id(&conn, &collection_id)
+    queries::user_placed_icons::delete_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -1114,21 +1114,21 @@ pub fn get_unopened_user_booster_packs(db: State<'_, Database>) -> Result<Vec<Us
 }
 
 #[command]
-pub fn get_unopened_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+pub fn get_unopened_user_booster_packs_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::get_unopened_by_collection(&conn, &collection_id)
+    queries::user_booster_packs::get_unopened_by_collection(&conn, collection_id)
 }
 
 #[command]
-pub fn get_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+pub fn get_user_booster_packs_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::get_by_collection_id(&conn, &collection_id)
+    queries::user_booster_packs::get_by_collection_id(&conn, collection_id)
 }
 
 #[command]
-pub fn get_user_booster_pack(id: String, db: State<'_, Database>) -> Result<Option<UserBoosterPack>, String> {
+pub fn get_user_booster_pack(id: i64, db: State<'_, Database>) -> Result<Option<UserBoosterPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::get_by_id(&conn, &id)
+    queries::user_booster_packs::get_by_id(&conn, id)
 }
 
 #[command]
@@ -1138,9 +1138,9 @@ pub fn count_unopened_user_booster_packs(db: State<'_, Database>) -> Result<i64,
 }
 
 #[command]
-pub fn count_unopened_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<i64, String> {
+pub fn count_unopened_user_booster_packs_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<i64, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::count_unopened_by_collection(&conn, &collection_id)
+    queries::user_booster_packs::count_unopened_by_collection(&conn, collection_id)
 }
 
 #[command]
@@ -1150,33 +1150,33 @@ pub fn award_user_booster_pack(booster_pack: UserBoosterPack, db: State<'_, Data
 }
 
 #[command]
-pub fn award_user_booster_packs_batch(count: i64, collection_id: String, earned_from: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+pub fn award_user_booster_packs_batch(count: i64, collection_id: i64, earned_from: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::create_batch(&conn, count, &collection_id, &earned_from)
+    queries::user_booster_packs::create_batch(&conn, count, collection_id, &earned_from)
 }
 
 #[command]
-pub fn open_user_booster_pack(id: String, db: State<'_, Database>) -> Result<UserBoosterPack, String> {
+pub fn open_user_booster_pack(id: i64, db: State<'_, Database>) -> Result<UserBoosterPack, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::mark_opened(&conn, &id)
+    queries::user_booster_packs::mark_opened(&conn, id)
 }
 
 #[command]
-pub fn open_user_booster_packs_batch(collection_id: String, count: i64, db: State<'_, Database>) -> Result<Vec<String>, String> {
+pub fn open_user_booster_packs_batch(collection_id: i64, count: i64, db: State<'_, Database>) -> Result<Vec<i64>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::mark_opened_batch(&conn, &collection_id, count)
+    queries::user_booster_packs::mark_opened_batch(&conn, collection_id, count)
 }
 
 #[command]
-pub fn delete_user_booster_pack(id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_booster_pack(id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::delete(&conn, &id)
+    queries::user_booster_packs::delete(&conn, id)
 }
 
 #[command]
-pub fn delete_user_booster_packs_by_collection(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_booster_packs_by_collection(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_booster_packs::delete_by_collection_id(&conn, &collection_id)
+    queries::user_booster_packs::delete_by_collection_id(&conn, collection_id)
 }
 
 #[command]
@@ -1189,7 +1189,7 @@ pub fn delete_all_user_booster_packs(db: State<'_, Database>) -> Result<i64, Str
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoosterPackSummary {
-    pub collection_id: String,
+    pub collection_id: i64,
     pub count: i64,
 }
 
@@ -1229,9 +1229,9 @@ pub fn get_all_pokemon_trivia_templates_v2(db: State<'_, Database>) -> Result<Ve
 }
 
 #[command]
-pub fn get_pokemon_trivia_template_v2(id: String, db: State<'_, Database>) -> Result<Option<PokemonTriviaTemplateV2>, String> {
+pub fn get_pokemon_trivia_template_v2(id: i64, db: State<'_, Database>) -> Result<Option<PokemonTriviaTemplateV2>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::pokemon_trivia_templates_v2::get_by_id(&conn, &id)
+    queries::pokemon_trivia_templates_v2::get_by_id(&conn, id)
 }
 
 #[command]
@@ -1292,15 +1292,15 @@ pub fn get_all_user_collection_rewards(db: State<'_, Database>) -> Result<Vec<Us
 
 /// Get a user collection reward by collection ID
 #[command]
-pub fn get_user_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<Option<UserCollectionReward>, String> {
+pub fn get_user_collection_reward(collection_id: i64, db: State<'_, Database>) -> Result<Option<UserCollectionReward>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collection_rewards::get_by_collection_id(&conn, &collection_id)
+    queries::user_collection_rewards::get_by_collection_id(&conn, collection_id)
 }
 
 /// Claim all accumulated rewards for a collection - awards booster packs and updates the claim timestamp
 /// Returns all the earned booster packs
 #[command]
-pub fn claim_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
+pub fn claim_collection_reward(collection_id: i64, db: State<'_, Database>) -> Result<Vec<UserBoosterPack>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
 
     // First check if user can claim (has stickers and enough time passed)
@@ -1310,10 +1310,10 @@ pub fn claim_collection_reward(collection_id: String, db: State<'_, Database>) -
     match collection_eligible {
         Some(ec) if ec.can_claim && ec.claimable_count > 0 => {
             // Update the claim timestamp
-            queries::user_collection_rewards::claim_reward(&conn, &collection_id)?;
+            queries::user_collection_rewards::claim_reward(&conn, collection_id)?;
 
             // Award all accumulated booster packs
-            let packs = queries::user_booster_packs::create_batch(&conn, ec.claimable_count, &collection_id, "timed-reward")?;
+            let packs = queries::user_booster_packs::create_batch(&conn, ec.claimable_count, collection_id, "timed-reward")?;
 
             Ok(packs)
         }
@@ -1324,9 +1324,9 @@ pub fn claim_collection_reward(collection_id: String, db: State<'_, Database>) -
 
 /// Delete a user collection reward by collection ID
 #[command]
-pub fn delete_user_collection_reward(collection_id: String, db: State<'_, Database>) -> Result<bool, String> {
+pub fn delete_user_collection_reward(collection_id: i64, db: State<'_, Database>) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
-    queries::user_collection_rewards::delete_by_collection_id(&conn, &collection_id)
+    queries::user_collection_rewards::delete_by_collection_id(&conn, collection_id)
 }
 
 /// Delete all user collection rewards

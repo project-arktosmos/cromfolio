@@ -1,5 +1,5 @@
 export interface StampPack {
-	id: string;
+	id: number;
 	source: string;
 	name: string;
 	author: string;
@@ -11,8 +11,8 @@ export interface StampPack {
 }
 
 export interface Stamp {
-	id: string;
-	packId: string;
+	id: number;
+	packId: number;
 	imagePath: string;
 	emojis: string | null;
 	createdAt: string;

@@ -20,7 +20,7 @@ export async function getStickerCollection(): Promise<Sticker[]> {
  */
 export async function getStickersBySource(sourceId: ID): Promise<Sticker[]> {
 	try {
-		return await invoke<Sticker[]>('get_stickers_by_source', { sourceId: String(sourceId) });
+		return await invoke<Sticker[]>('get_stickers_by_source', { sourceId });
 	} catch (e) {
 		console.error(`[stickers.service] getStickersBySource(${sourceId}):`, e);
 		return [];
@@ -50,21 +50,21 @@ export async function addStickersBatch(stickers: Sticker[]): Promise<Sticker[]> 
  * Remove a sticker from the collection
  */
 export async function removeSticker(sticker: Sticker): Promise<boolean> {
-	return await tauriApiService.delete('stickers', String(sticker.id));
+	return await tauriApiService.delete('stickers', sticker.id);
 }
 
 /**
  * Update a sticker in the collection
  */
 export async function updateSticker(sticker: Sticker): Promise<Sticker | null> {
-	return await tauriApiService.update<Sticker>('stickers', String(sticker.id), sticker);
+	return await tauriApiService.update<Sticker>('stickers', sticker.id, sticker);
 }
 
 /**
  * Get a sticker by ID
  */
 export async function getSticker(id: ID): Promise<Sticker | null> {
-	return await tauriApiService.get<Sticker>('stickers', String(id));
+	return await tauriApiService.get<Sticker>('stickers', id);
 }
 
 /**
@@ -80,7 +80,7 @@ export async function stickerExists(id: ID): Promise<Sticker | null> {
  */
 export async function removeStickersBySource(sourceId: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_stickers_by_source', { sourceId: String(sourceId) });
+		return await invoke<boolean>('delete_stickers_by_source', { sourceId });
 	} catch (e) {
 		console.error(`[stickers.service] removeStickersBySource(${sourceId}):`, e);
 		return false;

@@ -2,7 +2,7 @@ use rusqlite::{params, Connection};
 use crate::models::UserPlacedIcon;
 
 /// Get all placed icons for a collection
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Vec<UserPlacedIcon>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Vec<UserPlacedIcon>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, icon_path, collection_id, page_index, position_x, position_y,
@@ -22,7 +22,7 @@ pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Ve
 }
 
 /// Get placed icons for a specific page in a collection
-pub fn get_by_collection_page(conn: &Connection, collection_id: &str, page_index: i32) -> Result<Vec<UserPlacedIcon>, String> {
+pub fn get_by_collection_page(conn: &Connection, collection_id: i64, page_index: i32) -> Result<Vec<UserPlacedIcon>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, icon_path, collection_id, page_index, position_x, position_y,
@@ -42,7 +42,7 @@ pub fn get_by_collection_page(conn: &Connection, collection_id: &str, page_index
 }
 
 /// Get a single placed icon by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserPlacedIcon>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserPlacedIcon>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, icon_path, collection_id, page_index, position_x, position_y,
@@ -64,12 +64,6 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserPlacedIcon>, 
 
 /// Create a new placed icon
 pub fn create(conn: &Connection, placed_icon: &UserPlacedIcon) -> Result<UserPlacedIcon, String> {
-    let id = if placed_icon.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        placed_icon.id.clone()
-    };
-
     let placed_at = if placed_icon.placed_at.is_empty() {
         chrono_now()
     } else {
@@ -80,11 +74,10 @@ pub fn create(conn: &Connection, placed_icon: &UserPlacedIcon) -> Result<UserPla
     let color = if placed_icon.color.is_empty() { "#000000".to_string() } else { placed_icon.color.clone() };
 
     conn.execute(
-        "INSERT INTO _user_placed_icons (id, icon_path, collection_id, page_index,
+        "INSERT INTO _user_placed_icons (icon_path, collection_id, page_index,
          position_x, position_y, scale, rotation, color, placed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         params![
-            id,
             placed_icon.icon_path,
             placed_icon.collection_id,
             placed_icon.page_index,
@@ -97,6 +90,8 @@ pub fn create(conn: &Connection, placed_icon: &UserPlacedIcon) -> Result<UserPla
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserPlacedIcon {
         id,
@@ -128,7 +123,7 @@ pub fn update(conn: &Connection, placed_icon: &UserPlacedIcon) -> Result<UserPla
 }
 
 /// Delete a placed icon by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_placed_icons WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -137,7 +132,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete all placed icons for a collection
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_placed_icons WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;

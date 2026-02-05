@@ -18,7 +18,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Stamp>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_pack_id(conn: &Connection, pack_id: &str) -> Result<Vec<Stamp>, String> {
+pub fn get_by_pack_id(conn: &Connection, pack_id: i64) -> Result<Vec<Stamp>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, pack_id, image_path, emojis, created_at
@@ -36,7 +36,7 @@ pub fn get_by_pack_id(conn: &Connection, pack_id: &str) -> Result<Vec<Stamp>, St
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Stamp>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Stamp>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, pack_id, image_path, emojis, created_at
@@ -56,19 +56,12 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Stamp>, String> {
 }
 
 pub fn create(conn: &Connection, stamp: &Stamp) -> Result<Stamp, String> {
-    let id = if stamp.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        stamp.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO stamps (id, pack_id, image_path, emojis, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO stamps (pack_id, image_path, emojis, created_at)
+         VALUES (?1, ?2, ?3, ?4)",
         params![
-            id,
             stamp.pack_id,
             stamp.image_path,
             stamp.emojis,
@@ -76,6 +69,8 @@ pub fn create(conn: &Connection, stamp: &Stamp) -> Result<Stamp, String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Stamp {
         id,
@@ -93,17 +88,10 @@ pub fn create_batch(conn: &Connection, stamps: &[Stamp]) -> Result<Vec<Stamp>, S
         .map_err(|e| format!("Failed to begin transaction: {}", e))?;
 
     for stamp in stamps {
-        let id = if stamp.id.is_empty() {
-            uuid::Uuid::new_v4().to_string()
-        } else {
-            stamp.id.clone()
-        };
-
         let result = conn.execute(
-            "INSERT INTO stamps (id, pack_id, image_path, emojis, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO stamps (pack_id, image_path, emojis, created_at)
+             VALUES (?1, ?2, ?3, ?4)",
             params![
-                id,
                 stamp.pack_id,
                 stamp.image_path,
                 stamp.emojis,
@@ -113,6 +101,7 @@ pub fn create_batch(conn: &Connection, stamps: &[Stamp]) -> Result<Vec<Stamp>, S
 
         match result {
             Ok(_) => {
+                let id = conn.last_insert_rowid();
                 created_stamps.push(Stamp {
                     id,
                     created_at: now.clone(),
@@ -135,7 +124,7 @@ pub fn create_batch(conn: &Connection, stamps: &[Stamp]) -> Result<Vec<Stamp>, S
     Ok(created_stamps)
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM stamps WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -143,7 +132,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
     Ok(rows_affected > 0)
 }
 
-pub fn delete_by_pack_id(conn: &Connection, pack_id: &str) -> Result<bool, String> {
+pub fn delete_by_pack_id(conn: &Connection, pack_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM stamps WHERE pack_id = ?1", params![pack_id])
         .map_err(|e| e.to_string())?;

@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Collection {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub collection_type_id: Option<String>,
+    pub collection_type_id: Option<i64>,
     #[serde(default)]
     pub title: String,
     #[serde(default)]
@@ -29,9 +29,9 @@ pub struct Collection {
 #[serde(rename_all = "camelCase")]
 pub struct CollectionSticker {
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
     #[serde(default)]
-    pub sticker_id: String,
+    pub sticker_id: i64,
     #[serde(default)]
     pub sort_order: i32,
 

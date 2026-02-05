@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserPlacedIcon {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     /// Path to the SVG icon (e.g., /stamp/lorc/sword.svg)
     #[serde(default)]
     pub icon_path: String,
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
     #[serde(default)]
     pub page_index: i32,
     /// X position as percentage (0-100)

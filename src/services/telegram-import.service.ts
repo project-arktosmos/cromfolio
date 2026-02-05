@@ -15,7 +15,7 @@ export interface TelegramImportProgress {
 	errors: string[];
 	startedAt: number | null;
 	finishedAt: number | null;
-	resultPackId: string | null;
+	resultPackId: number | null;
 }
 
 /**

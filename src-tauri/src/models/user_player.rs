@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UserPlayer {
-    #[serde(default = "default_id")]
-    pub id: String,
+    #[serde(default)]
+    pub id: i64,
     #[serde(default = "default_name")]
     pub name: String,
     #[serde(default)]
@@ -16,10 +16,6 @@ pub struct UserPlayer {
     pub created_at: String,
     #[serde(default)]
     pub last_played_at: String,
-}
-
-fn default_id() -> String {
-    "player".to_string()
 }
 
 fn default_name() -> String {

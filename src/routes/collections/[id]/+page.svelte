@@ -53,6 +53,7 @@
 	import type { StampPack, Stamp } from '$types/stamp-pack.type';
 	import type { UserPlacedStamp } from '$types/user-placed-stamp.type';
 	import type { UserPlacedIcon } from '$types/user-placed-icon.type';
+	import type { ID } from '$types/core.type';
 	import { DEFAULT_GRID_PACKING_CONFIG, getGridPageAspectRatio } from '$types/album-layout.type';
 	import {
 		packStickersIntoGrid,
@@ -138,15 +139,15 @@
 	let collectionType: CollectionType | null = $state(null);
 	let stickers: Sticker[] = $state([]);
 	let rarities: Rarity[] = $state([]);
-	let raritiesMap = $state<Map<string, Rarity>>(new Map());
+	let raritiesMap = $state<Map<ID, Rarity>>(new Map());
 	let isLoading = $state(true);
 	let notFound = $state(false);
-	let ownedStickerIds = $state<Set<string>>(new Set());
-	let placedStickerIds = $state<Set<string>>(new Set());
-	let globalPlacementCounts = $state<Map<string, number>>(new Map());
-	let copyCountCache = $state<Map<string, number>>(new Map());
-	let stickerTagsMap = $state<Map<string, Tag[]>>(new Map());
-	let stickerRarityMap = $state<Map<string, string>>(new Map());
+	let ownedStickerIds = $state<Set<ID>>(new Set());
+	let placedStickerIds = $state<Set<number>>(new Set());
+	let globalPlacementCounts = $state<Map<number, number>>(new Map());
+	let copyCountCache = $state<Map<ID, number>>(new Map());
+	let stickerTagsMap = $state<Map<ID, Tag[]>>(new Map());
+	let stickerRarityMap = $state<Map<ID, ID>>(new Map());
 	let stickerRarityCopyCount = $state<Map<string, number>>(new Map()); // key: "stickerId::rarityId"
 	let userStickersData = $state<UserSticker[]>([]); // Store actual user stickers for mixing
 	let unopenedBoosterPacks = $state(0);
@@ -174,10 +175,10 @@
 
 	// Rarity counts for collection stats
 	let _rarityCounts = $derived.by(() => {
-		const counts = new SvelteMap<string, { total: number; owned: number; rarity: Rarity }>();
+		const counts = new SvelteMap<ID, { total: number; owned: number; rarity: Rarity }>();
 
 		for (const sticker of stickers) {
-			const rarityId = stickerRarityMap.get(String(sticker.id));
+			const rarityId = stickerRarityMap.get(sticker.id);
 			if (!rarityId) continue;
 
 			const rarity = raritiesMap.get(rarityId);
@@ -185,7 +186,7 @@
 
 			const existing = counts.get(rarityId) || { total: 0, owned: 0, rarity };
 			existing.total++;
-			if (ownedStickerIds.has(String(sticker.id))) {
+			if (ownedStickerIds.has(sticker.id)) {
 				existing.owned++;
 			}
 			counts.set(rarityId, existing);
@@ -198,14 +199,14 @@
 	// Stamp placement state
 	let stampPacks = $state<StampPack[]>([]);
 	let stampsDataDir = $state<string>('');
-	let stampPackCovers = $state<Map<string, string>>(new Map());
+	let stampPackCovers = $state<Map<number, string>>(new Map());
 	let hoveredPack = $state<StampPack | null>(null);
 	let hoveredPackStamps = $state<Stamp[]>([]);
 	let selectedStamp = $state<Stamp | null>(null);
 	let isPlacementMode = $state(false);
 	let placementScale = $state(1.0);
 	let placedStampsForCollection = $state<Map<string, UserPlacedStamp[]>>(new Map());
-	let stampImageCache = $state<Map<string, Stamp>>(new Map());
+	let stampImageCache = $state<Map<number, Stamp>>(new Map());
 	let globalMousePosition = $state({ x: 0, y: 0 });
 	let isOverHoverPanel = $state(false);
 	let hoverPanelPosition = $state({ x: 0 });
@@ -242,7 +243,7 @@
 			getAllStampPacks(),
 			getStampsDataDir()
 		]);
-		raritiesMap = new Map(rarities.map((r) => [String(r.id), r]));
+		raritiesMap = new Map(rarities.map((r) => [r.id, r]));
 
 		// Load stamp pack cover images
 		await loadStampPackCovers();
@@ -270,7 +271,7 @@
 
 		// Refresh copy counts
 		for (const sticker of stickers) {
-			await refreshCopyCount(String(sticker.id));
+			await refreshCopyCount(sticker.id);
 		}
 
 		// Load owned stickers
@@ -278,10 +279,10 @@
 		await refreshGlobalPlacementCounts();
 
 		// Load placed stamps for this collection
-		await loadPlacedStampsForCollection(String(collection.id));
+		await loadPlacedStampsForCollection(collection.id);
 
 		// Load placed icons for this collection
-		await loadPlacedIconsForCollection(String(collection.id));
+		await loadPlacedIconsForCollection(collection.id);
 
 		// Load placed sticker IDs for this collection
 		const placedIds = await getPlacedStickerIdsForCollection(collection.id);
@@ -347,7 +348,7 @@
 
 			// Refresh copy counts for all stickers
 			for (const sticker of stickers) {
-				await refreshCopyCount(String(sticker.id));
+				await refreshCopyCount(sticker.id);
 			}
 
 			// Refresh global placement counts
@@ -378,7 +379,7 @@
 	}
 
 	async function loadStampPackCovers() {
-		const covers = new SvelteMap<string, string>();
+		const covers = new SvelteMap<number, string>();
 		for (const pack of stampPacks) {
 			// If pack has a tray image, use it
 			if (pack.trayImage) {
@@ -407,38 +408,38 @@
 	async function refreshOwnedSet() {
 		if (!collection) return;
 
-		const collectionId = String(collection.id);
+		const collectionId = collection.id;
 		const allUserStickers = await getAllUserStickers();
 
 		// Filter to only stickers earned FROM this collection (by collectionId)
-		const userStickers = allUserStickers.filter((us) => String(us.collectionId) === collectionId);
+		const userStickers = allUserStickers.filter((us) => us.collectionId === collectionId);
 
 		userStickersData = userStickers; // Store for mixing (only this collection's stickers)
 
 		// Build owned sticker IDs set from filtered stickers
-		ownedStickerIds = new Set(userStickers.map((us) => String(us.stickerId)));
+		ownedStickerIds = new Set(userStickers.map((us) => us.stickerId));
 
-		const rarityMap = new SvelteMap<string, string>();
+		const rarityMap = new SvelteMap<ID, ID>();
 		const rarityCopyCount = new SvelteMap<string, number>();
 
 		for (const us of userStickers) {
-			const stickerId = String(us.stickerId);
-			const rarityId = us.rarityId ? String(us.rarityId) : '';
+			const stickerId = us.stickerId;
+			const rarityIdStr = us.rarityId ? String(us.rarityId) : '';
 
-			// Track copy count per (stickerId, rarityId) - use :: delimiter to avoid issues with UUIDs
-			const copyKey = `${stickerId}::${rarityId}`;
+			// Track copy count per (stickerId, rarityId) - use :: delimiter for composite key
+			const copyKey = `${stickerId}::${rarityIdStr}`;
 			rarityCopyCount.set(copyKey, (rarityCopyCount.get(copyKey) ?? 0) + 1);
 
-			if (!rarityId) continue;
+			if (!us.rarityId) continue;
 
 			const existingRarityId = rarityMap.get(stickerId);
 			if (!existingRarityId) {
-				rarityMap.set(stickerId, rarityId);
+				rarityMap.set(stickerId, us.rarityId);
 			} else {
 				const existingRarity = raritiesMap.get(existingRarityId);
-				const newRarity = raritiesMap.get(rarityId);
+				const newRarity = raritiesMap.get(us.rarityId);
 				if (newRarity && existingRarity && newRarity.sortOrder > existingRarity.sortOrder) {
-					rarityMap.set(stickerId, rarityId);
+					rarityMap.set(stickerId, us.rarityId);
 				}
 			}
 		}
@@ -447,7 +448,7 @@
 		stickerRarityCopyCount = rarityCopyCount;
 	}
 
-	async function refreshCopyCount(stickerId: string) {
+	async function refreshCopyCount(stickerId: ID) {
 		const count = await getStickerCopyCount(stickerId);
 		copyCountCache = new SvelteMap(copyCountCache).set(stickerId, count);
 	}
@@ -456,20 +457,20 @@
 		globalPlacementCounts = await getAllStickerPlacementCounts();
 	}
 
-	function getAvailableCopies(stickerId: string | number): number {
+	function getAvailableCopies(stickerId: ID): number {
 		const owned = getCachedCopyCount(stickerId);
-		const placed = globalPlacementCounts.get(String(stickerId)) ?? 0;
+		const placed = globalPlacementCounts.get(stickerId as number) ?? 0;
 		return owned - placed;
 	}
 
 	function getStickerRarity(sticker: Sticker): Rarity | null {
-		const rarityId = stickerRarityMap.get(String(sticker.id));
+		const rarityId = stickerRarityMap.get(sticker.id);
 		if (!rarityId) return null;
 		return raritiesMap.get(rarityId) ?? null;
 	}
 
-	function getCachedCopyCount(stickerId: string | number): number {
-		return copyCountCache.get(String(stickerId)) ?? 0;
+	function getCachedCopyCount(stickerId: ID): number {
+		return copyCountCache.get(stickerId) ?? 0;
 	}
 
 	// Mixing helpers
@@ -480,7 +481,7 @@
 	function getNextRarity(currentRarity: Rarity | null): Rarity | null {
 		const sorted = getSortedRarities();
 		if (!currentRarity) return sorted[0] ?? null;
-		const currentIndex = sorted.findIndex((r) => String(r.id) === String(currentRarity.id));
+		const currentIndex = sorted.findIndex((r) => r.id === currentRarity.id);
 		if (currentIndex === -1 || currentIndex >= sorted.length - 1) {
 			return null;
 		}
@@ -594,15 +595,14 @@
 		const nextRarity = getNextRarity(mixableRarity);
 		if (!nextRarity) return;
 
-		const key = String(sticker.id);
-		isMixing = key;
+		isMixing = String(sticker.id);
 
 		try {
 			const sourceId = getUserStickerSourceId(sticker.id, mixableRarity.id);
 			await mixStickers(sticker.id, mixableRarity.id, nextRarity.id, sourceId);
 			// Refresh data after mixing
 			await refreshOwnedSet();
-			await refreshCopyCount(key);
+			await refreshCopyCount(sticker.id);
 		} catch (error) {
 			console.error('Failed to mix sticker:', error);
 		} finally {
@@ -647,7 +647,7 @@
 			// Refresh all data after mixing
 			await refreshOwnedSet();
 			for (const sticker of stickers) {
-				await refreshCopyCount(String(sticker.id));
+				await refreshCopyCount(sticker.id);
 			}
 		} catch (error) {
 			console.error('Failed to mix all stickers:', error);
@@ -775,7 +775,7 @@
 	async function handleStickerClick(sticker: Sticker) {
 		if (!collection) return;
 
-		const stickerId = String(sticker.id);
+		const stickerId = sticker.id as number;
 		const owned = getCachedCopyCount(stickerId) > 0;
 		const placed = placedStickerIds.has(stickerId);
 		const availableCopies = getAvailableCopies(stickerId);
@@ -910,16 +910,17 @@
 		);
 	}
 
-	async function loadPlacedStampsForCollection(collectionId: string) {
+	async function loadPlacedStampsForCollection(collectionId: ID) {
 		const allPlaced = await getPlacedStampsByCollection(collectionId);
 		const byPage = new SvelteMap<string, UserPlacedStamp[]>();
 		for (const ps of allPlaced) {
 			const key = `${collectionId}-${ps.pageIndex}`;
 			const existing = byPage.get(key) ?? [];
 			byPage.set(key, [...existing, ps]);
-			if (!stampImageCache.has(String(ps.stampId))) {
+			const stampId = ps.stampId as number;
+			if (!stampImageCache.has(stampId)) {
 				const stamp = await getStamp(ps.stampId);
-				if (stamp) stampImageCache.set(String(ps.stampId), stamp);
+				if (stamp) stampImageCache.set(stampId, stamp);
 			}
 		}
 		placedStampsForCollection = byPage;
@@ -1042,7 +1043,7 @@
 		);
 	}
 
-	async function loadPlacedIconsForCollection(collectionId: string) {
+	async function loadPlacedIconsForCollection(collectionId: ID) {
 		const allPlaced = await getPlacedIconsByCollection(collectionId);
 		const byPage = new SvelteMap<string, UserPlacedIcon[]>();
 		for (const pi of allPlaced) {
@@ -1324,7 +1325,7 @@
 															{#each pokemonStickers as sticker (sticker.id)}
 																{@const copyCount = getCachedCopyCount(sticker.id)}
 																{@const owned = copyCount > 0}
-																{@const placed = placedStickerIds.has(String(sticker.id))}
+																{@const placed = placedStickerIds.has(sticker.id as number)}
 																{@const availableCopies = getAvailableCopies(sticker.id)}
 																{@const canPlace = owned && !placed && availableCopies > 0}
 																{@const placedElsewhere = owned && !placed && availableCopies <= 0}
@@ -1448,7 +1449,7 @@
 																{#each row.stickers as { sticker } (sticker.id)}
 																	{@const copyCount = getCachedCopyCount(sticker.id)}
 																	{@const owned = copyCount > 0}
-																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const placed = placedStickerIds.has(sticker.id as number)}
 																	{@const availableCopies = getAvailableCopies(sticker.id)}
 																	{@const canPlace = owned && !placed && availableCopies > 0}
 																	{@const placedElsewhere =
@@ -1609,7 +1610,7 @@
 																{#if fragment}
 																	{@const copyCount = getCachedCopyCount(fragment.id)}
 																	{@const owned = copyCount > 0}
-																	{@const placed = placedStickerIds.has(String(fragment.id))}
+																	{@const placed = placedStickerIds.has(fragment.id as number)}
 																	{@const availableCopies = getAvailableCopies(fragment.id)}
 																	{@const canPlace = owned && !placed && availableCopies > 0}
 																	{@const placedElsewhere =
@@ -1815,7 +1816,7 @@
 						<div class="grid grid-cols-2 gap-2 md:grid-cols-4">
 							{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
 								{@const groupKey = `${group.stickerId}::${group.rarityId}`}
-								{@const placed = placedStickerIds.has(group.stickerId)}
+								{@const placed = placedStickerIds.has(Number(group.stickerId))}
 								{@const canMix = canMixGroup(group)}
 								{@const nextRarity = getGroupNextRarity(group)}
 								<div
@@ -2040,7 +2041,7 @@
 			<div class="grid grid-cols-3 gap-2">
 				{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
 					{@const groupKey = `${group.stickerId}::${group.rarityId}`}
-					{@const placed = placedStickerIds.has(group.stickerId)}
+					{@const placed = placedStickerIds.has(Number(group.stickerId))}
 					{@const canMix = canMixGroup(group)}
 					{@const nextRarity = getGroupNextRarity(group)}
 					<div

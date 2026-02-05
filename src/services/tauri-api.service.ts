@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { toastService } from '$services/toast.service';
+import type { ID } from '$types/core.type';
 
 /**
  * Capitalize first letter of a string
@@ -73,7 +74,7 @@ export const tauriApiService = {
 	/**
 	 * Get a single item by ID
 	 */
-	async get<T>(resource: string, id: string): Promise<T | null> {
+	async get<T>(resource: string, id: ID): Promise<T | null> {
 		try {
 			const singular = toSingular(toSnakeCase(resource));
 			const commandName = `get_${singular}`;
@@ -110,7 +111,7 @@ export const tauriApiService = {
 	 */
 	async update<T>(
 		resource: string,
-		id: string,
+		id: ID,
 		data: Partial<T>,
 		options?: { silent?: boolean }
 	): Promise<T | null> {
@@ -136,7 +137,7 @@ export const tauriApiService = {
 	/**
 	 * Delete an item by ID
 	 */
-	async delete(resource: string, id: string): Promise<boolean> {
+	async delete(resource: string, id: ID): Promise<boolean> {
 		try {
 			const singular = toSingular(toSnakeCase(resource));
 			const commandName = `delete_${singular}`;

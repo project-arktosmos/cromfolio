@@ -24,7 +24,7 @@ export async function getRarityCollection(): Promise<Rarity[]> {
  */
 export async function getRarity(id: ID): Promise<Rarity | null> {
 	try {
-		return await invoke<Rarity | null>('get_rarity', { id: String(id) });
+		return await invoke<Rarity | null>('get_rarity', { id });
 	} catch (e) {
 		console.error(`[rarities.service] getRarity(${id}):`, e);
 		return null;
@@ -60,7 +60,7 @@ export async function updateRarity(rarity: Rarity): Promise<Rarity | null> {
  */
 export async function removeRarity(rarity: Rarity): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_rarity', { id: String(rarity.id) });
+		return await invoke<boolean>('delete_rarity', { id: rarity.id });
 	} catch (e) {
 		console.error('[rarities.service] removeRarity:', e);
 		return false;

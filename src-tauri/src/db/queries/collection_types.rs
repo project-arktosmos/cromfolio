@@ -18,7 +18,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<CollectionType>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<CollectionType>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<CollectionType>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, description, icon, sort_order, created_at, updated_at
@@ -38,19 +38,12 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<CollectionType>, 
 }
 
 pub fn create(conn: &Connection, collection_type: &CollectionType) -> Result<CollectionType, String> {
-    let id = if collection_type.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        collection_type.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO collection_types (id, name, description, icon, sort_order, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO collection_types (name, description, icon, sort_order, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
-            id,
             collection_type.name,
             collection_type.description,
             collection_type.icon,
@@ -60,6 +53,8 @@ pub fn create(conn: &Connection, collection_type: &CollectionType) -> Result<Col
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(CollectionType {
         id,
@@ -93,7 +88,7 @@ pub fn update(conn: &Connection, collection_type: &CollectionType) -> Result<Col
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM collection_types WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

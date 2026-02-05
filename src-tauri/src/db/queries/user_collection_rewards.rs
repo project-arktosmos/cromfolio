@@ -23,7 +23,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<UserCollectionReward>, String> {
 }
 
 /// Get a user collection reward by collection ID
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Option<UserCollectionReward>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Option<UserCollectionReward>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, last_claimed_at
@@ -70,7 +70,7 @@ pub fn get_eligible_collections(conn: &Connection) -> Result<Vec<EligibleRewardC
 
     let rows = stmt
         .query_map([], |row| {
-            let collection_id: String = row.get(0)?;
+            let collection_id: i64 = row.get(0)?;
             let collection_title: String = row.get(1)?;
             let collection_cover_image: Option<String> = row.get(2)?;
             let stickers_owned: i64 = row.get(3)?;
@@ -120,7 +120,7 @@ pub fn get_eligible_collections(conn: &Connection) -> Result<Vec<EligibleRewardC
 
 /// Claim a reward for a collection - updates or creates the reward tracking record
 /// Returns the updated/created UserCollectionReward
-pub fn claim_reward(conn: &Connection, collection_id: &str) -> Result<UserCollectionReward, String> {
+pub fn claim_reward(conn: &Connection, collection_id: i64) -> Result<UserCollectionReward, String> {
     let now = chrono_now();
 
     // Check if record exists
@@ -136,30 +136,30 @@ pub fn claim_reward(conn: &Connection, collection_id: &str) -> Result<UserCollec
 
         Ok(UserCollectionReward {
             id: existing_reward.id,
-            collection_id: collection_id.to_string(),
+            collection_id,
             last_claimed_at: now,
         })
     } else {
         // Create new record
-        let id = uuid::Uuid::new_v4().to_string();
-
         conn.execute(
-            "INSERT INTO _user_collection_rewards (id, collection_id, last_claimed_at)
-             VALUES (?1, ?2, ?3)",
-            params![id, collection_id, now],
+            "INSERT INTO _user_collection_rewards (collection_id, last_claimed_at)
+             VALUES (?1, ?2)",
+            params![collection_id, now],
         )
         .map_err(|e| e.to_string())?;
 
+        let id = conn.last_insert_rowid();
+
         Ok(UserCollectionReward {
             id,
-            collection_id: collection_id.to_string(),
+            collection_id,
             last_claimed_at: now,
         })
     }
 }
 
 /// Delete a user collection reward by collection ID
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_collection_rewards WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;

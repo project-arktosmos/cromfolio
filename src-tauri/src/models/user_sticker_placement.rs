@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserStickerPlacement {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub sticker_id: String,
+    pub sticker_id: i64,
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
     #[serde(default)]
     pub placed_at: String,
 }

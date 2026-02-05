@@ -4,7 +4,7 @@
 
 	interface Props {
 		stampPacks: StampPack[];
-		coverUrls?: Map<string, string>;
+		coverUrls?: Map<number, string>;
 		classes?: string;
 		onpackhover?: (pack: StampPack, event: MouseEvent) => void;
 		onpackleave?: () => void;

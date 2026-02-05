@@ -7,7 +7,7 @@ import type { UserPlacedStamp } from '$types/user-placed-stamp.type';
  */
 export async function getPlacedStampsByCollection(collectionId: ID): Promise<UserPlacedStamp[]> {
 	return await invoke<UserPlacedStamp[]>('get_placed_stamps_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -19,7 +19,7 @@ export async function getPlacedStampsByPage(
 	pageIndex: number
 ): Promise<UserPlacedStamp[]> {
 	return await invoke<UserPlacedStamp[]>('get_placed_stamps_by_page', {
-		collectionId: String(collectionId),
+		collectionId,
 		pageIndex
 	});
 }
@@ -28,7 +28,7 @@ export async function getPlacedStampsByPage(
  * Get a single placed stamp by ID
  */
 export async function getPlacedStamp(id: ID): Promise<UserPlacedStamp | null> {
-	return await invoke<UserPlacedStamp | null>('get_placed_stamp', { id: String(id) });
+	return await invoke<UserPlacedStamp | null>('get_placed_stamp', { id });
 }
 
 /**
@@ -44,9 +44,9 @@ export async function placeStamp(
 	rotation: number = 0
 ): Promise<UserPlacedStamp> {
 	const placedStamp: Partial<UserPlacedStamp> = {
-		id: '',
-		stampId: String(stampId),
-		collectionId: String(collectionId),
+		id: 0,
+		stampId,
+		collectionId,
 		pageIndex,
 		positionX,
 		positionY,
@@ -68,14 +68,14 @@ export async function updatePlacedStamp(placedStamp: UserPlacedStamp): Promise<U
  * Remove a placed stamp
  */
 export async function removePlacedStamp(id: ID): Promise<boolean> {
-	return await invoke<boolean>('remove_placed_stamp', { id: String(id) });
+	return await invoke<boolean>('remove_placed_stamp', { id });
 }
 
 /**
  * Clear all stamps from a collection
  */
 export async function clearCollectionStamps(collectionId: ID): Promise<boolean> {
-	return await invoke<boolean>('clear_collection_stamps', { collectionId: String(collectionId) });
+	return await invoke<boolean>('clear_collection_stamps', { collectionId });
 }
 
 /**

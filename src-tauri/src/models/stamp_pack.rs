@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct StampPack {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     /// Source of the sticker pack (e.g., "whatsapp", "telegram")
     #[serde(default)]
     pub source: String,

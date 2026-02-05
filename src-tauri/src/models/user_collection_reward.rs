@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserCollectionReward {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
 
     /// The collection this reward tracking is for
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
 
     /// Timestamp when the reward was last claimed for this collection
     #[serde(default)]
@@ -22,7 +22,7 @@ pub struct UserCollectionReward {
 #[serde(rename_all = "camelCase")]
 pub struct EligibleRewardCollection {
     /// The collection ID
-    pub collection_id: String,
+    pub collection_id: i64,
 
     /// The collection title
     pub collection_title: String,

@@ -24,7 +24,7 @@ export async function getAllCollectionTypes(): Promise<CollectionType[]> {
  */
 export async function getCollectionType(id: ID): Promise<CollectionType | null> {
 	try {
-		return await invoke<CollectionType | null>('get_collection_type', { id: String(id) });
+		return await invoke<CollectionType | null>('get_collection_type', { id });
 	} catch (e) {
 		console.error(`[collection-types.service] getCollectionType(${id}):`, e);
 		return null;
@@ -64,7 +64,7 @@ export async function updateCollectionType(
  */
 export async function deleteCollectionType(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_collection_type', { id: String(id) });
+		return await invoke<boolean>('delete_collection_type', { id });
 	} catch (e) {
 		console.error(`[collection-types.service] deleteCollectionType(${id}):`, e);
 		return false;

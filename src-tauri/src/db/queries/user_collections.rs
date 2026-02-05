@@ -20,7 +20,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<UserCollection>, String> {
 }
 
 /// Get user collection progress by collection_id
-pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Option<UserCollection>, String> {
+pub fn get_by_collection_id(conn: &Connection, collection_id: i64) -> Result<Option<UserCollection>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, started_at, completed_at
@@ -40,7 +40,7 @@ pub fn get_by_collection_id(conn: &Connection, collection_id: &str) -> Result<Op
 }
 
 /// Get a specific user collection by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserCollection>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserCollection>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, collection_id, started_at, completed_at
@@ -99,12 +99,6 @@ pub fn get_in_progress(conn: &Connection) -> Result<Vec<UserCollection>, String>
 
 /// Create a new user collection progress record (start tracking a collection)
 pub fn create(conn: &Connection, user_collection: &UserCollection) -> Result<UserCollection, String> {
-    let id = if user_collection.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        user_collection.id.clone()
-    };
-
     let started_at = if user_collection.started_at.is_empty() {
         chrono_now()
     } else {
@@ -112,16 +106,17 @@ pub fn create(conn: &Connection, user_collection: &UserCollection) -> Result<Use
     };
 
     conn.execute(
-        "INSERT INTO _user_collections (id, collection_id, started_at, completed_at)
-         VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO _user_collections (collection_id, started_at, completed_at)
+         VALUES (?1, ?2, ?3)",
         params![
-            id,
             user_collection.collection_id,
             started_at,
             user_collection.completed_at
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserCollection {
         id,
@@ -149,7 +144,7 @@ pub fn update(conn: &Connection, user_collection: &UserCollection) -> Result<Use
 }
 
 /// Mark a collection as completed
-pub fn mark_completed(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn mark_completed(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let now = chrono_now();
     let rows_affected = conn
         .execute(
@@ -162,7 +157,7 @@ pub fn mark_completed(conn: &Connection, collection_id: &str) -> Result<bool, St
 }
 
 /// Delete a user collection progress record by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_collections WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -171,7 +166,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete a user collection progress record by collection_id
-pub fn delete_by_collection_id(conn: &Connection, collection_id: &str) -> Result<bool, String> {
+pub fn delete_by_collection_id(conn: &Connection, collection_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_collections WHERE collection_id = ?1", params![collection_id])
         .map_err(|e| e.to_string())?;

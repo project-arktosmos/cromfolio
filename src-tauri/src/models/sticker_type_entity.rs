@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct StickerTypeEntity {
-    /// Unique identifier (e.g., "poster", "backdrop", "character")
+    /// Unique identifier
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     /// Display name (e.g., "Poster", "Backdrop", "Character")
     #[serde(default)]
     pub name: String,

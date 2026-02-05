@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserSource {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub source_id: String,
+    pub source_id: i64,
 
     // Timestamp when the source was acquired
     #[serde(default)]

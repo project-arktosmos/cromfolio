@@ -18,7 +18,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<StickerTypeEntity>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<StickerTypeEntity>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<StickerTypeEntity>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, description, category, source_type, badge_color, sort_order, created_at, updated_at
@@ -74,19 +74,12 @@ pub fn get_by_source_type(conn: &Connection, source_type: &str) -> Result<Vec<St
 }
 
 pub fn create(conn: &Connection, sticker_type: &StickerTypeEntity) -> Result<StickerTypeEntity, String> {
-    let id = if sticker_type.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        sticker_type.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO sticker_types (id, name, description, category, source_type, badge_color, sort_order, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO sticker_types (name, description, category, source_type, badge_color, sort_order, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
-            id,
             sticker_type.name,
             sticker_type.description,
             sticker_type.category,
@@ -98,6 +91,8 @@ pub fn create(conn: &Connection, sticker_type: &StickerTypeEntity) -> Result<Sti
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(StickerTypeEntity {
         id,
@@ -133,7 +128,7 @@ pub fn update(conn: &Connection, sticker_type: &StickerTypeEntity) -> Result<Sti
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM sticker_types WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

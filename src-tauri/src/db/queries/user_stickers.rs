@@ -20,7 +20,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<UserSticker>, String> {
 }
 
 /// Get all user-owned stickers for a specific source
-pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<UserSticker>, String> {
+pub fn get_by_source_id(conn: &Connection, source_id: i64) -> Result<Vec<UserSticker>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, sticker_id, source_id, collection_id, rarity_id, acquired_at
@@ -39,7 +39,7 @@ pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<UserSt
 }
 
 /// Get a specific user sticker by ID
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserSticker>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<UserSticker>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, sticker_id, source_id, collection_id, rarity_id, acquired_at
@@ -59,7 +59,7 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<UserSticker>, Str
 }
 
 /// Check if user owns a specific sticker (by sticker_id)
-pub fn owns_sticker(conn: &Connection, sticker_id: &str) -> Result<bool, String> {
+pub fn owns_sticker(conn: &Connection, sticker_id: i64) -> Result<bool, String> {
     let count: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1",
@@ -72,7 +72,7 @@ pub fn owns_sticker(conn: &Connection, sticker_id: &str) -> Result<bool, String>
 }
 
 /// Get the number of copies of a specific sticker the user owns
-pub fn get_copy_count(conn: &Connection, sticker_id: &str) -> Result<i64, String> {
+pub fn get_copy_count(conn: &Connection, sticker_id: i64) -> Result<i64, String> {
     conn.query_row(
         "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1",
         params![sticker_id],
@@ -82,7 +82,7 @@ pub fn get_copy_count(conn: &Connection, sticker_id: &str) -> Result<i64, String
 }
 
 /// Get count of unique stickers owned for a specific source
-pub fn get_unique_count_by_source(conn: &Connection, source_id: &str) -> Result<i64, String> {
+pub fn get_unique_count_by_source(conn: &Connection, source_id: i64) -> Result<i64, String> {
     conn.query_row(
         "SELECT COUNT(DISTINCT sticker_id) FROM _user_stickers WHERE source_id = ?1",
         params![source_id],
@@ -92,7 +92,7 @@ pub fn get_unique_count_by_source(conn: &Connection, source_id: &str) -> Result<
 }
 
 /// Get all unique sticker IDs owned by the user
-pub fn get_owned_sticker_ids(conn: &Connection) -> Result<Vec<String>, String> {
+pub fn get_owned_sticker_ids(conn: &Connection) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare("SELECT DISTINCT sticker_id FROM _user_stickers")
         .map_err(|e| e.to_string())?;
@@ -107,12 +107,6 @@ pub fn get_owned_sticker_ids(conn: &Connection) -> Result<Vec<String>, String> {
 
 /// Create a new user sticker (acquire a sticker)
 pub fn create(conn: &Connection, user_sticker: &UserSticker) -> Result<UserSticker, String> {
-    let id = if user_sticker.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        user_sticker.id.clone()
-    };
-
     let acquired_at = if user_sticker.acquired_at.is_empty() {
         chrono_now()
     } else {
@@ -120,10 +114,9 @@ pub fn create(conn: &Connection, user_sticker: &UserSticker) -> Result<UserStick
     };
 
     conn.execute(
-        "INSERT INTO _user_stickers (id, sticker_id, source_id, collection_id, rarity_id, acquired_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        "INSERT INTO _user_stickers (sticker_id, source_id, collection_id, rarity_id, acquired_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
         params![
-            id,
             user_sticker.sticker_id,
             user_sticker.source_id,
             user_sticker.collection_id,
@@ -133,6 +126,8 @@ pub fn create(conn: &Connection, user_sticker: &UserSticker) -> Result<UserStick
     )
     .map_err(|e| e.to_string())?;
 
+    let id = conn.last_insert_rowid();
+
     Ok(UserSticker {
         id,
         acquired_at,
@@ -141,7 +136,7 @@ pub fn create(conn: &Connection, user_sticker: &UserSticker) -> Result<UserStick
 }
 
 /// Delete a user sticker by ID
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_stickers WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -150,7 +145,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 /// Delete a user sticker by sticker_id (removes one copy)
-pub fn delete_by_sticker_id(conn: &Connection, sticker_id: &str) -> Result<bool, String> {
+pub fn delete_by_sticker_id(conn: &Connection, sticker_id: i64) -> Result<bool, String> {
     // Delete only one row (the first match)
     let rows_affected = conn
         .execute(
@@ -165,7 +160,7 @@ pub fn delete_by_sticker_id(conn: &Connection, sticker_id: &str) -> Result<bool,
 }
 
 /// Delete all user stickers for a specific source
-pub fn delete_by_source_id(conn: &Connection, source_id: &str) -> Result<bool, String> {
+pub fn delete_by_source_id(conn: &Connection, source_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM _user_stickers WHERE source_id = ?1", params![source_id])
         .map_err(|e| e.to_string())?;
@@ -195,23 +190,23 @@ fn row_to_user_sticker(row: &rusqlite::Row) -> UserSticker {
 
 /// Get stickers that can be mixed (same sticker_id and rarity_id with count >= 2)
 /// Returns tuples of (sticker_id, rarity_id, count)
-/// Note: Empty/null rarity_id is treated as empty string for grouping
-pub fn get_mixable_stickers(conn: &Connection) -> Result<Vec<(String, String, i64)>, String> {
+/// Note: NULL rarity_id is treated as 0 for grouping
+pub fn get_mixable_stickers(conn: &Connection) -> Result<Vec<(i64, Option<i64>, i64)>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT sticker_id, COALESCE(rarity_id, '') as rarity, COUNT(*) as cnt
+            "SELECT sticker_id, rarity_id, COUNT(*) as cnt
              FROM _user_stickers
-             GROUP BY sticker_id, rarity
+             GROUP BY sticker_id, rarity_id
              HAVING cnt >= 2
-             ORDER BY sticker_id, rarity",
+             ORDER BY sticker_id, rarity_id",
         )
         .map_err(|e| e.to_string())?;
 
     let rows = stmt
         .query_map([], |row| {
             Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
+                row.get::<_, i64>(0)?,
+                row.get::<_, Option<i64>>(1)?,
                 row.get::<_, i64>(2)?,
             ))
         })
@@ -222,36 +217,38 @@ pub fn get_mixable_stickers(conn: &Connection) -> Result<Vec<(String, String, i6
 }
 
 /// Get copy count for a specific sticker and rarity combination
-/// Empty string rarity_id matches both NULL and empty string in the database
-pub fn get_copy_count_by_rarity(conn: &Connection, sticker_id: &str, rarity_id: &str) -> Result<i64, String> {
-    if rarity_id.is_empty() {
-        // Match both NULL and empty string
-        conn.query_row(
-            "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1 AND (rarity_id IS NULL OR rarity_id = '')",
-            params![sticker_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())
-    } else {
-        conn.query_row(
-            "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2",
-            params![sticker_id, rarity_id],
-            |row| row.get(0),
-        )
-        .map_err(|e| e.to_string())
+/// None rarity_id matches NULL in the database
+pub fn get_copy_count_by_rarity(conn: &Connection, sticker_id: i64, rarity_id: Option<i64>) -> Result<i64, String> {
+    match rarity_id {
+        None => {
+            conn.query_row(
+                "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id IS NULL",
+                params![sticker_id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())
+        }
+        Some(rid) => {
+            conn.query_row(
+                "SELECT COUNT(*) FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2",
+                params![sticker_id, rid],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())
+        }
     }
 }
 
 /// Mix two stickers of the same type and rarity to create one of higher rarity
 /// Deletes 2 stickers with the given sticker_id and rarity_id, creates 1 with new_rarity_id
-/// Empty current_rarity_id matches stickers with NULL or empty rarity
+/// None current_rarity_id matches stickers with NULL rarity
 /// Returns the newly created sticker
 pub fn mix_stickers(
     conn: &Connection,
-    sticker_id: &str,
-    current_rarity_id: &str,
-    new_rarity_id: &str,
-    source_id: &str,
+    sticker_id: i64,
+    current_rarity_id: Option<i64>,
+    new_rarity_id: i64,
+    source_id: i64,
 ) -> Result<UserSticker, String> {
     // First, verify we have at least 2 copies to mix
     let count = get_copy_count_by_rarity(conn, sticker_id, current_rarity_id)?;
@@ -263,48 +260,50 @@ pub fn mix_stickers(
     }
 
     // Delete 2 copies (one at a time to be safe)
-    // Handle empty rarity_id by matching NULL or empty string
-    if current_rarity_id.is_empty() {
-        conn.execute(
-            "DELETE FROM _user_stickers WHERE id = (
-                SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND (rarity_id IS NULL OR rarity_id = '') LIMIT 1
-            )",
-            params![sticker_id],
-        )
-        .map_err(|e| e.to_string())?;
+    match current_rarity_id {
+        None => {
+            conn.execute(
+                "DELETE FROM _user_stickers WHERE id = (
+                    SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id IS NULL LIMIT 1
+                )",
+                params![sticker_id],
+            )
+            .map_err(|e| e.to_string())?;
 
-        conn.execute(
-            "DELETE FROM _user_stickers WHERE id = (
-                SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND (rarity_id IS NULL OR rarity_id = '') LIMIT 1
-            )",
-            params![sticker_id],
-        )
-        .map_err(|e| e.to_string())?;
-    } else {
-        conn.execute(
-            "DELETE FROM _user_stickers WHERE id = (
-                SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2 LIMIT 1
-            )",
-            params![sticker_id, current_rarity_id],
-        )
-        .map_err(|e| e.to_string())?;
+            conn.execute(
+                "DELETE FROM _user_stickers WHERE id = (
+                    SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id IS NULL LIMIT 1
+                )",
+                params![sticker_id],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        Some(rid) => {
+            conn.execute(
+                "DELETE FROM _user_stickers WHERE id = (
+                    SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2 LIMIT 1
+                )",
+                params![sticker_id, rid],
+            )
+            .map_err(|e| e.to_string())?;
 
-        conn.execute(
-            "DELETE FROM _user_stickers WHERE id = (
-                SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2 LIMIT 1
-            )",
-            params![sticker_id, current_rarity_id],
-        )
-        .map_err(|e| e.to_string())?;
+            conn.execute(
+                "DELETE FROM _user_stickers WHERE id = (
+                    SELECT id FROM _user_stickers WHERE sticker_id = ?1 AND rarity_id = ?2 LIMIT 1
+                )",
+                params![sticker_id, rid],
+            )
+            .map_err(|e| e.to_string())?;
+        }
     }
 
     // Create the new upgraded sticker
     let new_sticker = UserSticker {
-        id: String::new(),
-        sticker_id: sticker_id.to_string(),
-        source_id: source_id.to_string(),
+        id: 0,
+        sticker_id,
+        source_id,
         collection_id: None, // Mixed stickers don't have a specific collection origin
-        rarity_id: Some(new_rarity_id.to_string()),
+        rarity_id: Some(new_rarity_id),
         acquired_at: String::new(),
     };
 

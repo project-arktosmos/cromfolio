@@ -49,9 +49,8 @@ pub fn get_or_create(conn: &Connection, game_type: &str) -> Result<UserGameStats
         Some(stats) => Ok(stats),
         None => {
             let now = chrono_now();
-            let id = uuid::Uuid::new_v4().to_string();
             let stats = UserGameStats {
-                id: id.clone(),
+                id: 0,
                 game_type: game_type.to_string(),
                 total_games_played: 0,
                 total_score: 0,
@@ -71,22 +70,15 @@ pub fn get_or_create(conn: &Connection, game_type: &str) -> Result<UserGameStats
 
 /// Create new game stats
 pub fn create(conn: &Connection, stats: &UserGameStats) -> Result<UserGameStats, String> {
-    let id = if stats.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        stats.id.clone()
-    };
-
     let now = chrono_now();
     let created_at = if stats.created_at.is_empty() { now.clone() } else { stats.created_at.clone() };
     let updated_at = if stats.updated_at.is_empty() { now } else { stats.updated_at.clone() };
 
     conn.execute(
-        "INSERT INTO _user_game_stats (id, game_type, total_games_played, total_score, best_score,
+        "INSERT INTO _user_game_stats (game_type, total_games_played, total_score, best_score,
          total_correct, total_wrong, best_streak, longest_game, last_played_at, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         params![
-            id,
             stats.game_type,
             stats.total_games_played,
             stats.total_score,
@@ -101,6 +93,8 @@ pub fn create(conn: &Connection, stats: &UserGameStats) -> Result<UserGameStats,
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(UserGameStats {
         id,

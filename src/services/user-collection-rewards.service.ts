@@ -33,7 +33,7 @@ export async function getUserCollectionReward(
 	collectionId: ID
 ): Promise<UserCollectionReward | null> {
 	return await invoke<UserCollectionReward | null>('get_user_collection_reward', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -43,7 +43,7 @@ export async function getUserCollectionReward(
  */
 export async function claimCollectionReward(collectionId: ID): Promise<UserBoosterPack[]> {
 	return await invoke<UserBoosterPack[]>('claim_collection_reward', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -52,7 +52,7 @@ export async function claimCollectionReward(collectionId: ID): Promise<UserBoost
  */
 export async function deleteUserCollectionReward(collectionId: ID): Promise<boolean> {
 	return await invoke<boolean>('delete_user_collection_reward', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 

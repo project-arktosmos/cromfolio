@@ -7,7 +7,7 @@ pub fn get(conn: &Connection) -> Result<UserPlayer, String> {
         .prepare(
             "SELECT id, name, experience, created_at, last_played_at
              FROM _user_player
-             WHERE id = 'player'",
+             WHERE id = 1",
         )
         .map_err(|e| e.to_string())?;
 
@@ -20,7 +20,7 @@ pub fn get(conn: &Connection) -> Result<UserPlayer, String> {
         None => {
             // If no player exists, create default and return it
             let default_player = UserPlayer {
-                id: "player".to_string(),
+                id: 1,
                 name: "Adventurer".to_string(),
                 experience: 0,
                 created_at: chrono_now(),
@@ -33,7 +33,7 @@ pub fn get(conn: &Connection) -> Result<UserPlayer, String> {
 
 /// Create the player profile
 pub fn create(conn: &Connection, player: &UserPlayer) -> Result<UserPlayer, String> {
-    let id = if player.id.is_empty() { "player" } else { &player.id };
+    let id: i64 = if player.id == 0 { 1 } else { player.id };
     let created_at = if player.created_at.is_empty() { chrono_now() } else { player.created_at.clone() };
     let last_played_at = if player.last_played_at.is_empty() { chrono_now() } else { player.last_played_at.clone() };
 
@@ -51,7 +51,7 @@ pub fn create(conn: &Connection, player: &UserPlayer) -> Result<UserPlayer, Stri
     .map_err(|e| e.to_string())?;
 
     Ok(UserPlayer {
-        id: id.to_string(),
+        id,
         created_at,
         last_played_at,
         ..player.clone()
@@ -88,7 +88,7 @@ pub fn add_experience(conn: &Connection, amount: i64) -> Result<UserPlayer, Stri
     conn.execute(
         "UPDATE _user_player
          SET experience = experience + ?1, last_played_at = ?2
-         WHERE id = 'player'",
+         WHERE id = 1",
         params![amount, last_played_at],
     )
     .map_err(|e| e.to_string())?;
@@ -103,7 +103,7 @@ pub fn set_name(conn: &Connection, name: &str) -> Result<UserPlayer, String> {
     conn.execute(
         "UPDATE _user_player
          SET name = ?1, last_played_at = ?2
-         WHERE id = 'player'",
+         WHERE id = 1",
         params![name, last_played_at],
     )
     .map_err(|e| e.to_string())?;
@@ -118,7 +118,7 @@ pub fn reset(conn: &Connection) -> Result<UserPlayer, String> {
     conn.execute(
         "UPDATE _user_player
          SET name = 'Adventurer', experience = 0, created_at = ?1, last_played_at = ?2
-         WHERE id = 'player'",
+         WHERE id = 1",
         params![now, now],
     )
     .map_err(|e| e.to_string())?;
@@ -129,7 +129,7 @@ pub fn reset(conn: &Connection) -> Result<UserPlayer, String> {
 /// Delete the player profile
 pub fn delete(conn: &Connection) -> Result<bool, String> {
     let rows_affected = conn
-        .execute("DELETE FROM _user_player WHERE id = 'player'", [])
+        .execute("DELETE FROM _user_player WHERE id = 1", [])
         .map_err(|e| e.to_string())?;
 
     Ok(rows_affected > 0)

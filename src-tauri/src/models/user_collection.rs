@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserCollection {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
 
     // Timestamp when the user started this collection
     #[serde(default)]

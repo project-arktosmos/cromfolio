@@ -18,7 +18,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Rarity>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Rarity>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Rarity>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, color_from, color_to, sort_order, created_at, updated_at
@@ -38,19 +38,12 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Rarity>, String> 
 }
 
 pub fn create(conn: &Connection, rarity: &Rarity) -> Result<Rarity, String> {
-    let id = if rarity.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        rarity.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO rarities (id, name, color_from, color_to, sort_order, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO rarities (name, color_from, color_to, sort_order, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
-            id,
             rarity.name,
             rarity.color_from,
             rarity.color_to,
@@ -60,6 +53,8 @@ pub fn create(conn: &Connection, rarity: &Rarity) -> Result<Rarity, String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Rarity {
         id,
@@ -93,7 +88,7 @@ pub fn update(conn: &Connection, rarity: &Rarity) -> Result<Rarity, String> {
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM rarities WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

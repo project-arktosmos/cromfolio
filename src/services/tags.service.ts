@@ -28,7 +28,7 @@ export async function getAllTags(): Promise<Tag[]> {
  */
 export async function getTag(id: ID): Promise<Tag | null> {
 	try {
-		return await invoke<Tag | null>('get_tag', { id: String(id) });
+		return await invoke<Tag | null>('get_tag', { id });
 	} catch (e) {
 		console.error(`[tags.service] getTag(${id}):`, e);
 		return null;
@@ -52,7 +52,7 @@ export async function getTagsByKey(key: string): Promise<Tag[]> {
  */
 export async function getTagsByCard(cardId: ID): Promise<Tag[]> {
 	try {
-		return await invoke<Tag[]>('get_tags_by_card', { cardId: String(cardId) });
+		return await invoke<Tag[]>('get_tags_by_card', { cardId });
 	} catch (e) {
 		console.error(`[tags.service] getTagsByCard(${cardId}):`, e);
 		return [];
@@ -90,7 +90,7 @@ export async function updateTag(tag: Tag): Promise<Tag | null> {
  */
 export async function deleteTag(id: ID): Promise<boolean> {
 	try {
-		return await invoke<boolean>('delete_tag', { id: String(id) });
+		return await invoke<boolean>('delete_tag', { id });
 	} catch (e) {
 		console.error(`[tags.service] deleteTag(${id}):`, e);
 		return false;
@@ -107,8 +107,8 @@ export async function deleteTag(id: ID): Promise<boolean> {
 export async function addTagToCard(cardId: ID, tagId: ID): Promise<CardTag | null> {
 	try {
 		return await invoke<CardTag>('add_tag_to_card', {
-			cardId: String(cardId),
-			tagId: String(tagId)
+			cardId,
+			tagId
 		});
 	} catch (e) {
 		console.error(`[tags.service] addTagToCard(${cardId}, ${tagId}):`, e);
@@ -122,8 +122,8 @@ export async function addTagToCard(cardId: ID, tagId: ID): Promise<CardTag | nul
 export async function removeTagFromCard(cardId: ID, tagId: ID): Promise<boolean> {
 	try {
 		return await invoke<boolean>('remove_tag_from_card', {
-			cardId: String(cardId),
-			tagId: String(tagId)
+			cardId,
+			tagId
 		});
 	} catch (e) {
 		console.error(`[tags.service] removeTagFromCard(${cardId}, ${tagId}):`, e);
@@ -134,9 +134,9 @@ export async function removeTagFromCard(cardId: ID, tagId: ID): Promise<boolean>
 /**
  * Get all card IDs that have a specific tag
  */
-export async function getCardIdsByTag(tagId: ID): Promise<string[]> {
+export async function getCardIdsByTag(tagId: ID): Promise<number[]> {
 	try {
-		return await invoke<string[]>('get_card_ids_by_tag', { tagId: String(tagId) });
+		return await invoke<number[]>('get_card_ids_by_tag', { tagId });
 	} catch (e) {
 		console.error(`[tags.service] getCardIdsByTag(${tagId}):`, e);
 		return [];
@@ -152,7 +152,7 @@ export async function getCardIdsByTag(tagId: ID): Promise<string[]> {
  */
 export async function getTagsBySticker(stickerId: ID): Promise<Tag[]> {
 	try {
-		return await invoke<Tag[]>('get_tags_by_sticker', { stickerId: String(stickerId) });
+		return await invoke<Tag[]>('get_tags_by_sticker', { stickerId });
 	} catch (e) {
 		console.error(`[tags.service] getTagsBySticker(${stickerId}):`, e);
 		return [];
@@ -165,8 +165,8 @@ export async function getTagsBySticker(stickerId: ID): Promise<Tag[]> {
 export async function addTagToSticker(stickerId: ID, tagId: ID): Promise<StickerTag | null> {
 	try {
 		return await invoke<StickerTag>('add_tag_to_sticker', {
-			stickerId: String(stickerId),
-			tagId: String(tagId)
+			stickerId,
+			tagId
 		});
 	} catch (e) {
 		console.error(`[tags.service] addTagToSticker(${stickerId}, ${tagId}):`, e);
@@ -180,8 +180,8 @@ export async function addTagToSticker(stickerId: ID, tagId: ID): Promise<Sticker
 export async function removeTagFromSticker(stickerId: ID, tagId: ID): Promise<boolean> {
 	try {
 		return await invoke<boolean>('remove_tag_from_sticker', {
-			stickerId: String(stickerId),
-			tagId: String(tagId)
+			stickerId,
+			tagId
 		});
 	} catch (e) {
 		console.error(`[tags.service] removeTagFromSticker(${stickerId}, ${tagId}):`, e);
@@ -192,9 +192,9 @@ export async function removeTagFromSticker(stickerId: ID, tagId: ID): Promise<bo
 /**
  * Get all sticker IDs that have a specific tag
  */
-export async function getStickerIdsByTag(tagId: ID): Promise<string[]> {
+export async function getStickerIdsByTag(tagId: ID): Promise<number[]> {
 	try {
-		return await invoke<string[]>('get_sticker_ids_by_tag', { tagId: String(tagId) });
+		return await invoke<number[]>('get_sticker_ids_by_tag', { tagId });
 	} catch (e) {
 		console.error(`[tags.service] getStickerIdsByTag(${tagId}):`, e);
 		return [];
@@ -218,13 +218,13 @@ export async function tagSticker(stickerId: ID, key: string, value: string): Pro
  * Get tags for multiple stickers at once
  * Returns a Map of stickerId -> Tag[]
  */
-export async function getTagsForStickers(stickerIds: ID[]): Promise<Map<string, Tag[]>> {
-	const result = new Map<string, Tag[]>();
+export async function getTagsForStickers(stickerIds: ID[]): Promise<Map<ID, Tag[]>> {
+	const result = new Map<ID, Tag[]>();
 
 	// Fetch all tags in parallel
 	const tagPromises = stickerIds.map(async (id) => {
 		const tags = await getTagsBySticker(id);
-		return { id: String(id), tags };
+		return { id, tags };
 	});
 
 	const results = await Promise.all(tagPromises);
@@ -294,7 +294,7 @@ export async function getPokemonCommonTagKeys(): Promise<string[]> {
  * Pokemon with tags structure returned from backend
  */
 export interface PokemonWithTags {
-	id: string;
+	id: ID;
 	name: string;
 	image: string;
 	tags: Record<string, string>;
@@ -319,7 +319,7 @@ export async function getRandomPokemonWithTags(): Promise<PokemonWithTags | null
  */
 export async function getRandomPokemonByGeneration(
 	generation: string,
-	excludeId: string,
+	excludeId: ID,
 	limit: number
 ): Promise<PokemonWithTags[]> {
 	try {

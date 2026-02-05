@@ -102,7 +102,7 @@ fn run_whatsapp_import(
     progress_arc: Arc<Mutex<WhatsappImportProgress>>,
     cancel_flag: Arc<AtomicBool>,
 ) {
-    let mut result_pack_ids: Vec<String> = Vec::new();
+    let mut result_pack_ids: Vec<i64> = Vec::new();
 
     for file_path in &file_paths {
         // Check for cancellation
@@ -168,7 +168,7 @@ fn import_single_wastickers_file(
     db_conn: &Arc<Mutex<rusqlite::Connection>>,
     progress_arc: &Arc<Mutex<WhatsappImportProgress>>,
     cancel_flag: &Arc<AtomicBool>,
-) -> Result<String, String> {
+) -> Result<i64, String> {
     // Read the file
     let file_data =
         std::fs::read(file_path).map_err(|e| format!("Failed to read file: {}", e))?;
@@ -239,9 +239,9 @@ fn import_single_wastickers_file(
         return Err("No stickers found in pack".to_string());
     }
 
-    // Generate pack ID
-    let pack_id = uuid::Uuid::new_v4().to_string();
-    let stamps_dir = data_dir.join("stamps").join(&pack_id);
+    // Generate directory ID (UUID for file storage path)
+    let dir_id = uuid::Uuid::new_v4().to_string();
+    let stamps_dir = data_dir.join("stamps").join(&dir_id);
 
     // Create stamps directory
     std::fs::create_dir_all(&stamps_dir)
@@ -252,7 +252,7 @@ fn import_single_wastickers_file(
         let path = stamps_dir.join(&tray_filename);
         std::fs::write(&path, &tray_data)
             .map_err(|e| format!("Failed to write tray image: {}", e))?;
-        Some(format!("{}/{}", pack_id, tray_filename))
+        Some(format!("{}/{}", dir_id, tray_filename))
     } else {
         None
     };
@@ -265,10 +265,10 @@ fn import_single_wastickers_file(
     let pack_file_path = stamps_dir.join(original_filename);
     std::fs::write(&pack_file_path, &file_data)
         .map_err(|e| format!("Failed to write pack file: {}", e))?;
-    let pack_file_relative = format!("{}/{}", pack_id, original_filename);
+    let pack_file_relative = format!("{}/{}", dir_id, original_filename);
 
-    // Write sticker files and track them
-    let mut sticker_paths: Vec<(String, String)> = Vec::new();
+    // Write sticker files and track them (just image_path now, id will be auto-generated)
+    let mut sticker_paths: Vec<String> = Vec::new();
 
     for (filename, data) in &sticker_files {
         // Check for cancellation
@@ -288,9 +288,8 @@ fn import_single_wastickers_file(
             continue;
         }
 
-        let stamp_id = uuid::Uuid::new_v4().to_string();
-        let image_path = format!("{}/{}", pack_id, filename);
-        sticker_paths.push((stamp_id, image_path));
+        let image_path = format!("{}/{}", dir_id, filename);
+        sticker_paths.push(image_path);
 
         if let Ok(mut progress) = progress_arc.lock() {
             progress.processed_stickers += 1;
@@ -306,12 +305,12 @@ fn import_single_wastickers_file(
     // Create database records
     let now = chrono::Utc::now().to_rfc3339();
 
-    let db_result = (|| -> Result<(), String> {
+    let db_result = (|| -> Result<i64, String> {
         let conn = db_conn.lock().map_err(|e| e.to_string())?;
 
-        // Create stamp pack
+        // Create stamp pack (id: 0 means database will auto-generate)
         let stamp_pack = StampPack {
-            id: pack_id.clone(),
+            id: 0,
             source: "whatsapp".to_string(),
             name: title,
             author,
@@ -322,14 +321,15 @@ fn import_single_wastickers_file(
             updated_at: now.clone(),
         };
 
-        queries::stamp_packs::create(&conn, &stamp_pack)?;
+        let created_pack = queries::stamp_packs::create(&conn, &stamp_pack)?;
+        let pack_id = created_pack.id;
 
-        // Create stamps
+        // Create stamps (id: 0 means database will auto-generate)
         let stamps: Vec<Stamp> = sticker_paths
             .iter()
-            .map(|(id, image_path)| Stamp {
-                id: id.clone(),
-                pack_id: pack_id.clone(),
+            .map(|image_path| Stamp {
+                id: 0,
+                pack_id,
                 image_path: image_path.clone(),
                 emojis: None,
                 created_at: now.clone(),
@@ -338,16 +338,17 @@ fn import_single_wastickers_file(
 
         queries::stamps::create_batch(&conn, &stamps)?;
 
-        Ok(())
+        Ok(pack_id)
     })();
 
-    if let Err(e) = db_result {
-        // Clean up files on DB failure
-        let _ = std::fs::remove_dir_all(&stamps_dir);
-        return Err(format!("Database error: {}", e));
+    match db_result {
+        Ok(pack_id) => Ok(pack_id),
+        Err(e) => {
+            // Clean up files on DB failure
+            let _ = std::fs::remove_dir_all(&stamps_dir);
+            Err(format!("Database error: {}", e))
+        }
     }
-
-    Ok(pack_id)
 }
 
 /// Get current import progress

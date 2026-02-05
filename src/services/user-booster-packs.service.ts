@@ -28,7 +28,7 @@ export async function getUnopenedUserBoosterPacksByCollection(
 	collectionId: ID
 ): Promise<UserBoosterPack[]> {
 	return await invoke<UserBoosterPack[]>('get_unopened_user_booster_packs_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -39,7 +39,7 @@ export async function getUserBoosterPacksByCollection(
 	collectionId: ID
 ): Promise<UserBoosterPack[]> {
 	return await invoke<UserBoosterPack[]>('get_user_booster_packs_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -47,7 +47,7 @@ export async function getUserBoosterPacksByCollection(
  * Get a specific booster pack by ID
  */
 export async function getUserBoosterPack(id: ID): Promise<UserBoosterPack | null> {
-	return await invoke<UserBoosterPack | null>('get_user_booster_pack', { id: String(id) });
+	return await invoke<UserBoosterPack | null>('get_user_booster_pack', { id });
 }
 
 /**
@@ -62,7 +62,7 @@ export async function countUnopenedUserBoosterPacks(): Promise<number> {
  */
 export async function countUnopenedUserBoosterPacksByCollection(collectionId: ID): Promise<number> {
 	return await invoke<number>('count_unopened_user_booster_packs_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -74,8 +74,8 @@ export async function awardUserBoosterPack(
 	earnedFrom: string
 ): Promise<UserBoosterPack> {
 	const boosterPack: Partial<UserBoosterPack> = {
-		id: '',
-		collectionId: String(collectionId),
+		id: 0,
+		collectionId,
 		earnedFrom,
 		earnedAt: ''
 	};
@@ -93,7 +93,7 @@ export async function awardUserBoosterPacksBatch(
 ): Promise<UserBoosterPack[]> {
 	return await invoke<UserBoosterPack[]>('award_user_booster_packs_batch', {
 		count,
-		collectionId: String(collectionId),
+		collectionId,
 		earnedFrom
 	});
 }
@@ -102,7 +102,7 @@ export async function awardUserBoosterPacksBatch(
  * Mark a booster pack as opened
  */
 export async function openUserBoosterPack(id: ID): Promise<UserBoosterPack> {
-	return await invoke<UserBoosterPack>('open_user_booster_pack', { id: String(id) });
+	return await invoke<UserBoosterPack>('open_user_booster_pack', { id });
 }
 
 /**
@@ -112,9 +112,9 @@ export async function openUserBoosterPack(id: ID): Promise<UserBoosterPack> {
 export async function openUserBoosterPacksBatch(
 	collectionId: ID,
 	count: number
-): Promise<string[]> {
-	return await invoke<string[]>('open_user_booster_packs_batch', {
-		collectionId: String(collectionId),
+): Promise<number[]> {
+	return await invoke<number[]>('open_user_booster_packs_batch', {
+		collectionId,
 		count
 	});
 }
@@ -123,7 +123,7 @@ export async function openUserBoosterPacksBatch(
  * Delete a booster pack by ID
  */
 export async function deleteUserBoosterPack(id: ID): Promise<boolean> {
-	return await invoke<boolean>('delete_user_booster_pack', { id: String(id) });
+	return await invoke<boolean>('delete_user_booster_pack', { id });
 }
 
 /**
@@ -131,7 +131,7 @@ export async function deleteUserBoosterPack(id: ID): Promise<boolean> {
  */
 export async function deleteUserBoosterPacksByCollection(collectionId: ID): Promise<boolean> {
 	return await invoke<boolean>('delete_user_booster_packs_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 

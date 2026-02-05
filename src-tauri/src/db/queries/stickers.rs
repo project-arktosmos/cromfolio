@@ -19,7 +19,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Sticker>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<Sticker>, String> {
+pub fn get_by_source_id(conn: &Connection, source_id: i64) -> Result<Vec<Sticker>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, source_id, name, image, sticker_type_id, image_source,
@@ -38,7 +38,7 @@ pub fn get_by_source_id(conn: &Connection, source_id: &str) -> Result<Vec<Sticke
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Sticker>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Sticker>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, source_id, name, image, sticker_type_id, image_source,
@@ -59,21 +59,14 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Sticker>, String>
 }
 
 pub fn create(conn: &Connection, sticker: &Sticker) -> Result<Sticker, String> {
-    let id = if sticker.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        sticker.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
         "INSERT INTO stickers (
-            id, source_id, name, image, sticker_type_id, image_source,
+            source_id, name, image, sticker_type_id, image_source,
             width, height, fragment_of, fragment_position, added_at, created_at, updated_at
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         params![
-            id,
             sticker.source_id,
             sticker.name,
             sticker.image,
@@ -89,6 +82,8 @@ pub fn create(conn: &Connection, sticker: &Sticker) -> Result<Sticker, String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Sticker {
         id,
@@ -129,7 +124,7 @@ pub fn update(conn: &Connection, sticker: &Sticker) -> Result<Sticker, String> {
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM stickers WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -137,7 +132,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
     Ok(rows_affected > 0)
 }
 
-pub fn delete_by_source_id(conn: &Connection, source_id: &str) -> Result<bool, String> {
+pub fn delete_by_source_id(conn: &Connection, source_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM stickers WHERE source_id = ?1", params![source_id])
         .map_err(|e| e.to_string())?;
@@ -156,19 +151,12 @@ pub fn create_batch(conn: &Connection, stickers: &[Sticker]) -> Result<Vec<Stick
         .map_err(|e| format!("Failed to begin transaction: {}", e))?;
 
     for sticker in stickers {
-        let id = if sticker.id.is_empty() {
-            uuid::Uuid::new_v4().to_string()
-        } else {
-            sticker.id.clone()
-        };
-
         let result = conn.execute(
             "INSERT INTO stickers (
-                id, source_id, name, image, sticker_type_id, image_source,
+                source_id, name, image, sticker_type_id, image_source,
                 width, height, fragment_of, fragment_position, added_at, created_at, updated_at
-             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
             params![
-                id,
                 sticker.source_id,
                 sticker.name,
                 sticker.image,
@@ -186,6 +174,7 @@ pub fn create_batch(conn: &Connection, stickers: &[Sticker]) -> Result<Vec<Stick
 
         match result {
             Ok(_) => {
+                let id = conn.last_insert_rowid();
                 created_stickers.push(Sticker {
                     id,
                     created_at: now.clone(),

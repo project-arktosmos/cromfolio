@@ -38,7 +38,7 @@ export interface Sticker {
 
 	// Fragment metadata for split stickers (e.g., winners split into 4 pieces)
 	// fragmentOf: ID that links all fragments of the same original sticker together
-	fragmentOf?: string;
+	fragmentOf?: ID;
 	// fragmentPosition: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
 	fragmentPosition?: 1 | 2 | 3 | 4;
 

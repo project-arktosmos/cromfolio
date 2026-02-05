@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Sticker {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub source_id: String,
+    pub source_id: i64,
     #[serde(default)]
     pub name: String,
     #[serde(default)]
@@ -15,7 +15,7 @@ pub struct Sticker {
 
     // Sticker type ID - FK reference to sticker_types table
     #[serde(default)]
-    pub sticker_type_id: Option<String>,
+    pub sticker_type_id: Option<i64>,
 
     // Image source metadata
     #[serde(default)]
@@ -30,7 +30,7 @@ pub struct Sticker {
     // Fragment metadata for split stickers (e.g., winners split into 4 pieces)
     // fragment_of: ID that links all fragments of the same original sticker together
     #[serde(default)]
-    pub fragment_of: Option<String>,
+    pub fragment_of: Option<i64>,
     // fragment_position: 1=top-left, 2=top-right, 3=bottom-left, 4=bottom-right
     #[serde(default)]
     pub fragment_position: Option<i32>,

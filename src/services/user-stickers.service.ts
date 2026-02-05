@@ -20,7 +20,7 @@ export async function getAllUserStickers(): Promise<UserSticker[]> {
  */
 export async function getUserStickersBySource(sourceId: ID): Promise<UserSticker[]> {
 	return await invoke<UserSticker[]>('get_user_stickers_by_source', {
-		sourceId: String(sourceId)
+		sourceId
 	});
 }
 
@@ -28,21 +28,21 @@ export async function getUserStickersBySource(sourceId: ID): Promise<UserSticker
  * Get a specific user sticker by ID
  */
 export async function getUserSticker(id: ID): Promise<UserSticker | null> {
-	return await invoke<UserSticker | null>('get_user_sticker', { id: String(id) });
+	return await invoke<UserSticker | null>('get_user_sticker', { id });
 }
 
 /**
  * Check if the user owns a specific sticker
  */
 export async function ownsSticker(stickerId: ID): Promise<boolean> {
-	return await invoke<boolean>('user_owns_sticker', { stickerId: String(stickerId) });
+	return await invoke<boolean>('user_owns_sticker', { stickerId });
 }
 
 /**
  * Get the number of copies of a specific sticker the user owns
  */
 export async function getStickerCopyCount(stickerId: ID): Promise<number> {
-	return await invoke<number>('get_user_sticker_copy_count', { stickerId: String(stickerId) });
+	return await invoke<number>('get_user_sticker_copy_count', { stickerId });
 }
 
 /**
@@ -50,15 +50,15 @@ export async function getStickerCopyCount(stickerId: ID): Promise<number> {
  */
 export async function getUniqueStickerCountBySource(sourceId: ID): Promise<number> {
 	return await invoke<number>('get_user_unique_sticker_count_by_source', {
-		sourceId: String(sourceId)
+		sourceId
 	});
 }
 
 /**
  * Get all unique sticker IDs owned by the user
  */
-export async function getOwnedStickerIds(): Promise<string[]> {
-	return await invoke<string[]>('get_user_owned_sticker_ids');
+export async function getOwnedStickerIds(): Promise<number[]> {
+	return await invoke<number[]>('get_user_owned_sticker_ids');
 }
 
 /**
@@ -72,11 +72,11 @@ export async function acquireSticker(
 	rarityId?: ID
 ): Promise<UserSticker> {
 	const userSticker: Partial<UserSticker> = {
-		id: '',
-		stickerId: String(stickerId),
-		sourceId: String(sourceId),
-		collectionId: String(collectionId),
-		rarityId: rarityId ? String(rarityId) : undefined,
+		id: 0,
+		stickerId,
+		sourceId,
+		collectionId,
+		rarityId,
 		acquiredAt: ''
 	};
 
@@ -87,21 +87,21 @@ export async function acquireSticker(
  * Release a sticker (remove one copy from user's collection)
  */
 export async function releaseSticker(stickerId: ID): Promise<boolean> {
-	return await invoke<boolean>('release_user_sticker', { stickerId: String(stickerId) });
+	return await invoke<boolean>('release_user_sticker', { stickerId });
 }
 
 /**
  * Delete a specific user sticker by ID
  */
 export async function deleteUserSticker(id: ID): Promise<boolean> {
-	return await invoke<boolean>('delete_user_sticker', { id: String(id) });
+	return await invoke<boolean>('delete_user_sticker', { id });
 }
 
 /**
  * Delete all user stickers for a specific source
  */
 export async function deleteUserStickersBySource(sourceId: ID): Promise<boolean> {
-	return await invoke<boolean>('delete_user_stickers_by_source', { sourceId: String(sourceId) });
+	return await invoke<boolean>('delete_user_stickers_by_source', { sourceId });
 }
 
 /**
@@ -119,8 +119,8 @@ export async function deleteAllUserStickers(): Promise<number> {
  * Info about a sticker that can be mixed (has 2+ copies of same rarity)
  */
 export interface MixableStickerInfo {
-	stickerId: string;
-	rarityId: string;
+	stickerId: number;
+	rarityId: number | null;
 	count: number;
 }
 
@@ -134,10 +134,10 @@ export async function getMixableStickers(): Promise<MixableStickerInfo[]> {
 /**
  * Get copy count for a specific sticker and rarity combination
  */
-export async function getStickerCopyCountByRarity(stickerId: ID, rarityId: ID): Promise<number> {
+export async function getStickerCopyCountByRarity(stickerId: ID, rarityId: ID | null): Promise<number> {
 	return await invoke<number>('get_user_sticker_copy_count_by_rarity', {
-		stickerId: String(stickerId),
-		rarityId: String(rarityId)
+		stickerId,
+		rarityId
 	});
 }
 
@@ -151,14 +151,14 @@ export async function getStickerCopyCountByRarity(stickerId: ID, rarityId: ID): 
  */
 export async function mixStickers(
 	stickerId: ID,
-	currentRarityId: ID,
+	currentRarityId: ID | null,
 	newRarityId: ID,
 	sourceId: ID
 ): Promise<UserSticker> {
 	return await invoke<UserSticker>('mix_user_stickers', {
-		stickerId: String(stickerId),
-		currentRarityId: String(currentRarityId),
-		newRarityId: String(newRarityId),
-		sourceId: String(sourceId)
+		stickerId,
+		currentRarityId,
+		newRarityId,
+		sourceId
 	});
 }

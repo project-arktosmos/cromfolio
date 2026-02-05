@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct CollectionType {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
     pub name: String,
     #[serde(default)]

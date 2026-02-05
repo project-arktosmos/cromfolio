@@ -6,19 +6,19 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserSticker {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
-    pub sticker_id: String,
+    pub sticker_id: i64,
     #[serde(default)]
-    pub source_id: String,
+    pub source_id: i64,
 
     // Which collection this sticker was earned from
     #[serde(default)]
-    pub collection_id: Option<String>,
+    pub collection_id: Option<i64>,
 
     // Rarity of the sticker at time of acquisition
     #[serde(default)]
-    pub rarity_id: Option<String>,
+    pub rarity_id: Option<i64>,
 
     // Timestamp when the sticker was acquired
     #[serde(default)]

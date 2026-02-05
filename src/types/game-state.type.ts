@@ -210,22 +210,22 @@ export interface BoosterPackResult {
  * A group of owned stickers with the same sticker and rarity
  */
 export interface OwnedStickerGroup {
-	stickerId: string;
-	rarityId: string;
+	stickerId: ID;
+	rarityId: ID | null;
 	count: number;
 	sticker: {
-		id: string;
+		id: ID;
 		name: string;
 		image: string;
-		sourceId: string;
+		sourceId: ID;
 	};
 	rarity: {
-		id: string;
+		id: ID;
 		name: string;
 		sortOrder: number;
 		color?: string;
 	} | null;
-	sourceId: string;
+	sourceId: ID;
 }
 
 /**
@@ -233,9 +233,9 @@ export interface OwnedStickerGroup {
  */
 export interface MixResult {
 	/** The new sticker created */
-	newStickerId: string;
+	newStickerId: ID;
 	/** The rarity of the new sticker */
-	newRarityId: string;
+	newRarityId: ID;
 	/** Number of stickers consumed */
 	consumed: number;
 	/** Whether the mix was successful */
@@ -254,7 +254,7 @@ export interface PlacementState {
 	scale: number;
 	position: { x: number; y: number };
 	itemType: 'stamp' | 'icon';
-	itemId: string | null;
+	itemId: ID | null;
 }
 
 /**

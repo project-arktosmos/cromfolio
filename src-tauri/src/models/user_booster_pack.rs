@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct UserBoosterPack {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
 
     /// The collection this booster pack is for
     #[serde(default)]
-    pub collection_id: String,
+    pub collection_id: i64,
 
     /// Source of the booster pack (e.g., "pokemon-trivia", "daily-reward")
     #[serde(default)]

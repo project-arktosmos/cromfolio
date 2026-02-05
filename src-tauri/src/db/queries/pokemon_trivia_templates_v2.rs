@@ -21,7 +21,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<PokemonTriviaTemplateV2>, String
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<PokemonTriviaTemplateV2>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<PokemonTriviaTemplateV2>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, name, description, template_type,
@@ -156,23 +156,16 @@ pub fn get_unique_primary_attributes(conn: &Connection) -> Result<Vec<String>, S
 }
 
 pub fn create(conn: &Connection, template: &PokemonTriviaTemplateV2) -> Result<PokemonTriviaTemplateV2, String> {
-    let id = if template.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        template.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
         "INSERT INTO pokemon_trivia_templates_v2 (
-            id, name, description, template_type,
+            name, description, template_type,
             question_template, answer_template, primary_attribute,
             conditions, condition_logic, scope_filters, comparison_config,
             difficulty, weight, is_active, created_at, updated_at
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
         params![
-            id,
             template.name,
             template.description,
             template.template_type,
@@ -191,6 +184,8 @@ pub fn create(conn: &Connection, template: &PokemonTriviaTemplateV2) -> Result<P
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(PokemonTriviaTemplateV2 {
         id,
@@ -237,7 +232,7 @@ pub fn update(conn: &Connection, template: &PokemonTriviaTemplateV2) -> Result<P
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM pokemon_trivia_templates_v2 WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

@@ -22,7 +22,7 @@ pub fn get_all(conn: &Connection) -> Result<Vec<Tag>, String> {
         .map_err(|e| e.to_string())
 }
 
-pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Tag>, String> {
+pub fn get_by_id(conn: &Connection, id: i64) -> Result<Option<Tag>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, key, value, created_at, updated_at
@@ -60,20 +60,16 @@ pub fn get_by_key(conn: &Connection, key: &str) -> Result<Vec<Tag>, String> {
 }
 
 pub fn create(conn: &Connection, tag: &Tag) -> Result<Tag, String> {
-    let id = if tag.id.is_empty() {
-        uuid::Uuid::new_v4().to_string()
-    } else {
-        tag.id.clone()
-    };
-
     let now = chrono_now();
 
     conn.execute(
-        "INSERT INTO tags (id, key, value, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![id, tag.key, tag.value, now, now],
+        "INSERT INTO tags (key, value, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4)",
+        params![tag.key, tag.value, now, now],
     )
     .map_err(|e| e.to_string())?;
+
+    let id = conn.last_insert_rowid();
 
     Ok(Tag {
         id,
@@ -99,7 +95,7 @@ pub fn update(conn: &Connection, tag: &Tag) -> Result<Tag, String> {
     })
 }
 
-pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
+pub fn delete(conn: &Connection, id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute("DELETE FROM tags WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;
@@ -111,7 +107,7 @@ pub fn delete(conn: &Connection, id: &str) -> Result<bool, String> {
 // STICKER-TAG RELATIONSHIP OPERATIONS
 // ============================================================================
 
-pub fn get_by_sticker_id(conn: &Connection, sticker_id: &str) -> Result<Vec<Tag>, String> {
+pub fn get_by_sticker_id(conn: &Connection, sticker_id: i64) -> Result<Vec<Tag>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT t.id, t.key, t.value, t.created_at, t.updated_at
@@ -130,7 +126,7 @@ pub fn get_by_sticker_id(conn: &Connection, sticker_id: &str) -> Result<Vec<Tag>
         .map_err(|e| e.to_string())
 }
 
-pub fn add_tag_to_sticker(conn: &Connection, sticker_id: &str, tag_id: &str) -> Result<StickerTag, String> {
+pub fn add_tag_to_sticker(conn: &Connection, sticker_id: i64, tag_id: i64) -> Result<StickerTag, String> {
     let now = chrono_now();
 
     conn.execute(
@@ -141,13 +137,13 @@ pub fn add_tag_to_sticker(conn: &Connection, sticker_id: &str, tag_id: &str) -> 
     .map_err(|e| e.to_string())?;
 
     Ok(StickerTag {
-        sticker_id: sticker_id.to_string(),
-        tag_id: tag_id.to_string(),
+        sticker_id,
+        tag_id,
         created_at: now,
     })
 }
 
-pub fn remove_tag_from_sticker(conn: &Connection, sticker_id: &str, tag_id: &str) -> Result<bool, String> {
+pub fn remove_tag_from_sticker(conn: &Connection, sticker_id: i64, tag_id: i64) -> Result<bool, String> {
     let rows_affected = conn
         .execute(
             "DELETE FROM sticker_tags WHERE sticker_id = ?1 AND tag_id = ?2",
@@ -158,7 +154,7 @@ pub fn remove_tag_from_sticker(conn: &Connection, sticker_id: &str, tag_id: &str
     Ok(rows_affected > 0)
 }
 
-pub fn get_sticker_ids_by_tag_id(conn: &Connection, tag_id: &str) -> Result<Vec<String>, String> {
+pub fn get_sticker_ids_by_tag_id(conn: &Connection, tag_id: i64) -> Result<Vec<i64>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT sticker_id FROM sticker_tags WHERE tag_id = ?1",
@@ -174,7 +170,7 @@ pub fn get_sticker_ids_by_tag_id(conn: &Connection, tag_id: &str) -> Result<Vec<
 }
 
 /// Get all tags for multiple stickers at once (batch operation)
-pub fn get_tags_for_stickers(conn: &Connection, sticker_ids: &[String]) -> Result<Vec<(String, Tag)>, String> {
+pub fn get_tags_for_stickers(conn: &Connection, sticker_ids: &[i64]) -> Result<Vec<(i64, Tag)>, String> {
     if sticker_ids.is_empty() {
         return Ok(vec![]);
     }
@@ -194,7 +190,7 @@ pub fn get_tags_for_stickers(conn: &Connection, sticker_ids: &[String]) -> Resul
 
     let rows = stmt
         .query_map(rusqlite::params_from_iter(sticker_ids.iter()), |row| {
-            let sticker_id: String = row.get(0)?;
+            let sticker_id: i64 = row.get(0)?;
             let tag = Tag {
                 id: row.get(1).unwrap_or_default(),
                 key: row.get(2).unwrap_or_default(),
@@ -282,7 +278,7 @@ fn chrono_now() -> String {
 /// Represents a Pokemon with all its tags as a flat map
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PokemonWithTags {
-    pub id: String,
+    pub id: i64,
     pub name: String,
     pub image: String,
     pub tags: std::collections::HashMap<String, String>,
@@ -306,10 +302,10 @@ pub fn get_random_pokemon_with_tags(conn: &Connection) -> Result<Option<PokemonW
 
     let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
 
-    let sticker: Option<(String, String, String)> = stmt
+    let sticker: Option<(i64, String, String)> = stmt
         .query_row([], |row| {
             Ok((
-                row.get::<_, String>(0)?,
+                row.get::<_, i64>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
             ))
@@ -321,7 +317,7 @@ pub fn get_random_pokemon_with_tags(conn: &Connection) -> Result<Option<PokemonW
     };
 
     // Get all tags for this sticker
-    let tags = get_by_sticker_id(conn, &sticker_id)?;
+    let tags = get_by_sticker_id(conn, sticker_id)?;
 
     let mut tag_map: HashMap<String, String> = HashMap::new();
     for tag in tags {
@@ -341,7 +337,7 @@ pub fn get_random_pokemon_with_tags(conn: &Connection) -> Result<Option<PokemonW
 pub fn get_random_pokemon_by_generation(
     conn: &Connection,
     generation: &str,
-    exclude_id: &str,
+    exclude_id: i64,
     limit: usize,
 ) -> Result<Vec<PokemonWithTags>, String> {
     use std::collections::HashMap;
@@ -364,10 +360,10 @@ pub fn get_random_pokemon_by_generation(
 
     let mut stmt = conn.prepare(query).map_err(|e| e.to_string())?;
 
-    let stickers: Vec<(String, String, String)> = stmt
+    let stickers: Vec<(i64, String, String)> = stmt
         .query_map(params![exclude_id, generation, limit as i64], |row| {
             Ok((
-                row.get::<_, String>(0)?,
+                row.get::<_, i64>(0)?,
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
             ))
@@ -378,18 +374,18 @@ pub fn get_random_pokemon_by_generation(
 
     // If we don't have enough from the same generation, get more from any generation
     let mut results = Vec::new();
-    let mut used_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
-    used_ids.insert(exclude_id.to_string());
+    let mut used_ids: std::collections::HashSet<i64> = std::collections::HashSet::new();
+    used_ids.insert(exclude_id);
 
     for (sticker_id, name, image) in &stickers {
-        used_ids.insert(sticker_id.clone());
-        let tags = get_by_sticker_id(conn, sticker_id)?;
+        used_ids.insert(*sticker_id);
+        let tags = get_by_sticker_id(conn, *sticker_id)?;
         let mut tag_map: HashMap<String, String> = HashMap::new();
         for tag in tags {
             tag_map.insert(tag.key, tag.value);
         }
         results.push(PokemonWithTags {
-            id: sticker_id.clone(),
+            id: *sticker_id,
             name: name.clone(),
             image: image.clone(),
             tags: tag_map,
@@ -399,7 +395,7 @@ pub fn get_random_pokemon_by_generation(
     // If we need more, get from any generation
     if results.len() < limit {
         let remaining = limit - results.len();
-        let used_list: Vec<&String> = used_ids.iter().collect();
+        let used_list: Vec<i64> = used_ids.iter().copied().collect();
         let placeholders: String = used_list.iter().enumerate()
             .map(|(i, _)| format!("?{}", i + 1))
             .collect::<Vec<_>>()
@@ -420,17 +416,17 @@ pub fn get_random_pokemon_by_generation(
 
         let mut stmt = conn.prepare(&fallback_query).map_err(|e| e.to_string())?;
 
-        let mut all_params: Vec<&dyn rusqlite::ToSql> = Vec::new();
+        let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
         for id in &used_list {
-            all_params.push(*id);
+            all_params.push(Box::new(*id));
         }
         let remaining_i64 = remaining as i64;
-        all_params.push(&remaining_i64);
+        all_params.push(Box::new(remaining_i64));
 
-        let extra_stickers: Vec<(String, String, String)> = stmt
-            .query_map(rusqlite::params_from_iter(all_params), |row| {
+        let extra_stickers: Vec<(i64, String, String)> = stmt
+            .query_map(rusqlite::params_from_iter(all_params.iter().map(|b| b.as_ref())), |row| {
                 Ok((
-                    row.get::<_, String>(0)?,
+                    row.get::<_, i64>(0)?,
                     row.get::<_, String>(1)?,
                     row.get::<_, String>(2)?,
                 ))
@@ -440,7 +436,7 @@ pub fn get_random_pokemon_by_generation(
             .collect();
 
         for (sticker_id, name, image) in extra_stickers {
-            let tags = get_by_sticker_id(conn, &sticker_id)?;
+            let tags = get_by_sticker_id(conn, sticker_id)?;
             let mut tag_map: HashMap<String, String> = HashMap::new();
             for tag in tags {
                 tag_map.insert(tag.key, tag.value);

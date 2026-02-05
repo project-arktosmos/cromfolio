@@ -26,7 +26,7 @@ pub struct WhatsappImportProgress {
     pub errors: Vec<String>,
     pub started_at: Option<i64>,
     pub finished_at: Option<i64>,
-    pub result_pack_ids: Vec<String>,
+    pub result_pack_ids: Vec<i64>,
 }
 
 impl Default for WhatsappImportProgress {

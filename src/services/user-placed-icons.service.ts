@@ -14,7 +14,7 @@ import type { UserPlacedIcon } from '$types/user-placed-icon.type';
  */
 export async function getPlacedIconsByCollection(collectionId: ID): Promise<UserPlacedIcon[]> {
 	return await invoke<UserPlacedIcon[]>('get_placed_icons_by_collection', {
-		collectionId: String(collectionId)
+		collectionId
 	});
 }
 
@@ -26,7 +26,7 @@ export async function getPlacedIconsByPage(
 	pageIndex: number
 ): Promise<UserPlacedIcon[]> {
 	return await invoke<UserPlacedIcon[]>('get_placed_icons_by_page', {
-		collectionId: String(collectionId),
+		collectionId,
 		pageIndex
 	});
 }
@@ -35,7 +35,7 @@ export async function getPlacedIconsByPage(
  * Get a single placed icon by ID
  */
 export async function getPlacedIcon(id: ID): Promise<UserPlacedIcon | null> {
-	return await invoke<UserPlacedIcon | null>('get_placed_icon', { id: String(id) });
+	return await invoke<UserPlacedIcon | null>('get_placed_icon', { id });
 }
 
 /**
@@ -53,7 +53,7 @@ export async function placeIcon(
 ): Promise<UserPlacedIcon> {
 	const placedIcon: Partial<UserPlacedIcon> = {
 		iconPath,
-		collectionId: String(collectionId),
+		collectionId,
 		pageIndex,
 		positionX,
 		positionY,
@@ -75,14 +75,14 @@ export async function updatePlacedIcon(placedIcon: UserPlacedIcon): Promise<User
  * Remove a placed icon
  */
 export async function removePlacedIcon(id: ID): Promise<boolean> {
-	return await invoke<boolean>('remove_placed_icon', { id: String(id) });
+	return await invoke<boolean>('remove_placed_icon', { id });
 }
 
 /**
  * Clear all icons from a collection
  */
 export async function clearCollectionIcons(collectionId: ID): Promise<boolean> {
-	return await invoke<boolean>('clear_collection_icons', { collectionId: String(collectionId) });
+	return await invoke<boolean>('clear_collection_icons', { collectionId });
 }
 
 /**

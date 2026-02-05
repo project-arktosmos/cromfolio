@@ -59,7 +59,7 @@ impl SourceType {
 #[serde(rename_all = "camelCase")]
 pub struct Source {
     #[serde(default)]
-    pub id: String,
+    pub id: i64,
     #[serde(default)]
     pub source_type: SourceType,
     #[serde(default)]
