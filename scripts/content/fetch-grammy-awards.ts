@@ -92,7 +92,7 @@ function sleep(ms: number): Promise<void> {
  * Fetch all Grammy Award categories from Wikidata
  * Grammy Award is Q41254, we look for subclasses (P279) that are specific category awards
  */
-async function fetchGrammyCategories(): Promise<GrammyCategory[]> {
+async function _fetchGrammyCategories(): Promise<GrammyCategory[]> {
 	console.log('Fetching Grammy Award categories...');
 
 	const query = `
@@ -123,7 +123,7 @@ async function fetchGrammyCategories(): Promise<GrammyCategory[]> {
 /**
  * Fetch winners for a specific Grammy category
  */
-async function fetchCategoryWinners(
+async function _fetchCategoryWinners(
 	categoryId: string,
 	startYear: number,
 	endYear: number
@@ -161,7 +161,7 @@ async function fetchCategoryWinners(
 /**
  * Fetch nominees for a specific Grammy category
  */
-async function fetchCategoryNominees(
+async function _fetchCategoryNominees(
 	categoryId: string,
 	startYear: number,
 	endYear: number

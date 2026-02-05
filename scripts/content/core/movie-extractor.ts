@@ -7,7 +7,6 @@
 import type {
 	ExtractMovieOptions,
 	ExtractResult,
-	Source,
 	Sticker,
 	ImageItem,
 	CharacterItem,

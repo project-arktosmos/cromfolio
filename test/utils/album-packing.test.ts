@@ -120,9 +120,7 @@ describe('album-packing', () => {
 		});
 
 		it('should pack single sticker into one page', () => {
-			const stickers: Sticker[] = [
-				{ id: '1', name: 'Test', image: 'test.jpg', sourceId: 'src1' }
-			];
+			const stickers: Sticker[] = [{ id: '1', name: 'Test', image: 'test.jpg', sourceId: 'src1' }];
 
 			const pages = packStickersIntoPages(stickers, defaultConfig);
 
@@ -228,9 +226,7 @@ describe('album-packing', () => {
 		});
 
 		it('should ignore tags with different key', () => {
-			const stickers: Sticker[] = [
-				{ id: '1', name: 'Nominee', image: 'n.jpg', sourceId: 'src1' }
-			];
+			const stickers: Sticker[] = [{ id: '1', name: 'Nominee', image: 'n.jpg', sourceId: 'src1' }];
 
 			const stickerTagsMap = new Map<string, Tag[]>([
 				['1', [{ id: '1', key: 'award_status', value: 'nominee', stickerId: '1' }]]
@@ -268,10 +264,38 @@ describe('album-packing', () => {
 	describe('groupFragmentStickers', () => {
 		it('should group fragment stickers by fragmentOf ID', () => {
 			const stickers: Sticker[] = [
-				{ id: '1', name: 'Frag1', image: 'f1.jpg', sourceId: 'src1', fragmentOf: 'big1', fragmentPosition: 1 },
-				{ id: '2', name: 'Frag2', image: 'f2.jpg', sourceId: 'src1', fragmentOf: 'big1', fragmentPosition: 2 },
-				{ id: '3', name: 'Frag3', image: 'f3.jpg', sourceId: 'src1', fragmentOf: 'big1', fragmentPosition: 3 },
-				{ id: '4', name: 'Frag4', image: 'f4.jpg', sourceId: 'src1', fragmentOf: 'big1', fragmentPosition: 4 },
+				{
+					id: '1',
+					name: 'Frag1',
+					image: 'f1.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big1',
+					fragmentPosition: 1
+				},
+				{
+					id: '2',
+					name: 'Frag2',
+					image: 'f2.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big1',
+					fragmentPosition: 2
+				},
+				{
+					id: '3',
+					name: 'Frag3',
+					image: 'f3.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big1',
+					fragmentPosition: 3
+				},
+				{
+					id: '4',
+					name: 'Frag4',
+					image: 'f4.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big1',
+					fragmentPosition: 4
+				},
 				{ id: '5', name: 'Regular', image: 'r.jpg', sourceId: 'src1' }
 			];
 
@@ -287,8 +311,22 @@ describe('album-packing', () => {
 
 		it('should handle multiple fragment groups', () => {
 			const stickers: Sticker[] = [
-				{ id: '1', name: 'Frag1', image: 'f1.jpg', sourceId: 'src1', fragmentOf: 'big1', fragmentPosition: 1 },
-				{ id: '2', name: 'Frag2', image: 'f2.jpg', sourceId: 'src1', fragmentOf: 'big2', fragmentPosition: 1 }
+				{
+					id: '1',
+					name: 'Frag1',
+					image: 'f1.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big1',
+					fragmentPosition: 1
+				},
+				{
+					id: '2',
+					name: 'Frag2',
+					image: 'f2.jpg',
+					sourceId: 'src1',
+					fragmentOf: 'big2',
+					fragmentPosition: 1
+				}
 			];
 
 			const { grouped, nonFragments } = groupFragmentStickers(stickers, 5);

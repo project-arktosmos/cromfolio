@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import classNames from 'classnames';
 	import { triviaModalService } from '$services/trivia-modal.service';
 	import { getStickersForCollection } from '$services/collections.service';
 	import { getActivePokemonTriviaTemplatesV2 } from '$services/pokemon-trivia-templates.service';
@@ -92,7 +91,8 @@
 	let earnedPacksCount = $state(0); // Packs earned this game (saved to DB)
 
 	// Stats from service (loaded async)
-	let stats = $state<TriviaStats>({
+
+	let _stats = $state<TriviaStats>({
 		id: 'pokemon-trivia-stats',
 		totalGamesPlayed: 0,
 		totalCorrect: 0,
@@ -116,7 +116,7 @@
 		viewState = 'difficulty-select';
 		resetGameState();
 		templates = await getActivePokemonTriviaTemplatesV2();
-		stats = await getTriviaStats();
+		_stats = await getTriviaStats();
 		isLoading = false;
 	}
 
@@ -226,9 +226,15 @@
 		if (selectedTemplate.templateType === 'negation' && selectionResult.targetValue) {
 			const pokemonWithTargetValue = {
 				...correctPokemon,
-				tags: { ...correctPokemon.tags, [selectedTemplate.primaryAttribute]: selectionResult.targetValue }
+				tags: {
+					...correctPokemon.tags,
+					[selectedTemplate.primaryAttribute]: selectionResult.targetValue
+				}
 			};
-			currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, pokemonWithTargetValue);
+			currentQuestion = replacePlaceholders(
+				selectedTemplate.questionTemplate,
+				pokemonWithTargetValue
+			);
 		} else {
 			currentQuestion = replacePlaceholders(selectedTemplate.questionTemplate, correctPokemon);
 		}
@@ -278,7 +284,7 @@
 	async function handleNextQuestion() {
 		// Check if game is over (ran out of lives)
 		if (wrongAnswers >= maxLives) {
-			stats = await updateStatsAfterGame(correctAnswers, wrongAnswers, 0);
+			_stats = await updateStatsAfterGame(correctAnswers, wrongAnswers, 0);
 
 			// Award booster packs to database (1 per 3 correct answers)
 			earnedPacksCount = Math.floor(correctAnswers / 3);
@@ -348,18 +354,20 @@
 </script>
 
 {#if modalState.isOpen && modalState.collection}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 		onclick={handleClose}
+		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="trivia-modal-title"
+		tabindex="-1"
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="bg-base-100 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="presentation"
 		>
 			<!-- Header -->
 			<div class="bg-base-200 flex items-center justify-between border-b p-4">

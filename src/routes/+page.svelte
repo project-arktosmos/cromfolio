@@ -1,5 +1,6 @@
 <script lang="ts">
 	import classNames from 'classnames';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { onMount } from 'svelte';
 	import { getAllCollections, getStickersForCollection } from '$services/collections.service';
 	import { getRarityCollection } from '$services/rarities.service';
@@ -32,7 +33,17 @@
 
 		const genStr = match[1].toLowerCase();
 		// Handle Roman numerals
-		const romanMap: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9 };
+		const romanMap: Record<string, number> = {
+			i: 1,
+			ii: 2,
+			iii: 3,
+			iv: 4,
+			v: 5,
+			vi: 6,
+			vii: 7,
+			viii: 8,
+			ix: 9
+		};
 		if (romanMap[genStr]) return romanMap[genStr];
 
 		// Handle numeric
@@ -85,7 +96,7 @@
 	});
 
 	async function loadCollectionStats() {
-		const counts = new Map<string, CollectionDetailedStats>();
+		const counts = new SvelteMap<string, CollectionDetailedStats>();
 		const userStickers = await getAllUserStickers();
 
 		const maxSortOrder = rarities.length > 0 ? Math.max(...rarities.map((r) => r.sortOrder)) : 0;
@@ -109,7 +120,7 @@
 			);
 
 			// Build rarity breakdown (only from this collection's user stickers)
-			const rarityBreakdown = new Map<string, number>();
+			const rarityBreakdown = new SvelteMap<string, number>();
 			for (const us of userStickersForCollection) {
 				const rarityId = us.rarityId ? String(us.rarityId) : '';
 				if (rarityId) {
@@ -118,7 +129,7 @@
 			}
 
 			// Build best rarity per sticker for THIS collection only
-			const bestRarityPerSticker = new Map<string, string>();
+			const bestRarityPerSticker = new SvelteMap<string, string>();
 			for (const us of userStickersForCollection) {
 				const stickerId = String(us.stickerId);
 				const rarityId = us.rarityId ? String(us.rarityId) : '';
@@ -172,11 +183,9 @@
 			}
 		);
 	}
-
 </script>
 
 <div class="flex h-full flex-col">
-
 	{#if isLoading}
 		<div class="flex justify-center p-8">
 			<span class="loading loading-spinner loading-lg"></span>
@@ -191,8 +200,7 @@
 				{#each collections as collection (collection.id)}
 					{@const stats = getCollectionStats(collection.id)}
 					{@const isComplete =
-						stats.maxCompletionScore > 0 &&
-						stats.completionScore === stats.maxCompletionScore}
+						stats.maxCompletionScore > 0 && stats.completionScore === stats.maxCompletionScore}
 					{@const genInfo = getRegionForCollection(collection)}
 					<div
 						class={classNames('card bg-base-200 transition-all hover:shadow-lg', {
@@ -229,10 +237,14 @@
 								</div>
 							{/if}
 							{#if genInfo}
-								<div class="absolute left-0 right-0 top-0 bg-black/70 px-2 py-3 text-center text-white">
+								<div
+									class="absolute left-0 right-0 top-0 bg-black/70 px-2 py-3 text-center text-white"
+								>
 									<div class="text-3xl font-bold">{genInfo.regionLabel}</div>
 								</div>
-								<div class="absolute bottom-0 left-0 right-0 bg-black/70 px-2 py-2 text-center text-white">
+								<div
+									class="absolute bottom-0 left-0 right-0 bg-black/70 px-2 py-2 text-center text-white"
+								>
 									<div class="text-lg font-bold">{genInfo.generationLabel}</div>
 								</div>
 							{/if}
@@ -272,8 +284,7 @@
 									<progress
 										class={classNames('progress h-2 flex-1', {
 											'progress-success': completionPercent === 100,
-											'progress-warning':
-												completionPercent >= 50 && completionPercent < 100,
+											'progress-warning': completionPercent >= 50 && completionPercent < 100,
 											'progress-primary': completionPercent < 50
 										})}
 										value={stats.completionScore}
@@ -286,10 +297,7 @@
 							{/if}
 							<!-- Action buttons -->
 							<div class="mt-2 flex gap-2">
-								<a
-									href="/collections/{collection.id}"
-									class="btn btn-secondary btn-sm flex-1"
-								>
+								<a href="/collections/{collection.id}" class="btn btn-secondary btn-sm flex-1">
 									Open Album
 								</a>
 								<button

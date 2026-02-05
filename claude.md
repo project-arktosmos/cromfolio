@@ -358,9 +358,21 @@ Components should dispatch events for parent communication:
 ### Absolute Rules
 
 1. **NEVER use `<style>` tags** in Svelte components
-2. **NEVER use inline `style` attributes**
+2. **NEVER use inline `style` attributes** (see exceptions below)
 3. **ALWAYS use Tailwind CSS classes**
 4. **ALWAYS use `classnames`** for conditional rendering
+
+### Acceptable Inline Style Exceptions
+
+While inline styles should be avoided, these cases are acceptable when values cannot be known at build time:
+
+1. **Dynamic positioning** - Mouse tracking, drag operations, viewport-clamped positions where coordinates come from user interaction
+2. **Database-driven colors** - User-selected or data-driven hex colors that vary at runtime (e.g., `background-color: {userColor}`)
+3. **CSS masks** - The `mask`/`-webkit-mask` property for SVG icon coloring (not supported by Tailwind)
+4. **Runtime transforms** - Scale, rotation, translate based on user interaction or database values
+5. **Dynamic aspect ratios** - When aspect-ratio must be a prop value from data
+
+For static values that don't change at runtime, prefer Tailwind's arbitrary value syntax (e.g., `w-[360px]`, `max-h-[480px]`).
 
 ### Tailwind Configuration
 

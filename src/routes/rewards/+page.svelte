@@ -1,5 +1,4 @@
 <script lang="ts">
-	import classNames from 'classnames';
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		getEligibleRewardCollections,
@@ -258,7 +257,7 @@
 					{#each collectionsWithPacks as collection (collection.collectionId)}
 						{@const progressPercent = getProgressPercent(collection)}
 						{@const countdown = formatCountdown(collection)}
-						<div class="card bg-base-100 shadow-lg ring-2 ring-success/50">
+						<div class="card bg-base-100 ring-success/50 shadow-lg ring-2">
 							<figure class="relative h-32 overflow-hidden">
 								{#if collection.collectionCoverImage}
 									<img
@@ -333,7 +332,9 @@
 													d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
 												/>
 											</svg>
-											Claim {collection.claimableCount} Pack{collection.claimableCount > 1 ? 's' : ''}
+											Claim {collection.claimableCount} Pack{collection.claimableCount > 1
+												? 's'
+												: ''}
 										{/if}
 									</button>
 								</div>

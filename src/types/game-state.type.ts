@@ -5,7 +5,7 @@
  * These types are used by game services and components.
  */
 
-import type { ID } from './core.type';
+import type { ID } from '$types/core.type';
 
 // ============================================================================
 // Pokemon Trivia Game Types

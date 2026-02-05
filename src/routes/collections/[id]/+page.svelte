@@ -1,5 +1,6 @@
 <script lang="ts">
 	import classNames from 'classnames';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount, onDestroy } from 'svelte';
@@ -172,8 +173,8 @@
 	});
 
 	// Rarity counts for collection stats
-	let rarityCounts = $derived.by(() => {
-		const counts = new Map<string, { total: number; owned: number; rarity: Rarity }>();
+	let _rarityCounts = $derived.by(() => {
+		const counts = new SvelteMap<string, { total: number; owned: number; rarity: Rarity }>();
 
 		for (const sticker of stickers) {
 			const rarityId = stickerRarityMap.get(String(sticker.id));
@@ -377,7 +378,7 @@
 	}
 
 	async function loadStampPackCovers() {
-		const covers = new Map<string, string>();
+		const covers = new SvelteMap<string, string>();
 		for (const pack of stampPacks) {
 			// If pack has a tray image, use it
 			if (pack.trayImage) {
@@ -397,7 +398,7 @@
 		stampPackCovers = covers;
 	}
 
-	async function devAwardBoosterPacks() {
+	async function _devAwardBoosterPacks() {
 		if (!collection) return;
 		await awardUserBoosterPacksBatch(10, collection.id, 'dev-tool');
 		unopenedBoosterPacks = await countUnopenedUserBoosterPacksByCollection(collection.id);
@@ -410,17 +411,15 @@
 		const allUserStickers = await getAllUserStickers();
 
 		// Filter to only stickers earned FROM this collection (by collectionId)
-		const userStickers = allUserStickers.filter(
-			(us) => String(us.collectionId) === collectionId
-		);
+		const userStickers = allUserStickers.filter((us) => String(us.collectionId) === collectionId);
 
 		userStickersData = userStickers; // Store for mixing (only this collection's stickers)
 
 		// Build owned sticker IDs set from filtered stickers
 		ownedStickerIds = new Set(userStickers.map((us) => String(us.stickerId)));
 
-		const rarityMap = new Map<string, string>();
-		const rarityCopyCount = new Map<string, number>();
+		const rarityMap = new SvelteMap<string, string>();
+		const rarityCopyCount = new SvelteMap<string, number>();
 
 		for (const us of userStickers) {
 			const stickerId = String(us.stickerId);
@@ -450,7 +449,7 @@
 
 	async function refreshCopyCount(stickerId: string) {
 		const count = await getStickerCopyCount(stickerId);
-		copyCountCache = new Map(copyCountCache).set(stickerId, count);
+		copyCountCache = new SvelteMap(copyCountCache).set(stickerId, count);
 	}
 
 	async function refreshGlobalPlacementCounts() {
@@ -558,7 +557,9 @@
 	// Check if a group can be mixed
 	function canMixGroup(group: OwnedStickerGroup): boolean {
 		if (group.count < 2) return false;
-		const nextRarity = group.rarity ? getNextRarity(group.rarity) : getSortedRarities()[0] ?? null;
+		const nextRarity = group.rarity
+			? getNextRarity(group.rarity)
+			: (getSortedRarities()[0] ?? null);
 		return nextRarity !== null;
 	}
 
@@ -569,7 +570,7 @@
 	}
 
 	// Get mixable stickers count for this collection
-	let mixableStickers = $derived.by(() => {
+	let _mixableStickers = $derived.by(() => {
 		return stickers.filter((s) => canMixSticker(s));
 	});
 
@@ -582,13 +583,12 @@
 	function getUserStickerSourceId(stickerId: string | number, rarityId: string | number): string {
 		const us = userStickersData.find(
 			(u) =>
-				String(u.stickerId) === String(stickerId) &&
-				String(u.rarityId ?? '') === String(rarityId)
+				String(u.stickerId) === String(stickerId) && String(u.rarityId ?? '') === String(rarityId)
 		);
 		return us ? String(us.sourceId ?? '') : '';
 	}
 
-	async function handleMixSticker(sticker: Sticker) {
+	async function _handleMixSticker(sticker: Sticker) {
 		const mixableRarity = getMixableRarity(sticker);
 		if (!mixableRarity) return;
 		const nextRarity = getNextRarity(mixableRarity);
@@ -711,47 +711,47 @@
 		return currentPage >= winnerPageStart;
 	}
 
-	function isRegularPage(): boolean {
+	function _isRegularPage(): boolean {
 		return !isCoverPage() && !isWinnerPage();
 	}
 
 	// Get the actual page index for regular pages (0-indexed)
-	function getRegularPageIndex(): number {
+	function _getRegularPageIndex(): number {
 		return currentPage - 1;
 	}
 
 	// Get the winner index for winner pages (0-indexed)
-	function getWinnerPageIndex(): number {
+	function _getWinnerPageIndex(): number {
 		const winnerPageStart = 1 + getTotalRegularPages();
 		return currentPage - winnerPageStart;
 	}
 
 	// Get current pokemon page stickers
-	function getCurrentPokemonPage(): Sticker[] | null {
-		const pageIdx = getRegularPageIndex();
+	function _getCurrentPokemonPage(): Sticker[] | null {
+		const pageIdx = _getRegularPageIndex();
 		return pokemonPages[pageIdx] ?? null;
 	}
 
 	// Get current packed page
-	function getCurrentPackedPage(): GridPackedPage | null {
-		const pageIdx = getRegularPageIndex();
+	function _getCurrentPackedPage(): GridPackedPage | null {
+		const pageIdx = _getRegularPageIndex();
 		return packedPages[pageIdx] ?? null;
 	}
 
 	// Get current winner
-	function getCurrentWinner(): GroupedFragments | null {
+	function _getCurrentWinner(): GroupedFragments | null {
 		if (!isWinnerPage()) return null;
-		const winnerIdx = getWinnerPageIndex();
+		const winnerIdx = _getWinnerPageIndex();
 		return groupedWinners[winnerIdx] ?? null;
 	}
 
 	// Get page index for stamps/icons (considering cover is -1)
-	function getCurrentPageIndexForOverlays(): number {
+	function _getCurrentPageIndexForOverlays(): number {
 		if (isCoverPage()) return -1;
 		if (isWinnerPage()) {
-			return getTotalRegularPages() + getWinnerPageIndex();
+			return getTotalRegularPages() + _getWinnerPageIndex();
 		}
-		return getRegularPageIndex();
+		return _getRegularPageIndex();
 	}
 
 	function nextPage() {
@@ -765,7 +765,7 @@
 		currentPage -= 1;
 	}
 
-	function goToPage(pageNum: number) {
+	function _goToPage(pageNum: number) {
 		const totalPages = getTotalPages();
 		if (pageNum >= 0 && pageNum < totalPages) {
 			currentPage = pageNum;
@@ -786,7 +786,7 @@
 			await unstickSticker(sticker.id, collection.id);
 			placedStickerIds = new Set([...placedStickerIds].filter((id) => id !== stickerId));
 			const currentCount = globalPlacementCounts.get(stickerId) ?? 0;
-			globalPlacementCounts = new Map(globalPlacementCounts).set(
+			globalPlacementCounts = new SvelteMap(globalPlacementCounts).set(
 				stickerId,
 				Math.max(0, currentCount - 1)
 			);
@@ -795,7 +795,7 @@
 			await placeSticker(sticker.id, collection.id);
 			placedStickerIds = new Set([...placedStickerIds, stickerId]);
 			const currentCount = globalPlacementCounts.get(stickerId) ?? 0;
-			globalPlacementCounts = new Map(globalPlacementCounts).set(stickerId, currentCount + 1);
+			globalPlacementCounts = new SvelteMap(globalPlacementCounts).set(stickerId, currentCount + 1);
 		}
 	}
 
@@ -889,7 +889,7 @@
 
 		const key = `${collection.id}-${pageIndex}`;
 		const existingStamps = placedStampsForCollection.get(key) ?? [];
-		placedStampsForCollection = new Map(
+		placedStampsForCollection = new SvelteMap(
 			placedStampsForCollection.set(key, [...existingStamps, placedStamp])
 		);
 
@@ -902,7 +902,7 @@
 		await removePlacedStamp(placedStamp.id);
 		const key = `${collection.id}-${placedStamp.pageIndex}`;
 		const existingStamps = placedStampsForCollection.get(key) ?? [];
-		placedStampsForCollection = new Map(
+		placedStampsForCollection = new SvelteMap(
 			placedStampsForCollection.set(
 				key,
 				existingStamps.filter((s) => s.id !== placedStamp.id)
@@ -912,7 +912,7 @@
 
 	async function loadPlacedStampsForCollection(collectionId: string) {
 		const allPlaced = await getPlacedStampsByCollection(collectionId);
-		const byPage = new Map<string, UserPlacedStamp[]>();
+		const byPage = new SvelteMap<string, UserPlacedStamp[]>();
 		for (const ps of allPlaced) {
 			const key = `${collectionId}-${ps.pageIndex}`;
 			const existing = byPage.get(key) ?? [];
@@ -1022,7 +1022,7 @@
 
 		const key = `${collection.id}-${pageIndex}`;
 		const existingIcons = placedIconsForCollection.get(key) ?? [];
-		placedIconsForCollection = new Map(
+		placedIconsForCollection = new SvelteMap(
 			placedIconsForCollection.set(key, [...existingIcons, placedIcon])
 		);
 
@@ -1034,7 +1034,7 @@
 		await removePlacedIcon(placedIcon.id);
 		const key = `${collection.id}-${placedIcon.pageIndex}`;
 		const existingIcons = placedIconsForCollection.get(key) ?? [];
-		placedIconsForCollection = new Map(
+		placedIconsForCollection = new SvelteMap(
 			placedIconsForCollection.set(
 				key,
 				existingIcons.filter((i) => i.id !== placedIcon.id)
@@ -1044,7 +1044,7 @@
 
 	async function loadPlacedIconsForCollection(collectionId: string) {
 		const allPlaced = await getPlacedIconsByCollection(collectionId);
-		const byPage = new Map<string, UserPlacedIcon[]>();
+		const byPage = new SvelteMap<string, UserPlacedIcon[]>();
 		for (const pi of allPlaced) {
 			const key = `${collectionId}-${pi.pageIndex}`;
 			const existing = byPage.get(key) ?? [];
@@ -1060,7 +1060,7 @@
 	}
 </script>
 
-<div class="w-full h-full p-4 overflow-hidden">
+<div class="h-full w-full overflow-hidden p-4">
 	{#if isLoading}
 		<div class="flex h-64 items-center justify-center">
 			<span class="loading loading-spinner loading-lg"></span>
@@ -1070,20 +1070,20 @@
 			<div class="alert alert-error max-w-md">
 				<span>Collection not found</span>
 			</div>
-			<button class="btn btn-primary" onclick={() => goto('/')}>
-				Back to Collections
-			</button>
+			<button class="btn btn-primary" onclick={() => goto('/')}> Back to Collections </button>
 		</div>
 	{:else if collection}
 		{@const totalRegularPages = getTotalRegularPages()}
 		{@const totalWinnerPages = getTotalWinnerPages()}
 		{@const totalPages = getTotalPages()}
 
-		<div class="flex flex-col gap-4 h-full overflow-hidden">
+		<div class="flex h-full flex-col gap-4 overflow-hidden">
 			<!-- Main content grid: Album + My Stickers -->
-			<div class="flex flex-col gap-4 flex-1 min-h-0 md:grid md:grid-cols-3">
+			<div class="flex min-h-0 flex-1 flex-col gap-4 md:grid md:grid-cols-3">
 				<!-- Album View (col 1) -->
-				<div class="order-1 w-full md:col-span-1 flex-shrink-0 md:h-full min-h-0 rounded-lg overflow-hidden">
+				<div
+					class="order-1 min-h-0 w-full flex-shrink-0 overflow-hidden rounded-lg md:col-span-1 md:h-full"
+				>
 					{#if stickers.length === 0}
 						<div class="flex h-full items-center justify-center">
 							<div class="alert alert-info max-w-md">
@@ -1095,548 +1095,669 @@
 						{@const coverPlacedIcons = getPlacedIconsForPage(-1)}
 						{@const genInfo = getRegionForCollection(collection)}
 						<!-- Carousel Container -->
-						<div class="flex flex-col h-full">
-						<!-- Icons and Stamps Row -->
-						<div class="flex items-center gap-4 p-2">
-							<div>
-								<IconRow onclick={handleIconRowClick} />
-							</div>
-							<div class="flex-1">
-								<div class="flex items-center gap-2">
-									{#if stampPacks.length > 0}
-										<StampPackRow
-											{stampPacks}
-											coverUrls={stampPackCovers}
-											onpackhover={handlePackHover}
-											onpackleave={handlePackLeave}
-										/>
-									{/if}
-									<button
-										class="btn btn-ghost btn-sm"
-										onclick={() => stampsModalService.open()}
-										title="Manage Stamp Collections"
-									>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											class="h-5 w-5"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-											/>
-										</svg>
-									</button>
+						<div class="flex h-full flex-col">
+							<!-- Icons and Stamps Row -->
+							<div class="flex items-center gap-4 p-2">
+								<div>
+									<IconRow onclick={handleIconRowClick} />
 								</div>
-							</div>
-						</div>
-						<!-- Sliding Carousel -->
-						<div class="flex-1 flex items-center justify-center overflow-hidden">
-						<div class="w-full md:w-auto md:h-full md:max-w-full overflow-hidden" style="aspect-ratio: {PAGE_ASPECT};">
-							<div
-								class="flex h-full transition-transform duration-300 ease-in-out"
-								style="transform: translateX(-{currentPage * 100}%);"
-							>
-								<!-- Cover Page Slide -->
-								<div class="h-full w-full flex-shrink-0 flex justify-center">
-								<div
-									class={classNames(
-										'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
-										{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-									)}
-									style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
-									onclick={(e) => {
-										if (isPlacementMode) handlePageClick(e, e.currentTarget as HTMLElement, -1);
-										if (isIconPlacementMode)
-											handleIconPageClick(e, e.currentTarget as HTMLElement, -1);
-									}}
-									role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
-									tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
-								>
-									<PlacedStampOverlay
-										placedStamps={coverPlacedStamps}
-										stampImages={stampImageCache}
-										{stampsDataDir}
-										editable={!isPlacementMode && !isIconPlacementMode}
-										onstampremove={(ps) => handlePlacedStampRemove(ps)}
-									/>
-									<PlacedIconOverlay
-										placedIcons={coverPlacedIcons}
-										editable={!isPlacementMode && !isIconPlacementMode}
-										oniconremove={(pi) => handlePlacedIconRemove(pi)}
-									/>
-									<!-- Region/Generation overlay -->
-									{#if genInfo}
-										<div
-											class="absolute left-0 right-0 top-0 z-10 bg-black/70 px-2 py-3 text-center text-white"
-										>
-											<div class="text-3xl font-bold">{genInfo.regionLabel}</div>
-										</div>
-										<div
-											class="absolute bottom-0 left-0 right-0 z-10 bg-black/70 px-2 py-2 text-center text-white"
-										>
-											<div class="text-lg font-bold">{genInfo.generationLabel}</div>
-										</div>
-									{/if}
-									<div class="flex h-full flex-col">
-										{#if collection.coverImage}
-											<img
-												src={collection.coverImage}
-												alt={collection.title}
-												class="h-full w-full object-cover"
+								<div class="flex-1">
+									<div class="flex items-center gap-2">
+										{#if stampPacks.length > 0}
+											<StampPackRow
+												{stampPacks}
+												coverUrls={stampPackCovers}
+												onpackhover={handlePackHover}
+												onpackleave={handlePackLeave}
 											/>
-										{:else}
-											<div
-												class="from-primary to-secondary flex h-full flex-col items-center justify-center bg-gradient-to-br p-8"
-											>
-												<div class="mb-6 text-6xl text-white/30">
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														class="h-24 w-24"
-														fill="none"
-														viewBox="0 0 24 24"
-														stroke="currentColor"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-														/>
-													</svg>
-												</div>
-												<h2 class="text-center text-3xl font-bold text-white drop-shadow-lg">
-													{collection.title}
-												</h2>
-												{#if collection.description}
-													<p class="mt-4 max-w-xs text-center text-white/80">
-														{collection.description}
-													</p>
-												{/if}
-												<div class="mt-8 text-sm text-white/60">
-													{stickers.length} stickers · {totalRegularPages + totalWinnerPages} pages
-													{#if totalWinnerPages > 0}
-														<span class="ml-1"
-															>(incl. {totalWinnerPages} winner{totalWinnerPages > 1 ? 's' : ''})</span
-														>
-													{/if}
-												</div>
-											</div>
 										{/if}
+										<button
+											class="btn btn-ghost btn-sm"
+											onclick={() => stampsModalService.open()}
+											title="Manage Stamp Collections"
+											aria-label="Manage Stamp Collections"
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-5 w-5"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+												/>
+											</svg>
+										</button>
 									</div>
 								</div>
 							</div>
-
-							<!-- Regular Pages (Pokemon or Standard) -->
-							{#if isPokemonCollection}
-								{#each pokemonPages as pokemonStickers, pageIdx}
-									{@const actualPageIndex = pageIdx}
-									{@const pagePlacedStamps = getPlacedStampsForPage(actualPageIndex)}
-									{@const pagePlacedIcons = getPlacedIconsForPage(actualPageIndex)}
+							<!-- Sliding Carousel -->
+							<div class="flex flex-1 items-center justify-center overflow-hidden">
+								<div
+									class="w-full overflow-hidden md:h-full md:w-auto md:max-w-full"
+									style="aspect-ratio: {PAGE_ASPECT};"
+								>
 									<div
-										id="slide-{pageIdx + 1}"
-										class="h-full w-full flex-shrink-0 flex justify-center"
+										class="flex h-full transition-transform duration-300 ease-in-out"
+										style="transform: translateX(-{currentPage * 100}%);"
 									>
-										<div
-											class={classNames(
-												'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
-												{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-											)}
-											style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
-											onclick={(e) => {
-												if (isPlacementMode)
-													handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-												if (isIconPlacementMode)
-													handleIconPageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-											}}
-											role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
-											tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
-										>
-											<PlacedStampOverlay
-												placedStamps={pagePlacedStamps}
-												stampImages={stampImageCache}
-												{stampsDataDir}
-												editable={!isPlacementMode && !isIconPlacementMode}
-												onstampremove={(ps) => handlePlacedStampRemove(ps)}
-											/>
-											<PlacedIconOverlay
-												placedIcons={pagePlacedIcons}
-												editable={!isPlacementMode && !isIconPlacementMode}
-												oniconremove={(pi) => handlePlacedIconRemove(pi)}
-											/>
+										<!-- Cover Page Slide -->
+										<div class="flex h-full w-full flex-shrink-0 justify-center">
+											<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 											<div
-												class="grid h-full"
-												style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+												class={classNames(
+													'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
+													{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+												)}
+												style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
+												onclick={(e) => {
+													if (isPlacementMode)
+														handlePageClick(e, e.currentTarget as HTMLElement, -1);
+													if (isIconPlacementMode)
+														handleIconPageClick(e, e.currentTarget as HTMLElement, -1);
+												}}
+												onkeydown={(e) => {
+													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault();
+														if (isPlacementMode)
+															handlePageClick(
+																e as unknown as MouseEvent,
+																e.currentTarget as HTMLElement,
+																-1
+															);
+														if (isIconPlacementMode)
+															handleIconPageClick(
+																e as unknown as MouseEvent,
+																e.currentTarget as HTMLElement,
+																-1
+															);
+													}
+												}}
+												role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+												tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+												aria-label="Album cover page"
 											>
-												{#each pokemonStickers as sticker (sticker.id)}
-													{@const copyCount = getCachedCopyCount(sticker.id)}
-													{@const owned = copyCount > 0}
-													{@const placed = placedStickerIds.has(String(sticker.id))}
-													{@const availableCopies = getAvailableCopies(sticker.id)}
-													{@const canPlace = owned && !placed && availableCopies > 0}
-													{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-													{@const rarity = getStickerRarity(sticker)}
+												<PlacedStampOverlay
+													placedStamps={coverPlacedStamps}
+													stampImages={stampImageCache}
+													{stampsDataDir}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													onstampremove={(ps) => handlePlacedStampRemove(ps)}
+												/>
+												<PlacedIconOverlay
+													placedIcons={coverPlacedIcons}
+													editable={!isPlacementMode && !isIconPlacementMode}
+													oniconremove={(pi) => handlePlacedIconRemove(pi)}
+												/>
+												<!-- Region/Generation overlay -->
+												{#if genInfo}
 													<div
-														class={classNames(
-															'relative flex cursor-pointer flex-col overflow-hidden',
-															{ 'opacity-50 grayscale': !owned }
-														)}
-														onclick={() => handleStickerClick(sticker)}
-														role="button"
-														tabindex="0"
+														class="absolute left-0 right-0 top-0 z-10 bg-black/70 px-2 py-3 text-center text-white"
 													>
-														{#if canPlace}
-															<button
-																class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
-																onclick={(e) => {
-																	e.stopPropagation();
-																	handleStickerClick(sticker);
-																}}
-															>
-																<span class="text-primary/60 text-[10px] font-medium">Stick</span>
-															</button>
-														{:else if placedElsewhere}
-															<div
-																class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
-															>
-																<span class="text-warning px-1 text-center text-[8px] font-medium"
-																	>In other album</span
-																>
-															</div>
-														{/if}
-														<div
-															class={classNames('h-full w-full', {
-																'opacity-70 transition-opacity hover:opacity-100': canPlace
-															})}
-														>
-															<StickerItem
-																{sticker}
-																bgColor={rarity?.colorFrom ?? '#6B7280'}
-																borderColor={rarity?.colorTo}
-																classes="w-full h-full object-contain"
-															/>
-														</div>
+														<div class="text-3xl font-bold">{genInfo.regionLabel}</div>
 													</div>
-												{/each}
-											</div>
-										</div>
-									</div>
-								{/each}
-							{:else}
-								{#each packedPages as packedPage, pageIdx}
-									{@const actualPageIndex = pageIdx}
-									{@const pagePlacedStamps = getPlacedStampsForPage(actualPageIndex)}
-									{@const pagePlacedIcons = getPlacedIconsForPage(actualPageIndex)}
-									<div
-										id="slide-{pageIdx + 1}"
-										class="h-full w-full flex-shrink-0 flex justify-center"
-									>
-										<div
-											class={classNames(
-												'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
-												{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-											)}
-											style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
-											onclick={(e) => {
-												if (isPlacementMode)
-													handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-												if (isIconPlacementMode)
-													handleIconPageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-											}}
-											role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
-											tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
-										>
-											<PlacedStampOverlay
-												placedStamps={pagePlacedStamps}
-												stampImages={stampImageCache}
-												{stampsDataDir}
-												editable={!isPlacementMode && !isIconPlacementMode}
-												onstampremove={(ps) => handlePlacedStampRemove(ps)}
-											/>
-											<PlacedIconOverlay
-												placedIcons={pagePlacedIcons}
-												editable={!isPlacementMode && !isIconPlacementMode}
-												oniconremove={(pi) => handlePlacedIconRemove(pi)}
-											/>
-											<div
-												class="grid h-full"
-												style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
-											>
-												{#each packedPage.rows as row}
-													{#each row.stickers as { sticker } (sticker.id)}
-														{@const copyCount = getCachedCopyCount(sticker.id)}
-														{@const owned = copyCount > 0}
-														{@const placed = placedStickerIds.has(String(sticker.id))}
-														{@const availableCopies = getAvailableCopies(sticker.id)}
-														{@const canPlace = owned && !placed && availableCopies > 0}
-														{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-														{@const rarity = getStickerRarity(sticker)}
+													<div
+														class="absolute bottom-0 left-0 right-0 z-10 bg-black/70 px-2 py-2 text-center text-white"
+													>
+														<div class="text-lg font-bold">{genInfo.generationLabel}</div>
+													</div>
+												{/if}
+												<div class="flex h-full flex-col">
+													{#if collection.coverImage}
+														<img
+															src={collection.coverImage}
+															alt={collection.title}
+															class="h-full w-full object-cover"
+														/>
+													{:else}
 														<div
-															class={classNames(
-																'relative flex cursor-pointer flex-col overflow-hidden p-1',
-																{ 'opacity-50 grayscale': !owned }
-															)}
-															onclick={() => handleStickerClick(sticker)}
-															role="button"
-															tabindex="0"
+															class="from-primary to-secondary flex h-full flex-col items-center justify-center bg-gradient-to-br p-8"
 														>
-															{#if !placed}
-																<p
-																	class="absolute left-0 right-0 top-1 z-10 truncate bg-white/80 px-1 text-center text-[10px] text-gray-600"
+															<div class="mb-6 text-6xl text-white/30">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	class="h-24 w-24"
+																	fill="none"
+																	viewBox="0 0 24 24"
+																	stroke="currentColor"
 																>
-																	{sticker.name}
+																	<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+																	/>
+																</svg>
+															</div>
+															<h2 class="text-center text-3xl font-bold text-white drop-shadow-lg">
+																{collection.title}
+															</h2>
+															{#if collection.description}
+																<p class="mt-4 max-w-xs text-center text-white/80">
+																	{collection.description}
 																</p>
 															{/if}
-															{#if canPlace}
-																<button
-																	class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
-																	onclick={(e) => {
-																		e.stopPropagation();
-																		handleStickerClick(sticker);
-																	}}
-																>
-																	<span class="text-primary/60 text-xs font-medium"
-																		>Click to stick</span
+															<div class="mt-8 text-sm text-white/60">
+																{stickers.length} stickers · {totalRegularPages + totalWinnerPages} pages
+																{#if totalWinnerPages > 0}
+																	<span class="ml-1"
+																		>(incl. {totalWinnerPages} winner{totalWinnerPages > 1
+																			? 's'
+																			: ''})</span
 																	>
-																</button>
-															{:else if placedElsewhere}
-																<div
-																	class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
-																>
-																	<span
-																		class="text-warning px-1 text-center text-[9px] font-medium"
-																		>In other album</span
-																	>
-																</div>
-															{/if}
-															<div
-																class={classNames('w-full flex-1', {
-																	'opacity-70 transition-opacity hover:opacity-100': canPlace
-																})}
-															>
-																<StickerItem
-																	{sticker}
-																	bgColor={rarity?.colorFrom ?? '#6B7280'}
-																	borderColor={rarity?.colorTo}
-																	classes="w-full"
-																/>
+																{/if}
 															</div>
 														</div>
-													{/each}
-												{/each}
-											</div>
-										</div>
-									</div>
-								{/each}
-							{/if}
-
-							<!-- Winner Pages -->
-							{#each groupedWinners as winner, winnerIdx}
-								{@const actualPageIndex = totalRegularPages + winnerIdx}
-								{@const slideIndex = 1 + totalRegularPages + winnerIdx}
-								{@const winnerPlacedStamps = getPlacedStampsForPage(actualPageIndex)}
-								{@const winnerPlacedIcons = getPlacedIconsForPage(actualPageIndex)}
-								{@const topLeft = winner.fragments.get(1)}
-								{@const topRight = winner.fragments.get(2)}
-								{@const bottomLeft = winner.fragments.get(3)}
-								{@const bottomRight = winner.fragments.get(4)}
-								{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
-								{@const winnerName =
-									firstSticker?.name?.replace(
-										/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/,
-										''
-									) ?? 'Winner'}
-								<div
-									id="slide-{slideIndex}"
-									class="h-full w-full flex-shrink-0 flex justify-center"
-								>
-									<div
-										class={classNames(
-											'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
-											{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
-										)}
-										style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
-										onclick={(e) => {
-											if (isPlacementMode)
-												handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-											if (isIconPlacementMode)
-												handleIconPageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
-										}}
-										role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
-										tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
-									>
-										<PlacedStampOverlay
-											placedStamps={winnerPlacedStamps}
-											stampImages={stampImageCache}
-											{stampsDataDir}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											onstampremove={(ps) => handlePlacedStampRemove(ps)}
-										/>
-										<PlacedIconOverlay
-											placedIcons={winnerPlacedIcons}
-											editable={!isPlacementMode && !isIconPlacementMode}
-											oniconremove={(pi) => handlePlacedIconRemove(pi)}
-										/>
-										<div class="relative flex h-full flex-col p-4">
-											<div class="absolute right-2 top-2 z-10">
-												<span class="badge badge-warning badge-sm gap-1">
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														class="h-3 w-3"
-														fill="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-														/>
-													</svg>
-												</span>
-											</div>
-											<h3 class="mb-2 truncate text-center text-sm font-bold text-gray-800">
-												{winnerName}
-											</h3>
-											<div class="grid flex-1 grid-cols-2 grid-rows-2 gap-px">
-												{#each [topLeft, topRight, bottomLeft, bottomRight] as fragment}
-													{#if fragment}
-														{@const copyCount = getCachedCopyCount(fragment.id)}
-														{@const owned = copyCount > 0}
-														{@const placed = placedStickerIds.has(String(fragment.id))}
-														{@const availableCopies = getAvailableCopies(fragment.id)}
-														{@const canPlace = owned && !placed && availableCopies > 0}
-														{@const placedElsewhere = owned && !placed && availableCopies <= 0}
-														{@const rarity = getStickerRarity(fragment)}
-														<div
-															class={classNames('relative cursor-pointer', {
-																'opacity-50 grayscale': !owned
-															})}
-															onclick={() => handleStickerClick(fragment)}
-															role="button"
-															tabindex="0"
-														>
-															{#if canPlace}
-																<div
-																	class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
-																>
-																	<span class="text-primary/60 text-[10px] font-medium"
-																		>Stick</span
-																	>
-																</div>
-															{:else if placedElsewhere}
-																<div
-																	class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
-																>
-																	<span
-																		class="text-warning px-1 text-center text-[8px] font-medium"
-																		>In other album</span
-																	>
-																</div>
-															{/if}
-															<div
-																class={classNames({
-																	'opacity-70 transition-opacity hover:opacity-100': canPlace
-																})}
-															>
-																<StickerItem
-																	sticker={fragment}
-																	bgColor={rarity?.colorFrom ?? '#6B7280'}
-																	borderColor={rarity?.colorTo}
-																	classes="w-full h-full"
-																/>
-															</div>
-														</div>
-													{:else}
-														<div class="rounded bg-gray-200"></div>
 													{/if}
-												{/each}
+												</div>
 											</div>
 										</div>
+
+										<!-- Regular Pages (Pokemon or Standard) -->
+										{#if isPokemonCollection}
+											{#each pokemonPages as pokemonStickers, pageIdx (pageIdx)}
+												{@const actualPageIndex = pageIdx}
+												{@const pagePlacedStamps = getPlacedStampsForPage(actualPageIndex)}
+												{@const pagePlacedIcons = getPlacedIconsForPage(actualPageIndex)}
+												<div
+													id="slide-{pageIdx + 1}"
+													class="flex h-full w-full flex-shrink-0 justify-center"
+												>
+													<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+													<div
+														class={classNames(
+															'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
+															{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+														)}
+														style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
+														onclick={(e) => {
+															if (isPlacementMode)
+																handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
+															if (isIconPlacementMode)
+																handleIconPageClick(
+																	e,
+																	e.currentTarget as HTMLElement,
+																	actualPageIndex
+																);
+														}}
+														onkeydown={(e) => {
+															if (e.key === 'Enter' || e.key === ' ') {
+																e.preventDefault();
+																if (isPlacementMode)
+																	handlePageClick(
+																		e as unknown as MouseEvent,
+																		e.currentTarget as HTMLElement,
+																		actualPageIndex
+																	);
+																if (isIconPlacementMode)
+																	handleIconPageClick(
+																		e as unknown as MouseEvent,
+																		e.currentTarget as HTMLElement,
+																		actualPageIndex
+																	);
+															}
+														}}
+														role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+														tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+														aria-label="Pokemon album page {pageIdx + 1}"
+													>
+														<PlacedStampOverlay
+															placedStamps={pagePlacedStamps}
+															stampImages={stampImageCache}
+															{stampsDataDir}
+															editable={!isPlacementMode && !isIconPlacementMode}
+															onstampremove={(ps) => handlePlacedStampRemove(ps)}
+														/>
+														<PlacedIconOverlay
+															placedIcons={pagePlacedIcons}
+															editable={!isPlacementMode && !isIconPlacementMode}
+															oniconremove={(pi) => handlePlacedIconRemove(pi)}
+														/>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({POKEMON_COLS}, 1fr); grid-template-rows: repeat({POKEMON_ROWS}, 1fr); gap: 4px;"
+														>
+															{#each pokemonStickers as sticker (sticker.id)}
+																{@const copyCount = getCachedCopyCount(sticker.id)}
+																{@const owned = copyCount > 0}
+																{@const placed = placedStickerIds.has(String(sticker.id))}
+																{@const availableCopies = getAvailableCopies(sticker.id)}
+																{@const canPlace = owned && !placed && availableCopies > 0}
+																{@const placedElsewhere = owned && !placed && availableCopies <= 0}
+																{@const rarity = getStickerRarity(sticker)}
+																<div
+																	class={classNames(
+																		'relative flex cursor-pointer flex-col overflow-hidden',
+																		{ 'opacity-50 grayscale': !owned }
+																	)}
+																	onclick={() => handleStickerClick(sticker)}
+																	onkeydown={(e) =>
+																		e.key === 'Enter' && handleStickerClick(sticker)}
+																	role="button"
+																	tabindex="0"
+																	aria-label="Select sticker {sticker.name}"
+																>
+																	{#if canPlace}
+																		<button
+																			class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																			onclick={(e) => {
+																				e.stopPropagation();
+																				handleStickerClick(sticker);
+																			}}
+																		>
+																			<span class="text-primary/60 text-[10px] font-medium"
+																				>Stick</span
+																			>
+																		</button>
+																	{:else if placedElsewhere}
+																		<div
+																			class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																		>
+																			<span
+																				class="text-warning px-1 text-center text-[8px] font-medium"
+																				>In other album</span
+																			>
+																		</div>
+																	{/if}
+																	<div
+																		class={classNames('h-full w-full', {
+																			'opacity-70 transition-opacity hover:opacity-100': canPlace
+																		})}
+																	>
+																		<StickerItem
+																			{sticker}
+																			bgColor={rarity?.colorFrom ?? '#6B7280'}
+																			borderColor={rarity?.colorTo}
+																			classes="w-full h-full object-contain"
+																		/>
+																	</div>
+																</div>
+															{/each}
+														</div>
+													</div>
+												</div>
+											{/each}
+										{:else}
+											{#each packedPages as packedPage, pageIdx (pageIdx)}
+												{@const actualPageIndex = pageIdx}
+												{@const pagePlacedStamps = getPlacedStampsForPage(actualPageIndex)}
+												{@const pagePlacedIcons = getPlacedIconsForPage(actualPageIndex)}
+												<div
+													id="slide-{pageIdx + 1}"
+													class="flex h-full w-full flex-shrink-0 justify-center"
+												>
+													<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+													<div
+														class={classNames(
+															'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
+															{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+														)}
+														style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
+														onclick={(e) => {
+															if (isPlacementMode)
+																handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
+															if (isIconPlacementMode)
+																handleIconPageClick(
+																	e,
+																	e.currentTarget as HTMLElement,
+																	actualPageIndex
+																);
+														}}
+														onkeydown={(e) => {
+															if (e.key === 'Enter' || e.key === ' ') {
+																e.preventDefault();
+																if (isPlacementMode)
+																	handlePageClick(
+																		e as unknown as MouseEvent,
+																		e.currentTarget as HTMLElement,
+																		actualPageIndex
+																	);
+																if (isIconPlacementMode)
+																	handleIconPageClick(
+																		e as unknown as MouseEvent,
+																		e.currentTarget as HTMLElement,
+																		actualPageIndex
+																	);
+															}
+														}}
+														role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+														tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+														aria-label="Album page {pageIdx + 1}"
+													>
+														<PlacedStampOverlay
+															placedStamps={pagePlacedStamps}
+															stampImages={stampImageCache}
+															{stampsDataDir}
+															editable={!isPlacementMode && !isIconPlacementMode}
+															onstampremove={(ps) => handlePlacedStampRemove(ps)}
+														/>
+														<PlacedIconOverlay
+															placedIcons={pagePlacedIcons}
+															editable={!isPlacementMode && !isIconPlacementMode}
+															oniconremove={(pi) => handlePlacedIconRemove(pi)}
+														/>
+														<div
+															class="grid h-full"
+															style="padding: {config.pagePadding}px; grid-template-columns: repeat({config.columns}, 1fr); gap: {config.rowGap}px {config.columnGap}px; align-content: start;"
+														>
+															{#each packedPage.rows as row, rowIdx (rowIdx)}
+																{#each row.stickers as { sticker } (sticker.id)}
+																	{@const copyCount = getCachedCopyCount(sticker.id)}
+																	{@const owned = copyCount > 0}
+																	{@const placed = placedStickerIds.has(String(sticker.id))}
+																	{@const availableCopies = getAvailableCopies(sticker.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	{@const rarity = getStickerRarity(sticker)}
+																	<div
+																		class={classNames(
+																			'relative flex cursor-pointer flex-col overflow-hidden p-1',
+																			{ 'opacity-50 grayscale': !owned }
+																		)}
+																		onclick={() => handleStickerClick(sticker)}
+																		onkeydown={(e) =>
+																			e.key === 'Enter' && handleStickerClick(sticker)}
+																		role="button"
+																		tabindex="0"
+																		aria-label="Select sticker {sticker.name}"
+																	>
+																		{#if !placed}
+																			<p
+																				class="absolute left-0 right-0 top-1 z-10 truncate bg-white/80 px-1 text-center text-[10px] text-gray-600"
+																			>
+																				{sticker.name}
+																			</p>
+																		{/if}
+																		{#if canPlace}
+																			<button
+																				class="bg-base-300/80 border-primary/40 hover:bg-base-300/90 hover:border-primary/60 absolute inset-0 z-20 flex cursor-pointer items-center justify-center rounded border-2 border-dashed transition-colors"
+																				onclick={(e) => {
+																					e.stopPropagation();
+																					handleStickerClick(sticker);
+																				}}
+																			>
+																				<span class="text-primary/60 text-xs font-medium"
+																					>Click to stick</span
+																				>
+																			</button>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[9px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div
+																			class={classNames('w-full flex-1', {
+																				'opacity-70 transition-opacity hover:opacity-100': canPlace
+																			})}
+																		>
+																			<StickerItem
+																				{sticker}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full"
+																			/>
+																		</div>
+																	</div>
+																{/each}
+															{/each}
+														</div>
+													</div>
+												</div>
+											{/each}
+										{/if}
+
+										<!-- Winner Pages -->
+										{#each groupedWinners as winner, winnerIdx (winnerIdx)}
+											{@const actualPageIndex = totalRegularPages + winnerIdx}
+											{@const slideIndex = 1 + totalRegularPages + winnerIdx}
+											{@const winnerPlacedStamps = getPlacedStampsForPage(actualPageIndex)}
+											{@const winnerPlacedIcons = getPlacedIconsForPage(actualPageIndex)}
+											{@const topLeft = winner.fragments.get(1)}
+											{@const topRight = winner.fragments.get(2)}
+											{@const bottomLeft = winner.fragments.get(3)}
+											{@const bottomRight = winner.fragments.get(4)}
+											{@const firstSticker = topLeft || topRight || bottomLeft || bottomRight}
+											{@const winnerName =
+												firstSticker?.name?.replace(
+													/ \(Top Left\)$| \(Top Right\)$| \(Bottom Left\)$| \(Bottom Right\)$/,
+													''
+												) ?? 'Winner'}
+											<div
+												id="slide-{slideIndex}"
+												class="flex h-full w-full flex-shrink-0 justify-center"
+											>
+												<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+												<div
+													class={classNames(
+														'relative max-h-full overflow-hidden rounded-lg bg-white text-gray-900 shadow-xl',
+														{ 'cursor-crosshair': isPlacementMode || isIconPlacementMode }
+													)}
+													style="aspect-ratio: {PAGE_ASPECT}; height: 100%;"
+													onclick={(e) => {
+														if (isPlacementMode)
+															handlePageClick(e, e.currentTarget as HTMLElement, actualPageIndex);
+														if (isIconPlacementMode)
+															handleIconPageClick(
+																e,
+																e.currentTarget as HTMLElement,
+																actualPageIndex
+															);
+													}}
+													onkeydown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
+															e.preventDefault();
+															if (isPlacementMode)
+																handlePageClick(
+																	e as unknown as MouseEvent,
+																	e.currentTarget as HTMLElement,
+																	actualPageIndex
+																);
+															if (isIconPlacementMode)
+																handleIconPageClick(
+																	e as unknown as MouseEvent,
+																	e.currentTarget as HTMLElement,
+																	actualPageIndex
+																);
+														}
+													}}
+													role={isPlacementMode || isIconPlacementMode ? 'button' : 'img'}
+													tabindex={isPlacementMode || isIconPlacementMode ? 0 : -1}
+													aria-label="Winner page: {winnerName}"
+												>
+													<PlacedStampOverlay
+														placedStamps={winnerPlacedStamps}
+														stampImages={stampImageCache}
+														{stampsDataDir}
+														editable={!isPlacementMode && !isIconPlacementMode}
+														onstampremove={(ps) => handlePlacedStampRemove(ps)}
+													/>
+													<PlacedIconOverlay
+														placedIcons={winnerPlacedIcons}
+														editable={!isPlacementMode && !isIconPlacementMode}
+														oniconremove={(pi) => handlePlacedIconRemove(pi)}
+													/>
+													<div class="relative flex h-full flex-col p-4">
+														<div class="absolute right-2 top-2 z-10">
+															<span class="badge badge-warning badge-sm gap-1">
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	class="h-3 w-3"
+																	fill="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+																	/>
+																</svg>
+															</span>
+														</div>
+														<h3 class="mb-2 truncate text-center text-sm font-bold text-gray-800">
+															{winnerName}
+														</h3>
+														<div class="grid flex-1 grid-cols-2 grid-rows-2 gap-px">
+															{#each [topLeft, topRight, bottomLeft, bottomRight] as fragment, fragmentIdx (fragmentIdx)}
+																{#if fragment}
+																	{@const copyCount = getCachedCopyCount(fragment.id)}
+																	{@const owned = copyCount > 0}
+																	{@const placed = placedStickerIds.has(String(fragment.id))}
+																	{@const availableCopies = getAvailableCopies(fragment.id)}
+																	{@const canPlace = owned && !placed && availableCopies > 0}
+																	{@const placedElsewhere =
+																		owned && !placed && availableCopies <= 0}
+																	{@const rarity = getStickerRarity(fragment)}
+																	<div
+																		class={classNames('relative cursor-pointer', {
+																			'opacity-50 grayscale': !owned
+																		})}
+																		onclick={() => handleStickerClick(fragment)}
+																		onkeydown={(e) =>
+																			e.key === 'Enter' && handleStickerClick(fragment)}
+																		role="button"
+																		tabindex="0"
+																		aria-label="Select sticker fragment"
+																	>
+																		{#if canPlace}
+																			<div
+																				class="bg-base-300/80 border-primary/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span class="text-primary/60 text-[10px] font-medium"
+																					>Stick</span
+																				>
+																			</div>
+																		{:else if placedElsewhere}
+																			<div
+																				class="bg-warning/20 border-warning/40 absolute inset-0 z-20 flex items-center justify-center rounded border-2 border-dashed"
+																			>
+																				<span
+																					class="text-warning px-1 text-center text-[8px] font-medium"
+																					>In other album</span
+																				>
+																			</div>
+																		{/if}
+																		<div
+																			class={classNames({
+																				'opacity-70 transition-opacity hover:opacity-100': canPlace
+																			})}
+																		>
+																			<StickerItem
+																				sticker={fragment}
+																				bgColor={rarity?.colorFrom ?? '#6B7280'}
+																				borderColor={rarity?.colorTo}
+																				classes="w-full h-full"
+																			/>
+																		</div>
+																	</div>
+																{:else}
+																	<div class="rounded bg-gray-200"></div>
+																{/if}
+															{/each}
+														</div>
+													</div>
+												</div>
+											</div>
+										{/each}
 									</div>
 								</div>
-							{/each}
 							</div>
-						</div>
-						</div>
-						<!-- Pagination Controls -->
-						{#if totalPages > 1}
-							<div class="flex items-center justify-center gap-2 py-2">
+							<!-- Pagination Controls -->
+							{#if totalPages > 1}
+								<div class="flex items-center justify-center gap-2 py-2">
+									<button
+										class="btn btn-outline btn-sm"
+										onclick={prevPage}
+										disabled={currentPage <= 0}
+									>
+										Previous
+									</button>
+									<span class="text-base-content/60 text-sm">
+										Page {currentPage + 1} of {totalPages}
+									</span>
+									<button
+										class="btn btn-outline btn-sm"
+										onclick={nextPage}
+										disabled={currentPage >= totalPages - 1}
+									>
+										Next
+									</button>
+								</div>
+							{/if}
+							<!-- Actions Row -->
+							<div class="grid grid-cols-2 gap-2 p-2">
 								<button
-									class="btn btn-outline btn-sm"
-									onclick={prevPage}
-									disabled={currentPage <= 0}
+									class="btn btn-primary btn-sm w-full"
+									onclick={() => triviaModalService.open(collection!)}
+									disabled={isRefreshing}
 								>
-									Previous
+									{#if isRefreshing}
+										<span class="loading loading-spinner loading-xs"></span>
+										Updating...
+									{:else}
+										Play Trivia
+									{/if}
 								</button>
-								<span class="text-base-content/60 text-sm">
-									Page {currentPage + 1} of {totalPages}
-								</span>
 								<button
-									class="btn btn-outline btn-sm"
-									onclick={nextPage}
-									disabled={currentPage >= totalPages - 1}
+									class="btn btn-secondary btn-sm w-full"
+									onclick={() =>
+										boosterPackModalService.open(
+											collection!.id,
+											unopenedBoosterPacks,
+											'collection-page',
+											refreshAfterTrivia
+										)}
+									disabled={unopenedBoosterPacks === 0 || isRefreshing}
 								>
-									Next
+									{#if isRefreshing}
+										<span class="loading loading-spinner loading-xs"></span>
+										Updating...
+									{:else}
+										Open Packs ({unopenedBoosterPacks})
+									{/if}
 								</button>
 							</div>
-						{/if}
-						<!-- Actions Row -->
-						<div class="grid grid-cols-2 gap-2 p-2">
-							<button
-								class="btn btn-primary btn-sm w-full"
-								onclick={() => triviaModalService.open(collection!)}
-								disabled={isRefreshing}
-							>
-								{#if isRefreshing}
-									<span class="loading loading-spinner loading-xs"></span>
-									Updating...
-								{:else}
-									Play Trivia
-								{/if}
-							</button>
-							<button
-								class="btn btn-secondary btn-sm w-full"
-								onclick={() =>
-									boosterPackModalService.open(
-										collection!.id,
-										unopenedBoosterPacks,
-										'collection-page',
-										refreshAfterTrivia
-									)}
-								disabled={unopenedBoosterPacks === 0 || isRefreshing}
-							>
-								{#if isRefreshing}
-									<span class="loading loading-spinner loading-xs"></span>
-									Updating...
-								{:else}
-									Open Packs ({unopenedBoosterPacks})
-								{/if}
-							</button>
-						</div>
 						</div>
 					{/if}
 				</div>
 
 				<!-- My Stickers Button (mobile only) -->
-				<div class="order-2 w-full md:hidden p-2">
-					<button
-						class="btn btn-primary w-full gap-2"
-						onclick={() => showStickersModal = true}
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+				<div class="order-2 w-full p-2 md:hidden">
+					<button class="btn btn-primary w-full gap-2" onclick={() => (showStickersModal = true)}>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+							/>
 						</svg>
 						My Stickers ({ownedGroups.length})
 					</button>
 				</div>
 
 				<!-- My Stickers Panel (cols 2-3, desktop only) -->
-				<div class="hidden md:block order-3 w-full md:col-span-2 bg-base-200 rounded-lg p-4 overflow-y-auto flex-1 md:h-full min-h-0 relative">
+				<div
+					class="bg-base-200 relative order-3 hidden min-h-0 w-full flex-1 overflow-y-auto rounded-lg p-4 md:col-span-2 md:block md:h-full"
+				>
 					<!-- Loading overlay for sticker grid -->
 					{#if isRefreshing}
-						<div class="bg-base-100/80 absolute inset-0 z-10 flex items-center justify-center rounded-lg">
+						<div
+							class="bg-base-100/80 absolute inset-0 z-10 flex items-center justify-center rounded-lg"
+						>
 							<div class="flex flex-col items-center gap-2">
 								<span class="loading loading-spinner loading-lg"></span>
 								<span class="text-base-content/70 text-sm">Updating stickers...</span>
@@ -1648,7 +1769,10 @@
 							{#if isRefreshing}
 								My Stickers (loading...)
 							{:else if ownedGroups.length > 0}
-								My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce((sum, g) => sum + g.count, 0)} total)
+								My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce(
+									(sum, g) => sum + g.count,
+									0
+								)} total)
 							{:else}
 								My Stickers (0 owned)
 							{/if}
@@ -1688,98 +1812,102 @@
 							</div>
 						</div>
 					{:else}
-						<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+						<div class="grid grid-cols-2 gap-2 md:grid-cols-4">
 							{#each ownedGroups as group (`${group.stickerId}::${group.rarityId}`)}
-							{@const groupKey = `${group.stickerId}::${group.rarityId}`}
-							{@const placed = placedStickerIds.has(group.stickerId)}
-							{@const canMix = canMixGroup(group)}
-							{@const nextRarity = getGroupNextRarity(group)}
-							<div
-								class={classNames(
-									'card bg-base-200 relative overflow-hidden shadow-sm transition-shadow hover:shadow-md',
-									{ 'ring-success ring-2': placed },
-									{ 'ring-primary/50 ring-1': !placed }
-								)}
-							>
-								<div class="aspect-[3/4] p-2">
-									<StickerItem
-										sticker={group.sticker}
-										bgColor={group.rarity?.colorFrom ?? '#6B7280'}
-										borderColor={group.rarity?.colorTo}
-										classes="w-full h-full"
-									/>
-								</div>
-								<div class="p-2 pt-0">
-									<p class="truncate text-center text-[10px] font-medium" title={group.sticker.name}>
-										{group.sticker.name}
-									</p>
-									{#if group.rarity}
-										<div
-											class="badge badge-xs mt-1 w-full justify-center"
-											style="background: linear-gradient(135deg, {group.rarity.colorFrom}, {group.rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
+								{@const groupKey = `${group.stickerId}::${group.rarityId}`}
+								{@const placed = placedStickerIds.has(group.stickerId)}
+								{@const canMix = canMixGroup(group)}
+								{@const nextRarity = getGroupNextRarity(group)}
+								<div
+									class={classNames(
+										'card bg-base-200 relative overflow-hidden shadow-sm transition-shadow hover:shadow-md',
+										{ 'ring-success ring-2': placed },
+										{ 'ring-primary/50 ring-1': !placed }
+									)}
+								>
+									<div class="aspect-[3/4] p-2">
+										<StickerItem
+											sticker={group.sticker}
+											bgColor={group.rarity?.colorFrom ?? '#6B7280'}
+											borderColor={group.rarity?.colorTo}
+											classes="w-full h-full"
+										/>
+									</div>
+									<div class="p-2 pt-0">
+										<p
+											class="truncate text-center text-[10px] font-medium"
+											title={group.sticker.name}
 										>
-											{group.rarity.name}
+											{group.sticker.name}
+										</p>
+										{#if group.rarity}
+											<div
+												class="badge badge-xs mt-1 w-full justify-center"
+												style="background: linear-gradient(135deg, {group.rarity.colorFrom}, {group
+													.rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
+											>
+												{group.rarity.name}
+											</div>
+										{/if}
+										{#if canMix && nextRarity}
+											<button
+												class="btn btn-secondary btn-xs mt-1 w-full gap-1"
+												onclick={(e) => {
+													e.stopPropagation();
+													handleMixGroup(group);
+												}}
+												disabled={isMixing !== null || isRefreshing}
+												title="Mix 2 {group.rarity?.name ?? 'copies'} to get {nextRarity.name}"
+											>
+												{#if isMixing === groupKey}
+													<span class="loading loading-spinner loading-xs"></span>
+												{:else}
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														class="h-3 w-3"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke="currentColor"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+														/>
+													</svg>
+												{/if}
+												Mix
+											</button>
+										{/if}
+									</div>
+									<!-- Copy Count Badge -->
+									{#if group.count > 1}
+										<div class="badge badge-primary badge-xs absolute right-1 top-1 font-bold">
+											x{group.count}
 										</div>
 									{/if}
-									{#if canMix && nextRarity}
-										<button
-											class="btn btn-secondary btn-xs mt-1 w-full gap-1"
-											onclick={(e) => {
-												e.stopPropagation();
-												handleMixGroup(group);
-											}}
-											disabled={isMixing !== null || isRefreshing}
-											title="Mix 2 {group.rarity?.name ?? 'copies'} to get {nextRarity.name}"
-										>
-											{#if isMixing === groupKey}
-												<span class="loading loading-spinner loading-xs"></span>
-											{:else}
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													class="h-3 w-3"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke="currentColor"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-													/>
-												</svg>
-											{/if}
-											Mix
-										</button>
+									<!-- Placed Indicator -->
+									{#if placed}
+										<div class="badge badge-success badge-xs absolute left-1 top-1 gap-0.5">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-2.5 w-2.5"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M5 13l4 4L19 7"
+												/>
+											</svg>
+										</div>
 									{/if}
 								</div>
-								<!-- Copy Count Badge -->
-								{#if group.count > 1}
-									<div class="badge badge-primary badge-xs absolute right-1 top-1 font-bold">
-										x{group.count}
-									</div>
-								{/if}
-								<!-- Placed Indicator -->
-								{#if placed}
-									<div class="badge badge-success badge-xs absolute left-1 top-1 gap-0.5">
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											class="h-2.5 w-2.5"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-									</div>
-								{/if}
-							</div>
-						{/each}
+							{/each}
 						</div>
 					{/if}
 				</div>
@@ -1835,27 +1963,35 @@
 <!-- My Stickers Modal (mobile only) - Full screen slide up -->
 <div
 	class={classNames(
-		'fixed inset-0 z-50 md:hidden bg-base-100 flex flex-col transition-transform duration-300 ease-out',
+		'bg-base-100 fixed inset-0 z-50 flex flex-col transition-transform duration-300 ease-out md:hidden',
 		showStickersModal ? 'translate-y-0' : 'translate-y-full'
 	)}
 	style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
 >
 	<!-- Header -->
-	<div class="flex items-center justify-between p-4 border-b border-base-300 flex-shrink-0">
+	<div class="border-base-300 flex flex-shrink-0 items-center justify-between border-b p-4">
 		<h3 class="text-lg font-bold">
 			{#if isRefreshing}
 				My Stickers (loading...)
 			{:else if ownedGroups.length > 0}
-				My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce((sum, g) => sum + g.count, 0)} total)
+				My Stickers ({ownedGroups.length} groups, {ownedGroups.reduce((sum, g) => sum + g.count, 0)}
+				total)
 			{:else}
 				My Stickers (0 owned)
 			{/if}
 		</h3>
 		<button
 			class="btn btn-sm btn-circle btn-ghost"
-			onclick={() => showStickersModal = false}
+			onclick={() => (showStickersModal = false)}
+			aria-label="Close stickers panel"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-6 w-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+			>
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 			</svg>
 		</button>
@@ -1863,7 +1999,7 @@
 
 	<!-- Mix All Button -->
 	{#if mixableGroups.length > 0}
-		<div class="p-4 border-b border-base-300 flex-shrink-0">
+		<div class="border-base-300 flex-shrink-0 border-b p-4">
 			<button
 				class="btn btn-secondary btn-sm w-full gap-2"
 				onclick={handleMixAll}
@@ -1872,8 +2008,19 @@
 				{#if isMixing === 'all'}
 					<span class="loading loading-spinner loading-xs"></span>
 				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+						/>
 					</svg>
 				{/if}
 				Mix All ({mixableGroups.length})
@@ -1884,7 +2031,7 @@
 	<!-- Content -->
 	<div class="flex-1 overflow-y-auto p-4">
 		{#if ownedGroups.length === 0}
-			<div class="flex items-center justify-center h-full">
+			<div class="flex h-full items-center justify-center">
 				<div class="text-base-content/50 text-sm">
 					Play trivia or open booster packs to collect stickers!
 				</div>
@@ -1918,7 +2065,8 @@
 							{#if group.rarity}
 								<div
 									class="badge badge-xs mt-0.5 w-full justify-center"
-									style="background: linear-gradient(135deg, {group.rarity.colorFrom}, {group.rarity.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
+									style="background: linear-gradient(135deg, {group.rarity.colorFrom}, {group.rarity
+										.colorTo}); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3);"
 								>
 									{group.rarity.name}
 								</div>
@@ -1947,8 +2095,19 @@
 						{/if}
 						{#if placed}
 							<div class="badge badge-success badge-xs absolute left-1 top-1 gap-0.5">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-2.5 w-2.5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									/>
 								</svg>
 							</div>
 						{/if}

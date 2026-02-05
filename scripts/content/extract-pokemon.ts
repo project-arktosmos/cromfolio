@@ -16,7 +16,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createSqliteAdapter } from './core/db/sqlite-adapter.js';
-import type { Source, Sticker, ID } from './core/types.js';
+import type { Sticker, ID } from './core/types.js';
 
 const POKEMON_DIR = join(process.cwd(), 'static', 'pokemon');
 const CSV_PATH = join(POKEMON_DIR, 'data', 'pokemon_v2.csv');

@@ -15,7 +15,7 @@
 	<div class="relative w-full" style="max-width: {maxWidth};">
 		<!-- Collection cover positioned within the transparent window -->
 		{#if collection.coverImage}
-			<div class="absolute top-[6%] right-[12%] bottom-[8%] left-[12%] z-0 overflow-hidden">
+			<div class="absolute bottom-[8%] left-[12%] right-[12%] top-[6%] z-0 overflow-hidden">
 				<img
 					src={collection.coverImage}
 					alt={collection.title}
@@ -24,14 +24,12 @@
 			</div>
 		{/if}
 		<!-- Booster pack template on top (has transparent center) -->
-		<img
-			src="/booster-pack.png"
-			alt="Booster pack frame"
-			class="relative z-10 w-full"
-		/>
+		<img src="/booster-pack.png" alt="Booster pack frame" class="relative z-10 w-full" />
 		<!-- Region text on the booster pack -->
 		{#if collection.region}
-			<div class="absolute inset-x-0 bottom-[10%] z-20 flex flex-col items-center text-lg font-semibold text-white drop-shadow-lg [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]">
+			<div
+				class="absolute inset-x-0 bottom-[10%] z-20 flex flex-col items-center text-lg font-semibold text-white drop-shadow-lg [text-shadow:_0_1px_2px_rgb(0_0_0_/_80%)]"
+			>
 				<span>{collection.region}</span>
 				<span>Collection</span>
 			</div>

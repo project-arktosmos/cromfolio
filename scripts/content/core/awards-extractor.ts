@@ -368,7 +368,7 @@ export async function extractAwards(
 			console.log(`Completed ${year}: ${nominees.length - skipped} processed`);
 		}
 
-		const totalNominees = sourcesCreated > 0 ? stickersCreated : 0;
+		const _totalNominees = sourcesCreated > 0 ? stickersCreated : 0;
 		const message = dryRun
 			? `Dry run complete: would create ${sourcesCreated} sources with ${stickersCreated} stickers`
 			: `Created ${sourcesCreated} sources with ${stickersCreated} stickers`;

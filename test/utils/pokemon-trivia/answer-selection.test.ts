@@ -10,7 +10,11 @@ import {
 import type { PokemonWithTags } from '$services/tags.service';
 
 describe('pokemon-trivia/answer-selection', () => {
-	const createPokemon = (id: string, name: string, tags: Record<string, string>): PokemonWithTags => ({
+	const createPokemon = (
+		id: string,
+		name: string,
+		tags: Record<string, string>
+	): PokemonWithTags => ({
 		id,
 		name,
 		image: `${name.toLowerCase()}.png`,
@@ -61,7 +65,12 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Machamp', { attack: '130' })
 			];
 
-			const result = selectAnswers(candidates, 'superlative', 'attack', 'Which has highest attack?');
+			const result = selectAnswers(
+				candidates,
+				'superlative',
+				'attack',
+				'Which has highest attack?'
+			);
 
 			expect(result.correct?.name).toBe('Machamp');
 		});
@@ -89,7 +98,12 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Stronger', { attack: '150' })
 			];
 
-			const result = selectSuperlativeAnswers(candidates, 'attack', 'Which has highest attack?', true);
+			const result = selectSuperlativeAnswers(
+				candidates,
+				'attack',
+				'Which has highest attack?',
+				true
+			);
 
 			expect(result.correct?.name).toBe('Stronger');
 			expect(result.message).toContain('highest');
@@ -130,14 +144,28 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Lowest', { attack: '25' })
 			];
 
-			const result = selectSuperlativeAnswers(candidates, 'attack', 'Which has highest attack?', true);
+			const result = selectSuperlativeAnswers(
+				candidates,
+				'attack',
+				'Which has highest attack?',
+				true
+			);
 
 			// Wrong answers should not include tied values
 			expect(result.wrong.every((p) => p.tags.attack !== '100')).toBe(true);
 		});
 
 		it('should detect min keywords in question', () => {
-			const keywords = ['lowest', 'least', 'slowest', 'shortest', 'lightest', 'weakest', 'earliest', 'last in battle'];
+			const keywords = [
+				'lowest',
+				'least',
+				'slowest',
+				'shortest',
+				'lightest',
+				'weakest',
+				'earliest',
+				'last in battle'
+			];
 
 			keywords.forEach((keyword) => {
 				const candidates = [
@@ -147,7 +175,12 @@ describe('pokemon-trivia/answer-selection', () => {
 					createPokemon('4', 'Lowest', { stat: '10' })
 				];
 
-				const result = selectSuperlativeAnswers(candidates, 'stat', `Which has ${keyword} stat?`, true);
+				const result = selectSuperlativeAnswers(
+					candidates,
+					'stat',
+					`Which has ${keyword} stat?`,
+					true
+				);
 
 				expect(result.correct?.name).toBe('Lowest');
 			});
@@ -335,7 +368,11 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Grass', { 'against-ghost': '1' })
 			];
 
-			const result = selectTypeEffectivenessAnswers(candidates, 'against-ghost', 'Which is immune to Ghost?');
+			const result = selectTypeEffectivenessAnswers(
+				candidates,
+				'against-ghost',
+				'Which is immune to Ghost?'
+			);
 
 			expect(result.correct?.name).toBe('Normal');
 		});
@@ -350,7 +387,11 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Ice', { 'against-ice': '1' })
 			];
 
-			const result = selectTypeEffectivenessAnswers(candidates, 'against-ice', 'Which takes 4x from Ice?');
+			const result = selectTypeEffectivenessAnswers(
+				candidates,
+				'against-ice',
+				'Which takes 4x from Ice?'
+			);
 
 			expect(result.correct?.name).toBe('GrassFly');
 		});
@@ -365,7 +406,11 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Bug', { 'against-fire': '2' })
 			];
 
-			const result = selectTypeEffectivenessAnswers(candidates, 'against-fire', 'Which takes half damage from Fire?');
+			const result = selectTypeEffectivenessAnswers(
+				candidates,
+				'against-fire',
+				'Which takes half damage from Fire?'
+			);
 
 			expect(['Fire', 'Water']).toContain(result.correct?.name);
 		});
@@ -380,7 +425,11 @@ describe('pokemon-trivia/answer-selection', () => {
 				createPokemon('4', 'Rock', { 'against-fire': '0.5' })
 			];
 
-			const result = selectTypeEffectivenessAnswers(candidates, 'against-fire', 'Which takes 2x from Fire?');
+			const result = selectTypeEffectivenessAnswers(
+				candidates,
+				'against-fire',
+				'Which takes 2x from Fire?'
+			);
 
 			expect(result.correct?.name).toBe('Grass');
 		});

@@ -10,7 +10,12 @@
 		boosterPacksClaimed?: boolean;
 	}
 
-	let { correctAnswers, difficulty, difficultyConfig, boosterPacksClaimed = false }: Props = $props();
+	let {
+		correctAnswers,
+		difficulty,
+		difficultyConfig,
+		boosterPacksClaimed = false
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		playAgain: void;
@@ -58,7 +63,8 @@
 			</div>
 
 			<p class="text-base-content/70 mt-2">
-				You answered {correctAnswers} question{correctAnswers !== 1 ? 's' : ''} correctly before running out of lives!
+				You answered {correctAnswers} question{correctAnswers !== 1 ? 's' : ''} correctly before running
+				out of lives!
 			</p>
 
 			<div class="stats bg-base-300 mt-6">
@@ -77,12 +83,13 @@
 			<!-- Booster Pack Reward Section -->
 			<div class="bg-primary/10 border-primary/30 mt-4 rounded-lg border p-4 text-center">
 				{#if boosterPacksClaimed}
-					<p class="text-success font-medium">
-						Booster packs claimed!
-					</p>
+					<p class="text-success font-medium">Booster packs claimed!</p>
 				{:else if earnedPacks > 0}
 					<p class="mb-2 text-sm">
-						You earned <span class="text-primary font-bold">{earnedPacks}</span> booster pack{earnedPacks !== 1 ? 's' : ''}!
+						You earned <span class="text-primary font-bold">{earnedPacks}</span> booster pack{earnedPacks !==
+						1
+							? 's'
+							: ''}!
 					</p>
 					<button
 						class="btn btn-primary"
@@ -94,9 +101,7 @@
 					<p class="text-base-content/50 mb-2 text-sm">
 						Get 3+ correct answers to earn booster packs!
 					</p>
-					<button class="btn btn-primary" disabled>
-						Open Booster Packs
-					</button>
+					<button class="btn btn-primary" disabled> Open Booster Packs </button>
 				{/if}
 			</div>
 
@@ -105,5 +110,4 @@
 			</div>
 		</div>
 	</div>
-
 </div>

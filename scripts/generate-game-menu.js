@@ -97,7 +97,7 @@ function generateMenuItems() {
 			}
 			return a.label.localeCompare(b.label);
 		});
-	} catch (error) {
+	} catch (_error) {
 		console.warn('Game routes directory not found, creating empty menu');
 	}
 

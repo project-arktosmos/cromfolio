@@ -7,7 +7,11 @@ export interface TriviaModalState {
 }
 
 function createTriviaModalStore() {
-	const { subscribe, set, update } = writable<TriviaModalState>({
+	const {
+		subscribe,
+		set,
+		update: _update
+	} = writable<TriviaModalState>({
 		isOpen: false,
 		collection: null
 	});

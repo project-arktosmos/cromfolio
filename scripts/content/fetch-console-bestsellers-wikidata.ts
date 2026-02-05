@@ -336,7 +336,7 @@ async function fetchConsoleGamesAlternative(
 			title: r.gameLabel.value,
 			copies: parseFloat(r.copies.value) / 1000000
 		}));
-	} catch (error) {
+	} catch (_error) {
 		console.log('    Alternative query failed, returning empty');
 		return [];
 	}
@@ -371,7 +371,7 @@ async function main() {
 
 	let outputFile = 'src/data/games/console-bestsellers-wikidata.json';
 	let maxGames = 100;
-	let consoleFilter: string[] = [];
+	const consoleFilter: string[] = [];
 	let manufacturerFilter: string | null = null;
 	let showCoverage = false;
 	let listConsoles = false;
@@ -537,7 +537,7 @@ Examples:
 	console.log('-'.repeat(60));
 
 	let totalGames = 0;
-	for (const [id, data] of Object.entries(output)) {
+	for (const [_id, data] of Object.entries(output)) {
 		console.log(`  ${data.name.padEnd(25)} ${data.games.length} games with sales data`);
 		totalGames += data.games.length;
 	}

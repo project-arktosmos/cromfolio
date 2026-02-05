@@ -12,7 +12,8 @@
 
 <div
 	class="pointer-events-none fixed z-[100]"
-	style="left: {mousePosition.x - size / 2}px; top: {mousePosition.y - size / 2}px; width: {size}px; height: {size}px;"
+	style="left: {mousePosition.x - size / 2}px; top: {mousePosition.y -
+		size / 2}px; width: {size}px; height: {size}px;"
 >
 	{@render children()}
 	<div

@@ -7,7 +7,6 @@
 import type {
 	ExtractTvOptions,
 	ExtractResult,
-	Source,
 	Sticker,
 	ImageItem,
 	CharacterItem,

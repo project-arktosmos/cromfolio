@@ -304,7 +304,7 @@ function parseCopiesSold(text: string): number {
  * | {{nts|69.56}}{{nbsp}}million
  * | ...
  */
-function parseGamesFromContent(content: string, consoleName: string): GameEntry[] {
+function parseGamesFromContent(content: string, _consoleName: string): GameEntry[] {
 	const games: GameEntry[] = [];
 
 	// Find wikitables in the content
@@ -340,18 +340,10 @@ function parseGamesFromContent(content: string, consoleName: string): GameEntry[
 
 		let titleCol = -1;
 		let copiesCol = -1;
-		let developerCol = -1;
-		let publisherCol = -1;
-		let genreCol = -1;
-		let dateCol = -1;
 
 		headerCells.forEach((h, i) => {
 			if (h.includes('title') || h.includes('game')) titleCol = i;
 			if (h.includes('copies') || h.includes('sold') || h.includes('sales')) copiesCol = i;
-			if (h.includes('developer')) developerCol = i;
-			if (h.includes('publisher')) publisherCol = i;
-			if (h.includes('genre')) genreCol = i;
-			if (h.includes('release') && h.includes('date')) dateCol = i;
 		});
 
 		// If we couldn't find columns, use defaults (Title=0, Copies=1)
@@ -504,7 +496,7 @@ async function main() {
 
 	let outputFile = 'src/data/games/console-bestsellers.json';
 	let maxGames = 100;
-	let consoleFilter: string[] = [];
+	const consoleFilter: string[] = [];
 	let manufacturerFilter: string | null = null;
 	let typeFilter: string | null = null;
 	let listConsoles = false;
@@ -631,7 +623,7 @@ Examples:
 	console.log('-'.repeat(60));
 
 	let totalGames = 0;
-	for (const [id, data] of Object.entries(output)) {
+	for (const [_id, data] of Object.entries(output)) {
 		console.log(`  ${data.name.padEnd(25)} ${data.games.length} games`);
 		totalGames += data.games.length;
 	}

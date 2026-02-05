@@ -3,7 +3,7 @@
  * Wraps the UI's awards.service.ts functions for use with the extractor
  */
 
-import type { AwardEvent, EventInfo } from '../types.js';
+import type { AwardEvent } from '../types.js';
 import type { AwardsDataLoader } from '../awards-extractor.js';
 
 // These will be dynamically imported from the UI service

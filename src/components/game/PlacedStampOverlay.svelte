@@ -7,7 +7,7 @@
 		handleImageError as onImageError,
 		STAMP_FALLBACK_IMAGE
 	} from '$utils/stamp-image';
-	import PlacedOverlay from './PlacedOverlay.svelte';
+	import PlacedOverlay from '$components/game/PlacedOverlay.svelte';
 
 	interface Props {
 		placedStamps: UserPlacedStamp[];

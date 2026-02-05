@@ -109,6 +109,8 @@
 	style="left: {clampedX}px; bottom: 100px; width: 360px; max-height: 480px;"
 	onmouseenter={() => onpanelenter?.()}
 	onmouseleave={() => onpanelleave?.()}
+	role="region"
+	aria-label="Icon picker panel"
 >
 	<!-- Header -->
 	<div class="mb-3 flex items-center justify-between">
@@ -147,6 +149,7 @@
 						style="background-color: {color}"
 						onclick={() => (selectedColor = color)}
 						title={color}
+						aria-label="Select color {color}"
 					></button>
 				{/each}
 			</div>
@@ -171,6 +174,7 @@
 						class="hover:bg-base-300 bg-base-100 aspect-square cursor-pointer rounded-md p-1.5 transition-all hover:scale-105"
 						onclick={() => handleIconClick(icon)}
 						title="{icon.subdir}/{icon.filename}"
+						aria-label="Place icon {icon.filename}"
 					>
 						<div
 							class="h-full w-full"

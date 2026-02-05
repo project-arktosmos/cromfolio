@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import AnswerButton from './AnswerButton.svelte';
+	import AnswerButton from '$components/trivia/AnswerButton.svelte';
 	import type { PokemonTriviaTemplateV2 } from '$types/pokemon-trivia-template.type';
 
 	interface Answer {

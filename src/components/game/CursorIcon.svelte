@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CursorPlacement from './CursorPlacement.svelte';
+	import CursorPlacement from '$components/game/CursorPlacement.svelte';
 
 	interface Props {
 		iconPath: string;

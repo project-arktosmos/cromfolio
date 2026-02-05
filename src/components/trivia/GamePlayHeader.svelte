@@ -12,8 +12,14 @@
 		difficultyConfig: DifficultyConfig;
 	}
 
-	let { currentQuestionIndex, livesRemaining, maxLives, correctAnswers, difficulty, difficultyConfig }: Props =
-		$props();
+	let {
+		currentQuestionIndex: _currentQuestionIndex,
+		livesRemaining,
+		maxLives,
+		correctAnswers,
+		difficulty,
+		difficultyConfig
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		quit: void;
@@ -68,11 +74,14 @@
 	<div class="flex w-full items-center justify-center gap-2">
 		<span class="text-base-content/70 text-sm">Lives:</span>
 		<div class="flex gap-1">
-			{#each Array(maxLives) as _, i}
-				<span class={classNames('text-2xl transition-all', {
-					'opacity-100': i < livesRemaining,
-					'opacity-30 grayscale': i >= livesRemaining
-				})}>❤️</span>
+			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
+			{#each Array(maxLives) as _, i (i)}
+				<span
+					class={classNames('text-2xl transition-all', {
+						'opacity-100': i < livesRemaining,
+						'opacity-30 grayscale': i >= livesRemaining
+					})}>❤️</span
+				>
 			{/each}
 		</div>
 	</div>

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import classNames from 'classnames';
 	import lottie, { type AnimationItem } from 'lottie-web';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { convertFileSrc } from '@tauri-apps/api/core';
 	import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 	import { open } from '@tauri-apps/plugin-dialog';
@@ -10,7 +11,6 @@
 	import {
 		startTelegramImport,
 		getTelegramImportProgress,
-		cancelTelegramImport,
 		resetTelegramImport,
 		type TelegramImportProgress
 	} from '$services/telegram-import.service';
@@ -69,7 +69,7 @@
 	let stampsDataDir = $state('');
 
 	// Lottie animation references for thumbnails
-	let lottieThumbAnims: Map<string, AnimationItem> = new Map();
+	let lottieThumbAnims: SvelteMap<string, AnimationItem> = new SvelteMap();
 
 	// Telegram import state
 	let telegramUrl = $state('');
@@ -89,7 +89,7 @@
 	let searchError = $state<string | null>(null);
 	let searchVariations = $state<string[]>([]);
 	let searchOffset = $state(0);
-	let searchSeenNames = $state<Set<string>>(new Set());
+	let searchSeenNames: SvelteSet<string> = new SvelteSet();
 	let hasMoreSearchResults = $derived(searchOffset < searchVariations.length);
 
 	// WhatsApp import state
@@ -302,21 +302,6 @@
 	// ============================================================================
 	// TELEGRAM IMPORT FUNCTIONS
 	// ============================================================================
-
-	/**
-	 * Parse pack name from Telegram URL
-	 */
-	function parsePackName(input: string): string | null {
-		const trimmed = input.trim();
-		const urlMatch = trimmed.match(/(?:https?:\/\/)?t\.me\/addstickers\/([a-zA-Z0-9_]+)/);
-		if (urlMatch) {
-			return urlMatch[1];
-		}
-		if (/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-			return trimmed;
-		}
-		return null;
-	}
 
 	/**
 	 * Fetch sticker pack from Telegram API and save to database (via Rust backend)
@@ -569,7 +554,7 @@
 			.toLowerCase()
 			.replace(/\s+/g, '_')
 			.replace(/[^a-z0-9_]/g, '');
-		const variations = new Set<string>();
+		const variations = new SvelteSet<string>();
 
 		// Add base variations
 		variations.add(base);
@@ -604,7 +589,7 @@
 		isSearching = true;
 		searchError = null;
 		searchResults = [];
-		searchSeenNames = new Set();
+		searchSeenNames = new SvelteSet();
 		searchOffset = 0;
 
 		const query = searchQuery.trim();
@@ -663,7 +648,7 @@
 	async function loadSearchBatch(
 		variations: string[],
 		startOffset: number,
-		seenNames: Set<string>,
+		seenNames: SvelteSet<string>,
 		maxResults: number
 	): Promise<{
 		newResults: { name: string; title: string; stickerCount?: number; thumbUrl?: string }[];
@@ -914,18 +899,20 @@
 </script>
 
 {#if modalState.isOpen}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 		onclick={handleClose}
+		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="stamps-modal-title"
+		tabindex="-1"
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="bg-base-100 flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="presentation"
 		>
 			<!-- Header -->
 			<div class="bg-base-200 flex flex-shrink-0 items-center justify-between border-b p-4">
@@ -1216,7 +1203,9 @@
 											<div class="min-w-0 flex-1">
 												<div class="flex items-center gap-2">
 													<span class="truncate text-sm font-medium">{pack.name}</span>
-													<span class={classNames('badge badge-xs', getSourceBadgeClass(pack.source))}>
+													<span
+														class={classNames('badge badge-xs', getSourceBadgeClass(pack.source))}
+													>
 														{pack.source}
 													</span>
 												</div>

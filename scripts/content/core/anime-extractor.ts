@@ -7,7 +7,6 @@
 import type {
 	ExtractAnimeOptions,
 	ExtractAnimeResult,
-	Source,
 	Sticker,
 	ImageItem,
 	CharacterItem,

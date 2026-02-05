@@ -29,12 +29,6 @@ const MAJOR_CATEGORIES = [
 	'Grammy_Award_for_Best_Classical_Album'
 ];
 
-interface WikipediaPage {
-	title: string;
-	extract?: string;
-	revisions?: Array<{ content: string }>;
-}
-
 interface GrammyEntry {
 	year: number;
 	category: string;
@@ -144,10 +138,6 @@ async function parseGrammyCeremonyPage(ceremonyNumber: number): Promise<GrammyEn
 
 	// Also try to parse wikitables if templates didn't work
 	if (entries.length === 0) {
-		// Simple table parsing - look for patterns
-		const tablePattern = /\{\|\s*class="wikitable"[^}]*\|-(.*?)\|\}/gs;
-		const tables = content.match(tablePattern) || [];
-
 		// Parse General Field section specifically
 		const generalFieldMatch = content.match(/===\s*General\s*[Ff]ield\s*===([^=]*?)(?====|$)/s);
 		if (generalFieldMatch) {
@@ -330,7 +320,9 @@ function getOrdinalSuffix(n: number): string {
 /**
  * Transform entries to award format
  */
-function transformToAwardFormat(entries: GrammyEntry[]): Record<string, any> {
+function transformToAwardFormat(
+	entries: GrammyEntry[]
+): Record<string, { grammy: Record<string, { nominee: string[]; winner: string[] }> }> {
 	const result: Record<
 		string,
 		{ grammy: Record<string, { nominee: string[]; winner: string[] }> }

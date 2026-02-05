@@ -199,9 +199,10 @@ export function selectReverseLookupAnswers(
 	return {
 		correct,
 		wrong,
-		message: wrong.length < 3
-			? 'Limited differentiated options'
-			: `\u2713 Only ${correct.name} has ${primaryAttribute}: ${correctValue}`
+		message:
+			wrong.length < 3
+				? 'Limited differentiated options'
+				: `\u2713 Only ${correct.name} has ${primaryAttribute}: ${correctValue}`
 	};
 }
 
@@ -385,8 +386,9 @@ export function selectTypeEffectivenessAnswers(
 	return {
 		correct,
 		wrong,
-		message: wrong.length < 3
-			? 'Limited differentiated options'
-			: `\u2713 ${correct.name} has ${primaryAttribute}: ${targetValue}x`
+		message:
+			wrong.length < 3
+				? 'Limited differentiated options'
+				: `\u2713 ${correct.name} has ${primaryAttribute}: ${targetValue}x`
 	};
 }

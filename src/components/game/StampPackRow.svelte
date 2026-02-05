@@ -48,6 +48,8 @@
 			onmouseenter={(e) => onpackhover?.(pack, e)}
 			onmouseleave={() => onpackleave?.()}
 			title={pack.name}
+			role="img"
+			aria-label={pack.name}
 		>
 			<img
 				src={getCoverImage(pack)}

@@ -47,6 +47,8 @@
 	style="left: {clampedX}px; bottom: 100px;"
 	onmouseenter={() => onpanelenter?.()}
 	onmouseleave={() => onpanelleave?.()}
+	role="region"
+	aria-label="Stamp selection panel"
 >
 	<h3 class="mb-2 truncate text-sm font-bold" title={pack.name}>{pack.name}</h3>
 	<div class="grid max-h-64 grid-cols-4 gap-1.5 overflow-y-auto">

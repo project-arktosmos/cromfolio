@@ -6,7 +6,7 @@
 		handleImageError as onImageError,
 		STAMP_FALLBACK_IMAGE
 	} from '$utils/stamp-image';
-	import CursorPlacement from './CursorPlacement.svelte';
+	import CursorPlacement from '$components/game/CursorPlacement.svelte';
 
 	interface Props {
 		stamp: Stamp;

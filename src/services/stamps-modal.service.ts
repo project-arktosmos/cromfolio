@@ -14,7 +14,7 @@ const initialState: StampsModalState = {
 };
 
 function createStampsModalService() {
-	const { subscribe, set, update } = writable<StampsModalState>(initialState);
+	const { subscribe, set: _set, update } = writable<StampsModalState>(initialState);
 
 	return {
 		subscribe,

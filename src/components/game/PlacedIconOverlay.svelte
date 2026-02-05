@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { UserPlacedIcon } from '$types/user-placed-icon.type';
-	import PlacedOverlay from './PlacedOverlay.svelte';
+	import PlacedOverlay from '$components/game/PlacedOverlay.svelte';
 
 	interface Props {
 		placedIcons: UserPlacedIcon[];

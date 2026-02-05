@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { boosterPackModalService } from '$services/booster-pack-modal.service';
 	import { getCollection, getStickersForCollection } from '$services/collections.service';
 	import { getRarityCollection } from '$services/rarities.service';
@@ -35,7 +36,7 @@
 	let collection = $state<Collection | null>(null);
 	let collectionStickers = $state<Sticker[]>([]);
 	let rarities = $state<Rarity[]>([]);
-	let raritiesMap = $state<Map<string, Rarity>>(new Map());
+	let raritiesMap: SvelteMap<string, Rarity> = new SvelteMap();
 
 	// Pack states: track which packs are opened and their stickers
 	interface PackState {
@@ -47,15 +48,15 @@
 	}
 	let packStates = $state<PackState[]>([]);
 	let allBoosterStickers = $state<Sticker[]>([]);
-	let boosterStickerRarityMap = $state<Map<string, string>>(new Map());
+	let boosterStickerRarityMap: SvelteMap<string, string> = new SvelteMap();
 
 	// Currently viewing pack (null = pack selection, number = viewing specific pack's results)
 	let viewingPackId = $state<number | null>(null);
 
 	// Dragging state for pack movement
 	let draggingPackId = $state<number | null>(null);
-	let activeDragPackIds = $state<Set<number>>(new Set()); // Packs being dragged together in this session
-	let packXOffsets = $state<Map<number, number>>(new Map());
+	let activeDragPackIds: SvelteSet<number> = new SvelteSet(); // Packs being dragged together in this session
+	let packXOffsets: SvelteMap<number, number> = new SvelteMap();
 	let gridRef = $state<HTMLElement | null>(null);
 
 	async function handlePackMouseDown(packId: number, event: MouseEvent) {
@@ -76,7 +77,7 @@
 		draggingPackId = packId;
 
 		// Track all unopened packs that will be dragged together
-		const draggedPacks = new Set<number>();
+		const draggedPacks = new SvelteSet<number>();
 		for (let i = 0; i <= packId; i++) {
 			const pack = packStates.find((p) => p.id === i);
 			if (pack && !pack.isOpened) {
@@ -89,7 +90,7 @@
 	function handleMouseUp() {
 		if (draggingPackId !== null) {
 			draggingPackId = null;
-			activeDragPackIds = new Set();
+			activeDragPackIds = new SvelteSet();
 		}
 	}
 
@@ -107,19 +108,20 @@
 		const maxOffset = gridRect.width - packWidth;
 		offset = Math.max(minOffset, Math.min(maxOffset, offset));
 
-		const newOffsets = new Map(packXOffsets);
 		// Update offset for all packs that are part of this drag session
 		for (const packId of activeDragPackIds) {
-			newOffsets.set(packId, offset);
+			packXOffsets.set(packId, offset);
 		}
-		packXOffsets = newOffsets;
 
 		// Calculate how many cells the pack has uncovered based on position
 		const cellWidth = gridRect.width / 7;
 		// Pack starts at column 0, reveals happen when pack moves past cell boundaries
 		// Cell 1 is revealed when pack's right edge passes cell 1's left edge
 		const packRightEdge = offset + packWidth;
-		const revealedCells = Math.min(5, Math.max(0, Math.floor((packRightEdge - cellWidth) / cellWidth)));
+		const revealedCells = Math.min(
+			5,
+			Math.max(0, Math.floor((packRightEdge - cellWidth) / cellWidth))
+		);
 
 		// Update reveal count for dragged pack and all unopened packs above it
 		for (let i = 0; i <= draggingPackId; i++) {
@@ -156,13 +158,11 @@
 		const commonRarity = rarities.find((r) => r.sortOrder === 0);
 
 		// Track rarity for display
-		const newRarityMap = new Map(boosterStickerRarityMap);
 		for (const sticker of packStickers) {
 			if (commonRarity) {
-				newRarityMap.set(String(sticker.id), String(commonRarity.id));
+				boosterStickerRarityMap.set(String(sticker.id), String(commonRarity.id));
 			}
 		}
-		boosterStickerRarityMap = newRarityMap;
 
 		// Store the stickers in pack state
 		packStates[packIndex].stickers = packStickers;
@@ -182,7 +182,12 @@
 
 		// Acquire all stickers from this pack
 		for (const sticker of packStickers) {
-			await acquireSticker(sticker.id, sticker.sourceId, modalState.collectionId!, commonRarity?.id);
+			await acquireSticker(
+				sticker.id,
+				sticker.sourceId,
+				modalState.collectionId!,
+				commonRarity?.id
+			);
 		}
 
 		// Mark pack as opened
@@ -244,7 +249,7 @@
 
 		isInitializing = true;
 		allBoosterStickers = [];
-		boosterStickerRarityMap = new Map();
+		boosterStickerRarityMap = new SvelteMap();
 		viewingPackId = null;
 
 		// Load collection data for display
@@ -252,7 +257,10 @@
 
 		// Load rarities
 		rarities = await getRarityCollection();
-		raritiesMap = new Map(rarities.map((r) => [String(r.id), r]));
+		raritiesMap = new SvelteMap<string, Rarity>();
+		for (const r of rarities) {
+			raritiesMap.set(String(r.id), r);
+		}
 
 		// Load collection stickers
 		collectionStickers = await getStickersForCollection(modalState.collectionId);
@@ -267,7 +275,7 @@
 		}));
 
 		// Reset drag state
-		packXOffsets = new Map();
+		packXOffsets = new SvelteMap();
 
 		isInitializing = false;
 	}
@@ -299,20 +307,22 @@
 </script>
 
 {#if modalState.isOpen}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 		onclick={handleClose}
+		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		onmousemove={handleMouseMove}
 		onmouseup={handleMouseUp}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="booster-modal-title"
+		tabindex="-1"
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="bg-base-100 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="presentation"
 		>
 			<!-- Header -->
 			<div class="bg-base-200 flex items-center justify-between border-b p-4">
@@ -382,9 +392,7 @@
 										Open More Packs
 									</button>
 								{:else}
-									<button class="btn btn-primary" onclick={handleDone}>
-										Awesome!
-									</button>
+									<button class="btn btn-primary" onclick={handleDone}> Awesome! </button>
 								{/if}
 							</div>
 						</div>
@@ -395,9 +403,7 @@
 						<div class="text-base-content/60 text-center">
 							<p>No stickers available in this collection.</p>
 						</div>
-						<button class="btn btn-outline" onclick={handleDone}>
-							Back
-						</button>
+						<button class="btn btn-outline" onclick={handleDone}> Back </button>
 					</div>
 				{:else}
 					<!-- Pack selection view -->
@@ -468,7 +474,9 @@
 									<!-- Unopened pack - clickable -->
 									<button
 										class="z-10 cursor-pointer border border-black transition-opacity"
-										style="transform: {getPackTransform(pack.id)}; opacity: {getPackOpacity(pack.id)}"
+										style="transform: {getPackTransform(pack.id)}; opacity: {getPackOpacity(
+											pack.id
+										)}"
 										onmousedown={(e) => handlePackMouseDown(pack.id, e)}
 									>
 										{#if collection}
@@ -477,6 +485,7 @@
 									</button>
 								{/if}
 								<!-- Columns 2-6: Sticker reveal cells -->
+								<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 								{#each Array(5) as _, i (i)}
 									{@const revealedSticker = getRevealedSticker(pack.id, i)}
 									<div class="flex aspect-[2/3] items-center justify-center border border-black">
@@ -498,9 +507,7 @@
 							{/each}
 						</div>
 						{#if getAllPacksOpened()}
-							<button class="btn btn-primary" onclick={handleDone}>
-								Awesome!
-							</button>
+							<button class="btn btn-primary" onclick={handleDone}> Awesome! </button>
 						{/if}
 					</div>
 				{/if}

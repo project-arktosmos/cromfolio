@@ -63,12 +63,7 @@
 				onerror={handleImageError}
 			/>
 		{:else}
-			<img
-				src={sticker.image}
-				alt={sticker.name}
-				class="w-full"
-				onerror={handleImageError}
-			/>
+			<img src={sticker.image} alt={sticker.name} class="w-full" onerror={handleImageError} />
 		{/if}
 	</div>
 	{#if sticker.sourceName}

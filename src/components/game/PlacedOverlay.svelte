@@ -1,4 +1,7 @@
-<script lang="ts" generics="T extends { id: string | number; positionX: number; positionY: number; scale: number; rotation: number }">
+<script
+	lang="ts"
+	generics="T extends { id: string | number; positionX: number; positionY: number; scale: number; rotation: number }"
+>
 	import classNames from 'classnames';
 	import type { Snippet } from 'svelte';
 
@@ -32,6 +35,7 @@
 
 <div class={computedClasses}>
 	{#each items as item (item.id)}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 		<div
 			class={classNames('group absolute h-12 w-12', {
 				'hover:ring-primary pointer-events-auto cursor-pointer rounded hover:ring-2': editable
@@ -42,8 +46,10 @@
 				transform: translate(-50%, -50%) scale({item.scale}) rotate({item.rotation}deg);
 			"
 			onclick={() => editable && onitemclick?.(item)}
+			onkeydown={(e) => editable && e.key === 'Enter' && onitemclick?.(item)}
 			role={editable ? 'button' : 'img'}
 			tabindex={editable ? 0 : -1}
+			aria-label={editable ? 'Edit placed item' : 'Placed item'}
 		>
 			{@render children(item)}
 			{#if editable}
