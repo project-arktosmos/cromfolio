@@ -37,4 +37,4 @@ coverage/
 .claude/
 
 # LLM Models (large files)
-/models/
+/models/release.keystore

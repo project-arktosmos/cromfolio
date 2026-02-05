@@ -1,0 +1,133 @@
+name: Android Release
+
+on:
+  release:
+    types: [created]
+
+# Only run if the tag starts with 'v'
+jobs:
+  build-android:
+    if: startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
+          add-to-path: true
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2"
+
+      - name: Initialize Tauri Android
+        run: cargo tauri android init
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
+
+      - name: Build Android APK (Release)
+        run: cargo tauri android build --apk
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Sign APK
+        run: |
+          # Find the unsigned APK
+          APK_PATH=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" | head -1)
+          SIGNED_APK="${{ github.workspace }}/cromfolio-${{ github.ref_name }}.apk"
+
+          # Sign with apksigner
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks ${{ github.workspace }}/release.keystore \
+            --ks-key-alias ${{ secrets.ANDROID_KEY_ALIAS }} \
+            --ks-pass pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+            --key-pass pass:${{ secrets.ANDROID_KEY_PASSWORD }} \
+            --out "$SIGNED_APK" \
+            "$APK_PATH"
+
+          echo "SIGNED_APK=$SIGNED_APK" >> $GITHUB_ENV
+
+      - name: Build Android AAB (Release)
+        run: cargo tauri android build --aab
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Sign AAB
+        run: |
+          # Find the unsigned AAB
+          AAB_PATH=$(find src-tauri/gen/android/app/build/outputs/bundle -name "*.aab" | head -1)
+          SIGNED_AAB="${{ github.workspace }}/cromfolio-${{ github.ref_name }}.aab"
+
+          # Sign with jarsigner
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore ${{ github.workspace }}/release.keystore \
+            -storepass ${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+            -keypass ${{ secrets.ANDROID_KEY_PASSWORD }} \
+            -signedjar "$SIGNED_AAB" \
+            "$AAB_PATH" \
+            ${{ secrets.ANDROID_KEY_ALIAS }}
+
+          echo "SIGNED_AAB=$SIGNED_AAB" >> $GITHUB_ENV
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.SIGNED_APK }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload AAB to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.SIGNED_AAB }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup keystore
+        if: always()
+        run: rm -f ${{ github.workspace }}/release.keystore
