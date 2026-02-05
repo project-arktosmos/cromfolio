@@ -1,149 +1,100 @@
-# Untitled Collections Project
+# Cromfolio
 
-## What this is
+A digital collectible sticker game where players collect cards organized into themed albums spanning movies, TV shows, anime, video games, sports, and more. Progress by playing trivia games and earn booster packs to expand your collection.
 
-- A very very pirate fangame of collectible cards and albums spanning multiple themes
-- The way to progress is via involvement in a franchise, ie, via guitar hero tap games on the franchise's music, or by answering trivia questions
+## Features
 
-## Album Families
+### Collections & Stickers
+- Browse themed collections (Pokémon generations, TV shows, movies, anime, etc.)
+- Each collection contains stickers with varying rarity levels
+- Track completion percentage based on rarity scores
+- View collections in a paginated grid layout
 
-### API Coverage
+### Trivia Games
+- Answer trivia questions to earn booster packs
+- Two difficulty modes: Easy (3 lives, 10s timer) and Hard (1 life, 5s timer)
+- Questions generated dynamically from collection-specific templates
+- Track your stats: games played, best score, best streak, accuracy
 
-|   Theme    |  Album API   |        Card API        |
-| :--------: | :----------: | :--------------------: |
-|   Movies   |     OMDB     |     TMDB / TVMaze      |
-|  TV Shows  |     OMDB     |     TMDB / TVMaze      |
-|   Anime    |   AniList    |         Jikan          |
-| Videogames |     IGDB     |      StreamGridDB      |
-|  Animals   |   WikiData   | Wikimedia, iNaturalist |
-|   Sports   |  TheSportsDB |       TheSportsDB      |
+### Booster Pack System
+- Earn packs through trivia games and timed rewards
+- Each pack contains 5 random stickers with weighted rarity
+- Interactive drag-and-drop pack opening experience
+- Stickers have color-coded rarity levels
 
-| Cartoons (non-anime)
-| Geography
-| Vehicles
-| Minerals
-| Plants
-| Astronomy
-| Classic Art
-| Mythology
-| Cuisine
-| Fashion
+### Timed Rewards
+- Earn 1 booster pack every 10 minutes per active collection
+- Real-time countdown timers show when rewards are ready
+- Rewards scale with collection completion percentage
 
-### Available Metadata
+### Album Customization
+- Place decorative stamps and icons on album pages
+- Drag-and-drop positioning with scale and rotation
+- Decorations persist across sessions
 
-All albums contain the following, common metadata:
+## Tech Stack
 
-- Title
-- Cover
-- Category (Movie, TV Show, Animal Genus,...)
+- **Frontend**: SvelteKit, TailwindCSS v4, DaisyUI v5
+- **Desktop**: Tauri v2 (Rust)
+- **Database**: SQLite for persistent storage
+- **State**: Svelte stores with localStorage for game state
 
-And all cards, regardless of the album they are in, have the following shared metadata:
+## Development
 
-- Title
-- Image(s)
--
+### Prerequisites
+- Node.js 18+
+- pnpm
+- Rust toolchain (for Tauri)
 
-|   Album    |      Album Fields      |   Card Element   | Metadata Fields (Cards) |
-| :--------: | :--------------------: | :--------------: | :---------------------: |
-|   Movies   | Year, Authors, Country |    Character     |          Actor          |
-|  TV Shows  | Year, Authors, Country |    Character     |      Season, Actor      |
-|   Music    | Year, Authors, Country |      Album       |      Year, Author       |
-|   Anime    |     Year, Authors      |    Character     |       Year, Actor       |
-| Videogames |     Year, Authors      |     Character    |          Actor          |
-|   Books    | Year, Authors, Country | Individual Books |          Year           |
-|  Animals   |
-|   Sports   |        Country         |     Players      |          Year           |
+### Setup
 
-## Minigames
-The game is mostly flavored trivia questions, as generic in their formatting and data-sourcing as possible, to ease inclusion and expansion.
+```bash
+# Install dependencies
+pnpm install
 
-Universal minigames (work with all albums and card types):
+# Run in development mode
+pnpm dev
 
-- Odd One Out: 2 cards belong to that collection, one doesn't. All cards start fully blurred, and a timer unblurs them, and the quicker the response, if right, the highest the score
-- Memory flip: Time-driven memory flip game
-- Hanging Man: A blurred card is shown. Each subsequent letter picked right reveals the image further, and each miss is penalized. Not timed, but scored based off wrong hits
+# Build for production
+pnpm build
 
-|     Minigame     |                                                      Mechanics                                                      |
-| :--------------: | :-----------------------------------------------------------------------------------------------------------------: |
-|   Historigram    |       Get 3 year-tagged events from the album, and place them in order. Requires each card to include a year        |
-|   Odd One Out    |                         3 images shown, 2 belong to this album, and 1 to an adjacent album                          |
-|   Hanging Man    |          Get a blurry card image, not yet owned. Each correctly guessed letter makes the image less blurry          |
-|   Memory Flip    |                                              Flip cards and pair them                                               |
-|      Wordle      | given X-length words, player can guess, and get which letters they got right. Can use any term related to the album |
-|  Who Said What   |                 Match a quote with 3 possible cards who said that. Requires cards to be characters                  |
-| Guess the Author |                          Presents a card and 3 possible authors. Requires authors in cards                          |
+# Run Tauri desktop app
+pnpm tauri dev
+```
 
-## Albums & Cards
+### Testing
 
-There are several types of album families for each album category
-### Movies
-Album
+```bash
+pnpm test           # Run all tests
+pnpm test:ui        # Interactive test UI
+pnpm test:coverage  # Coverage report
+```
 
-- Individual Movies (Fight Club Album)
-- Movies from a decade (90s Movies Album)
-- Movies with an author/actor in them
+## Project Structure
 
-### TV Shows
-Album
+```
+src/
+├── routes/           # SvelteKit pages
+├── components/       # Reusable UI components
+├── services/         # Business logic and state management
+├── adapters/         # Data transformation
+├── types/            # TypeScript definitions
+└── utils/            # Pure utility functions
 
-- Individual TV Shows
-- movies from a decade
+src-tauri/
+├── src/commands/     # Rust commands exposed to frontend
+└── src/db/           # SQLite database operations
+```
 
-## Albert @ Ilustrum call
+## Data Sources
 
-4k collections when they closed
+Collections pull metadata from various APIs:
 
-private collections
-
-- history, flags, politics
-
-- new colletions are important
-- they release sunday night, multiples, via moderation
--
-
-## Collection Types
-
-### Movie & TV Prize
-
-- use the award list collection api to produce an album for each year's nominees and winners
-  - assemble a single page per movie, using 4 of its images
-    - poster
-    - backdrop
-    - director?
-    - protagonist?
-    - nominee?
-
-### Anime
-
-- each anime gets their own album
-  - has anime posters
-  - has character imagery
-
-### Sport Leagues
-
-- similar to the awards one
-- need to find a proper way to fetch the team and players data
-- make one for each sport, competition and year
-
-### Music Awards
-
-- collect artist image and album cover for nominees and winners to grammys and the such
-
-### Launch Collections
-
-- Movie and TV awards, 1 per decade
-  - movie posters
-- Billboard albums
-  - collect album covers and artist images
-- pokemon
-  - 1 per gen
-  - pokemon and gym leader art
-  - trivia is by pokemon gen and types, as well as who evolves into who, or from whom
-- digimon
-  - split by anime series
-  - digimon, digidestined and appearing, from wikias maybe
-  - digidestined kids
-  - questions are about gen and evo lines, as well as who trained who in which series
-- dragon ball
-  - one for series (original, z, gt, super, movies)
-  - characters and manga covers
+| Theme      | Album API  | Card API               |
+|:----------:|:----------:|:----------------------:|
+| Movies     | OMDB       | TMDB / TVMaze          |
+| TV Shows   | OMDB       | TMDB / TVMaze          |
+| Anime      | AniList    | Jikan                  |
+| Videogames | IGDB       | StreamGridDB           |
+| Animals    | WikiData   | Wikimedia, iNaturalist |
+| Sports     | TheSportsDB| TheSportsDB            |
