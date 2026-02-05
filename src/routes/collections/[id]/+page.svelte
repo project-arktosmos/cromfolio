@@ -230,8 +230,16 @@
 	const SCALE_STEP = 0.1;
 
 	onMount(async () => {
-		const collectionId = $page.params.id;
-		if (!collectionId) {
+		const collectionIdParam = $page.params.id;
+		if (!collectionIdParam) {
+			notFound = true;
+			isLoading = false;
+			return;
+		}
+
+		// Parse the collection ID from URL param (string) to number
+		const collectionId = Number(collectionIdParam);
+		if (isNaN(collectionId)) {
 			notFound = true;
 			isLoading = false;
 			return;
